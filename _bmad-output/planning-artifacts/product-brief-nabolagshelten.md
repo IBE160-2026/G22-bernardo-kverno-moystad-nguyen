@@ -120,6 +120,8 @@ Andre grupper — barnefamilier, travle personer og arbeidsledige — har de sam
 
 Alle skjermbilder skal fungere på mobil (fra 360 px bredde) og bruke stor nok tekst og trykkflater for eldre brukere.
 
+Skisser av de fem skjermbildene ligger i [skisser-skjermbilder.md](skisser-skjermbilder.md).
+
 ## Regler (hvem kan gjøre hva)
 
 Disse reglene skal håndheves på serveren, ikke bare skjules i grensesnittet, og hver regel skal ha minst én automatisk test.
