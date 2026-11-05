@@ -76,7 +76,7 @@ Det første en innlogget bruker ser. Viser bare **åpne** oppdrag, som standard 
 - Hele kortet kan trykkes og åpner *Oppdragsdetaljer*.
 - Sortert etter tidspunkt, de som skal gjøres først øverst.
 - Ingen treff: «Ingen ledige oppdrag i 0571 akkurat nå.» med lenken <Se alle postnumre>.
-- Oppdrag med status Hjelper valgt, Utført eller Avbrutt vises ikke her.
+- Oppdrag med status Hjelper valgt, Utført eller Avbrutt vises ikke her, og heller ikke åpne oppdrag der tidspunktet er passert.
 
 **Krav:** suksesskriterium 3, regel 1.
 
@@ -167,9 +167,10 @@ Skjemaet er delt i to steg, så Kari ikke får alle feltene på én gang.
 - Postnummer er forhåndsutfylt fra profilen.
 - Feil i obligatoriske felter vises med tekst rett under feltet, for eksempel «Skriv en tittel».
 - Forhåndsvisningen i steg 2 viser kortet slik det blir seende ut i oversikten.
-- Den samme skjermen brukes til å *redigere* et oppdrag. Da står det «Lagre endringer» i stedet for «Publiser oppdrag».
+- Gyldige verdier for hvert felt står i «Felter i et oppdrag» i briefen.
+- Den samme skjermen brukes til å *redigere* et oppdrag, men bare mens det har status Åpen (regel 4). Da står det «Lagre endringer» i stedet for «Publiser oppdrag».
 
-**Krav:** suksesskriterium 2 og 9, regel 10.
+**Krav:** suksesskriterium 2 og 10, regel 4 og 12.
 
 ---
 
@@ -208,7 +209,7 @@ Samme skjerm, men innholdet nederst avhenger av **hvem** som ser den og **hvilke
 +------------------------------------+
 ```
 
-Etter at brukeren har meldt interesse, byttes knappen ut med teksten «Du har meldt interesse. Under Mine oppdrag ser du om Kari har valgt deg.» (Varsler er utsatt til senere, så appen sender ingen beskjed.)
+Etter at brukeren har meldt interesse, byttes knappen ut med teksten «Du har meldt interesse. Under Mine oppdrag ser du om Kari har valgt deg.» (Varsler er utsatt til senere, så appen sender ingen beskjed.) Under står lenken <Trekk interessen>, så lenge oppdraget er åpent.
 
 ### 3b. Oppdragsgiveren ser interesserte
 
@@ -266,13 +267,17 @@ Trykk på «Velg» åpner en bekreftelse: «Velge Amir? Dere får se hverandres 
 |                                    |
 |  (bare for Amir:)                  |
 |  [   Marker som utført        ]    |
+|  <Trekk meg fra oppdraget>         |
 |                                    |
 |  (bare for Kari:)                  |
+|  ( Fjern hjelper )                 |
 |  ( Avbryt oppdrag )                |
 +------------------------------------+
 ```
 
 Kari ser Amirs telefonnummer og Amir ser Karis. Ingen andre ser noen av numrene. Oppdraget er borte fra oversikten.
+
+«Fjern hjelper» og «Trekk meg fra oppdraget» åpner en bekreftelse. Etterpå er oppdraget Åpent igjen, telefonnumrene skjules, og Kari kan velge blant de andre interesserte (regel 6).
 
 ### 3d. Utført – gi tilbakemelding
 
@@ -302,7 +307,7 @@ Kari ser Amirs telefonnummer og Amir ser Karis. Ingen andre ser noen av numrene.
 
 Vurderingen er tall-knapper (1–5) med tekst på endene, ikke små stjerner. Det er lettere å treffe og forstå. Etter at tilbakemeldingen er sendt: «Takk! Tilbakemeldingen er lagt til i Amirs profil.»
 
-**Krav:** suksesskriterium 4–7, regel 2–8.
+**Krav:** suksesskriterium 4–8, regel 2–10.
 
 ---
 
@@ -348,7 +353,8 @@ To faner. Kari bruker mest den første og Amir den andre, men alle kan bruke beg
 **Merknader**
 
 - Oppdragene er gruppert etter hva brukeren må gjøre, ikke bare listet etter status. Det som krever handling, kommer øverst.
-- Fanen «Hjelper med» viser oppdrag brukeren har meldt interesse på, med status som «Venter på svar», «Du er valgt» eller «Utført».
+- Fanen «Hjelper med» viser oppdrag brukeren har meldt interesse på, med status som «Venter på svar», «Du er valgt», «Ikke valgt», «Avbrutt» eller «Utført». For oppdrag der brukeren ikke ble valgt, vises bare tittel og status (regel 9).
+- Åpne oppdrag der tidspunktet er passert, står under «Trenger handling» merket «Tidspunktet er passert», med valgene «Endre tidspunkt» og «Avbryt».
 - Avbrutte oppdrag er skjult bak en lenke, så lista ikke blir lang.
 
 **Krav:** omfanget «Mine oppdrag med status».
@@ -404,11 +410,12 @@ Profilen er «erfaringsbeviset». Den samme skjermen vises når andre trykker «
 
 **Merknader**
 
-- Telefonnummer og e-post vises **aldri** i profilen. Telefonnummeret vises bare inne i et oppdrag der hjelper er valgt (regel 8).
+- Telefonnummer, e-post og fødselsdato vises **aldri** i profilen (regel 9). Telefonnummeret vises bare inne i et oppdrag der hjelper er valgt (regel 10).
+- En bruker uten vurderinger vises med «Ingen vurderinger ennå».
 - «Slett konto» er en lite fremtredende lenke nederst. Den åpner en bekreftelse som forklarer hva som skjer (se «Sletting av konto» i briefen), blant annet at kommentarer i noen tilfeller kan avsløre hvem som skrev dem.
 - Tilbakemeldinger fra slettede brukere vises med «Slettet bruker».
 
-**Krav:** suksesskriterium 1 og 8, regel 8 og 11.
+**Krav:** suksesskriterium 1 og 9, regel 9, 10 og 13.
 
 ---
 
