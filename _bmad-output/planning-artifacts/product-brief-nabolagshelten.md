@@ -134,13 +134,14 @@ Disse reglene skal håndheves på serveren, ikke bare skjules i grensesnittet, o
 8. Telefonnummer vises bare for oppdragsgiver og valgt hjelper, og først etter at hjelper er valgt.
 9. Registrering krever at brukeren oppgir en fødselsdato som gir alder på minst 18 år.
 10. KI-forslag endrer aldri et oppdrag direkte. Bare brukeren kan fylle inn og publisere. Bare oppdragsteksten sendes til KI-tjenesten, aldri navn, e-post, telefonnummer eller annen informasjon om brukeren.
+11. Bare brukeren selv kan slette sin egen konto.
 
 ## Suksesskriterier
 
 Kriteriene under er funksjonelle og skal kunne bli testtilfeller (akseptansekriterier i stories). V1 er ferdig når alle er oppfylt.
 
-1. **Registrering og innlogging:** En person på 18 år eller eldre kan registrere seg med navn, e-post, passord, telefonnummer og postnummer, og logge inn og ut. Registrering med alder under 18 år eller en e-post som allerede er i bruk avvises med en forståelig feilmelding.
-2. **Legge ut oppdrag:** En innlogget bruker kan legge ut et oppdrag med tittel, beskrivelse, kategori, postnummer, tidspunkt og godtgjørelse. Oppdraget får status **Åpen** og vises i oversikten for brukere med samme postnummer. Oppdrag med manglende obligatoriske felter avvises.
+1. **Registrering og innlogging:** En person på 18 år eller eldre kan registrere seg med navn, e-post, passord, telefonnummer og postnummer, og logge inn og ut. Registrering med alder under 18 år eller en e-post som allerede er i bruk avvises med en forståelig feilmelding. En innlogget bruker kan slette sin egen konto etter å ha bekreftet det, og kan deretter ikke logge inn med den.
+2. **Legge ut oppdrag:** En innlogget bruker kan legge ut et oppdrag med tittel, beskrivelse, kategori, postnummer, tidspunkt og godtgjørelse. Oppdraget får status **Åpen** og vises i oversikten for brukere med samme postnummer. Oppdrag med manglende obligatoriske felter avvises. Oppdragsgiveren kan redigere eller avbryte oppdraget så lenge det ikke er **Utført**. Et avbrutt oppdrag får status **Avbrutt**. Forsøk fra andre brukere på å redigere eller avbryte avvises.
 3. **Finne oppdrag:** En bruker ser som standard bare åpne oppdrag i sitt eget postnummer, og kan filtrere på kategori og velge et annet postnummer. Oppdrag med status **Hjelper valgt**, **Utført** eller **Avbrutt** vises ikke i oversikten.
 4. **Melde interesse:** En bruker kan melde interesse på et åpent oppdrag som ikke er hennes eget, med en kort melding. Oppdragsgiveren ser alle interesserte med navn, antall fullførte oppdrag og gjennomsnittlig vurdering.
 5. **Velge hjelper:** Oppdragsgiveren kan velge én av de interesserte. Status endres til **Hjelper valgt**, og oppdragsgiver og valgt hjelper ser hverandres telefonnummer. Andre brukere kan ikke velge hjelper eller se telefonnumrene.
@@ -162,7 +163,7 @@ I tillegg gjelder disse kvalitetskravene:
 - Vi lagrer bare det som trengs: navn, e-post, hashet passord, telefonnummer, postnummer, fødselsdato (for aldersgrensen) og innholdet brukeren selv legger inn.
 - Eksakt adresse lagres ikke.
 - Telefonnummer deles bare mellom partene i et oppdrag der hjelper er valgt (regel 8).
-- En bruker kan slette sin egen konto.
+- En bruker kan slette sin egen konto (regel 11, suksesskriterium 1).
 - Til KI-tjenesten sendes bare oppdragsteksten (regel 10). Brukeren får beskjed om at teksten sendes til en ekstern tjeneste når hun bruker «Få forslag».
 - Eksempeldata i repoet er oppdiktet og inneholder ingen ekte personopplysninger.
 
@@ -171,6 +172,7 @@ I tillegg gjelder disse kvalitetskravene:
 ### Inkludert i v1
 
 - Registrering og innlogging med e-post og passord, med 18-årsgrense
+- Slette egen konto
 - Brukerprofil med historikk og tilbakemeldinger
 - Legge ut, redigere og avbryte oppdrag med fast liste over kategorier: *Snømåking, Hage, Bærehjelp/flytting, Dyrepass, Teknologihjelp, Annet*
 - Oversikt over åpne oppdrag med filter på kategori og postnummer
@@ -212,7 +214,7 @@ På sikt skal *«Finnes det noen i nærheten som kan hjelpe?»* bli et naturlig 
 |---|---|
 | Fjern BankID/Vipps og foresattgodkjenning fra v1 | Vanlig innlogging med e-post og passord, 18-årsgrense. Begge flyttet til «Utsatt». |
 | Begrens v1 til én kjerneflyt | Utlån av utstyr flyttet til trinn 2. V1 er oppdragsflyten fra start til tilbakemelding. |
-| Testbare suksesskriterier | 8 funksjonelle kriterier i formen «en bruker kan …» og 9 regler for hvem som kan gjøre hva. |
+| Testbare suksesskriterier | 9 funksjonelle kriterier i formen «en bruker kan …» og 11 regler for hvem som kan gjøre hva. |
 | Hva skjer etter interesse? | Beskrevet valg av hjelper, deling av telefonnummer, utført og tilbakemelding, med statusmodell. |
 | Uavklart betaling og nærhet | Ingen betaling i appen; nærhet via postnummer. |
 | Skille fra eksisterende tjenester | Sammenligning med Facebook-grupper, Finn og anbudstjenester. |
