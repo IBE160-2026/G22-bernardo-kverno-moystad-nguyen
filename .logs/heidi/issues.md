@@ -12,3 +12,6 @@
 - [ ] 2026-11-07 [prd](998-2026-11-05-22-16-33-prd.md) — `bmad-architecture` med PRD v1.0 som grunnlag
 - [ ] 2026-11-07 [prd](998-2026-11-05-22-16-33-prd.md) — gruppen bør godkjenne valgene i PRD v1.0 §10, særlig at glemt passord og rapportering/blokkering er utsatt
 - [ ] 2026-11-07 [python-installasjon](997-2026-11-07-16-15-21-python-installasjon.md) — README: beskriv Python-kravet (3.11 eller nyere for BMAD-skriptene) og oppsett av `.venv` hvis appen bruker Python; avklares etter `bmad-architecture`
+- [ ] 2026-11-07 [prd](998-2026-11-05-22-16-33-prd.md) — rett PRD-en til v1.1 etter reviewen 2026-11-07 før `bmad-architecture`; gruppen bør ta produktvalgene i statusmodellen (Hjelper valgt etter tidspunktet, Utført, FR-13 mot FR-15, FR-18 per rolle, sletting av konto)
+- [ ] 2026-11-07 [prd](998-2026-11-05-22-16-33-prd.md) — rett sikkerhet og testbarhet i PRD-en (XSS, innloggingsgrense, FR-3, KI-grense, «Testes ved» i NFR-ene, NFR-7/SM-5, relative datoer i eksempeldata, FR-26, FR-25 mot FR-5)
+- [ ] 2026-11-07 [prd](998-2026-11-05-22-16-33-prd.md) — ta de redaksjonelle funnene (structure og prose) fra reviewen 2026-11-07 i samme omgang
