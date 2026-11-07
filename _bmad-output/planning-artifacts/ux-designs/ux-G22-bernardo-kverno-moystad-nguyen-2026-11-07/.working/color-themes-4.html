@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skogbunn i ny palett</title>
+<style>
+/* Sideramme: frameBg #EEE5D3 (beige), frameText #2F302D (antrasitt), frameMuted #5E5347 (taupe, mørk), frameBorder #7B6C5D (taupe, mørkere) */
+
+:root{color-scheme:light;--frameBg:#EEE5D3;--frameText:#2F302D;--frameMuted:#5E5347;--frameBorder:#7B6C5D}
+*{box-sizing:border-box}
+html{font-size:100%}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;font-size:18px;line-height:1.55;background:var(--frameBg);color:var(--frameText)}
+h1,h2,h3,h4,.brand{font-family:ui-rounded,"SF Pro Rounded","Nunito","Segoe UI Variable Display","Segoe UI",system-ui,sans-serif}
+.page{max-width:1240px;margin:0 auto;padding:32px 16px 64px}
+.page>header h1{font-size:2rem;line-height:1.2;margin:0 0 8px}
+.page>header p{margin:0 0 8px;max-width:72ch;color:var(--frameMuted)}
+.list{display:grid;gap:40px;margin-top:28px}
+.var{border-radius:20px;overflow:hidden;border:1px solid var(--frameBorder);background:var(--bg);color:var(--text)}
+.var-head{padding:24px 24px 4px}
+.var-head h2{margin:0;font-size:1.6rem;line-height:1.25}
+.var-head .tag{display:inline-block;font-weight:800;margin-right:8px}
+.var-head p{margin:8px 0 0;max-width:80ch;color:var(--muted)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,520px),1fr));gap:0 8px;align-items:start}
+.section-label{font-size:1rem;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--muted);margin:24px 24px 12px}
+.palette{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;padding:0 24px}
+.pchip{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;font-size:1rem}
+.pchip .sw{height:52px;border-bottom:1px solid var(--border)}
+.pchip .meta{padding:8px 10px 10px}
+.pchip .pname{font-weight:700;display:block}
+.pchip .pderiv{display:block;color:var(--muted)}
+.pchip .proles{display:block;color:var(--muted)}
+code{font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;font-size:.95rem;overflow-wrap:anywhere}
+.chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;padding:0 24px}
+.chip{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;font-size:1rem}
+.chip .sw{height:52px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.25rem;border-bottom:1px solid var(--border)}
+.chip .meta{padding:8px 10px 10px}
+.chip .role{font-weight:700;display:block}
+.chip .pair{display:block;color:var(--muted)}
+.chip .ok{font-weight:700;color:var(--text);white-space:nowrap}
+.demo{margin:0 24px 24px;border:1px solid var(--border);border-radius:var(--rcard);overflow:hidden;background:var(--bg)}
+.topbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;padding:8px 16px;background:var(--topbar);color:var(--topbarText)}
+.brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:1.25rem;letter-spacing:-.01em;color:var(--brandIcon)}
+.topbar nav ul{list-style:none;display:flex;flex-wrap:wrap;gap:4px;margin:0;padding:0}
+.topbar nav a{display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:0 12px;color:var(--topbarText);text-decoration:none;border-radius:10px;border-bottom:3px solid transparent}
+.topbar nav a[aria-current="page"]{font-weight:700;border-bottom-color:var(--navIndicator);border-radius:10px 10px 0 0}
+.topbar nav a:focus-visible{outline:3px solid var(--topbarFocus);outline-offset:2px}
+.newbadge{display:inline-flex;align-items:center;font-size:1rem;font-weight:700;line-height:1.3;padding:1px 9px;border-radius:999px;background:var(--newBg);color:var(--newFg)}
+.content{padding:28px 24px 32px}
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:24px}
+.toolbar h3{margin:0;font-size:1.3rem}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;min-width:48px;padding:0 22px;font:inherit;font-weight:700;border-radius:12px;cursor:pointer;text-decoration:none}
+.btn-primary{background:var(--primary);color:var(--onPrimary);border:2px solid var(--primaryEdge)}
+.btn-outline{background:transparent;color:var(--accentStrong);border:1.5px solid var(--accentStrong)}
+.btn-text{background:transparent;color:var(--accentStrong);border:2px solid transparent;text-decoration:underline;text-underline-offset:3px;padding:0 14px}
+.btn:focus-visible,.is-focus{outline:3px solid var(--focus);outline-offset:3px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rcard);box-shadow:var(--shadow);padding:26px}
+.card-top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:8px}
+.cat{display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:var(--onAccent);font-size:1rem;font-weight:700;padding:3px 12px;border-radius:999px}
+.card h4{margin:16px 0 8px;font-size:1.35rem;line-height:1.3}
+.card .desc{margin:0 0 16px}
+.facts{list-style:none;margin:0 0 24px;padding:0;display:grid;gap:8px;color:var(--muted)}
+.facts li{display:flex;align-items:center;gap:8px}
+.facts strong{color:var(--text)}
+.price{font-size:1.25rem}
+.actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.status{display:inline-flex;align-items:center;gap:6px;font-size:1rem;font-weight:700;padding:3px 12px;border-radius:999px;border:1.5px solid currentColor;white-space:nowrap}
+.s-open{background:var(--openBg);color:var(--openFg)}
+.s-chosen{background:var(--chosenBg);color:var(--chosenFg)}
+.s-done{background:var(--doneBg);color:var(--doneFg)}
+.s-cancel{background:var(--cancelBg);color:var(--cancelFg)}
+.row{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px}
+.msgs{display:grid;gap:12px;margin-top:28px}
+.msg{display:flex;gap:8px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-left-width:6px;border-radius:10px;padding:12px 16px;margin:0}
+.msg-err{color:var(--error);border-left-color:var(--error)}
+.msg-ok{color:var(--success);border-left-color:var(--success)}
+.msg svg{flex:none;margin-top:3px}
+.focusdemo{margin-top:28px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--rcard)}
+.focusdemo p{margin:0 0 12px;color:var(--muted)}
+.note{color:var(--muted);margin:0 24px 24px;font-size:1rem}
+
+/* Variasjon P1 – Salvie og sand: Grønt leder: mørk salvie i topplinjen og på knappene, sand og beige som flater, blush og terrakotta som varm aksent, antrasitt tekst. Frisk og jordnær. */
+/* Konkrete hex-verdier (ett tema, ingen lys/mørk-variant). token  hex  palettnavn
+   bg            #E3D3B3  sand
+   surface       #EEE5D3  beige
+   text          #2F302D  antrasitt
+   muted         #6E4E3A  mokka
+   primary       #47553F  salviegrønn, mørk
+   onPrimary     #F4E8CF  champagne
+   primaryEdge   #47553F  salviegrønn, mørk
+   accent        #E3D3B3  sand
+   onAccent      #4B3324  mørkebrun
+   accentStrong  #47553F  salviegrønn, mørk
+   border        #7B6C5D  taupe, mørkere
+   focus         #2F302D  antrasitt
+   topbar        #47553F  salviegrønn, mørk
+   topbarText    #F4E8CF  champagne
+   topbarFocus   #EBC7BC  blush
+   brandIcon     #EBC7BC  blush
+   navIndicator  #EBC7BC  blush
+   newBg         #EBC7BC  blush
+   newFg         #4B3324  mørkebrun
+   openBg        #CBDDC1  pastellgrønn
+   openFg        #47553F  salviegrønn, mørk
+   chosenBg      #EBC7BC  blush
+   chosenFg      #81432C  terrakotta, mørk
+   doneBg        #F4E8CF  champagne
+   doneFg        #4D5829  oliven, mørk
+   cancelBg      #D2CABD  greige
+   cancelFg      #5E5347  taupe, mørk
+   error         #81432C  terrakotta, mørk
+   success       #47553F  salviegrønn, mørk
+*/
+.v-P1{--bg:#E3D3B3;--surface:#EEE5D3;--text:#2F302D;--muted:#6E4E3A;--primary:#47553F;--onPrimary:#F4E8CF;--primaryEdge:#47553F;--accent:#E3D3B3;--onAccent:#4B3324;--accentStrong:#47553F;--border:#7B6C5D;--focus:#2F302D;--topbar:#47553F;--topbarText:#F4E8CF;--topbarFocus:#EBC7BC;--brandIcon:#EBC7BC;--navIndicator:#EBC7BC;--newBg:#EBC7BC;--newFg:#4B3324;--openBg:#CBDDC1;--openFg:#47553F;--chosenBg:#EBC7BC;--chosenFg:#81432C;--doneBg:#F4E8CF;--doneFg:#4D5829;--cancelBg:#D2CABD;--cancelFg:#5E5347;--error:#81432C;--success:#47553F;--rcard:14px;--shadow:0 1px 2px rgba(47,48,45,.06), 0 4px 14px rgba(47,48,45,.07);}
+/* Variasjon P2 – Mokka og champagne: Brunt leder: mørkebrun topplinje og mokka primærknapp, latte og champagne som flater, cappuccino i kantene, salviegrønn sekundærknapp, blush som aksent. Varm og kafé-lun. */
+/* Konkrete hex-verdier (ett tema, ingen lys/mørk-variant). token  hex  palettnavn
+   bg            #DFCCB0  latte
+   surface       #F4E8CF  champagne
+   text          #4B3324  mørkebrun
+   muted         #6E4E3A  mokka
+   primary       #6E4E3A  mokka
+   onPrimary     #F4E8CF  champagne
+   primaryEdge   #6E4E3A  mokka
+   accent        #DFCCB0  latte
+   onAccent      #4B3324  mørkebrun
+   accentStrong  #47553F  salviegrønn, mørk
+   border        #8B6B52  cappuccino, mørk
+   focus         #4B3324  mørkebrun
+   topbar        #4B3324  mørkebrun
+   topbarText    #F4E8CF  champagne
+   topbarFocus   #EBC7BC  blush
+   brandIcon     #EBC7BC  blush
+   navIndicator  #EBC7BC  blush
+   newBg         #EBC7BC  blush
+   newFg         #4B3324  mørkebrun
+   openBg        #CBDDC1  pastellgrønn
+   openFg        #47553F  salviegrønn, mørk
+   chosenBg      #EBC7BC  blush
+   chosenFg      #6E4E3A  mokka
+   doneBg        #E3D3B3  sand
+   doneFg        #4D5829  oliven, mørk
+   cancelBg      #D2CABD  greige
+   cancelFg      #5E5347  taupe, mørk
+   error         #81432C  terrakotta, mørk
+   success       #4D5829  oliven, mørk
+*/
+.v-P2{--bg:#DFCCB0;--surface:#F4E8CF;--text:#4B3324;--muted:#6E4E3A;--primary:#6E4E3A;--onPrimary:#F4E8CF;--primaryEdge:#6E4E3A;--accent:#DFCCB0;--onAccent:#4B3324;--accentStrong:#47553F;--border:#8B6B52;--focus:#4B3324;--topbar:#4B3324;--topbarText:#F4E8CF;--topbarFocus:#EBC7BC;--brandIcon:#EBC7BC;--navIndicator:#EBC7BC;--newBg:#EBC7BC;--newFg:#4B3324;--openBg:#CBDDC1;--openFg:#47553F;--chosenBg:#EBC7BC;--chosenFg:#6E4E3A;--doneBg:#E3D3B3;--doneFg:#4D5829;--cancelBg:#D2CABD;--cancelFg:#5E5347;--error:#81432C;--success:#4D5829;--rcard:14px;--shadow:0 1px 2px rgba(47,48,45,.06), 0 4px 14px rgba(47,48,45,.07);}
+/* Variasjon P3 – Greige og oliven: Nøytralt leder: antrasitt topplinje, greige og beige som flater, taupe i tekst og kanter, oliven primærknapp, karamell som eneste aksent. Den roligste. */
+/* Konkrete hex-verdier (ett tema, ingen lys/mørk-variant). token  hex  palettnavn
+   bg            #D2CABD  greige
+   surface       #EEE5D3  beige
+   text          #2F302D  antrasitt
+   muted         #5E5347  taupe, mørk
+   primary       #5E6B32  oliven
+   onPrimary     #EEE5D3  beige
+   primaryEdge   #5E6B32  oliven
+   accent        #D2CABD  greige
+   onAccent      #2F302D  antrasitt
+   accentStrong  #4D5829  oliven, mørk
+   border        #7B6C5D  taupe, mørkere
+   focus         #2F302D  antrasitt
+   topbar        #2F302D  antrasitt
+   topbarText    #EEE5D3  beige
+   topbarFocus   #C98B4F  karamell
+   brandIcon     #C98B4F  karamell
+   navIndicator  #C98B4F  karamell
+   newBg         #C98B4F  karamell
+   newFg         #2F302D  antrasitt
+   openBg        #CBDDC1  pastellgrønn
+   openFg        #47553F  salviegrønn, mørk
+   chosenBg      #C98B4F  karamell
+   chosenFg      #2F302D  antrasitt
+   doneBg        #E3D3B3  sand
+   doneFg        #4D5829  oliven, mørk
+   cancelBg      #D2CABD  greige
+   cancelFg      #5E5347  taupe, mørk
+   error         #81432C  terrakotta, mørk
+   success       #4D5829  oliven, mørk
+*/
+.v-P3{--bg:#D2CABD;--surface:#EEE5D3;--text:#2F302D;--muted:#5E5347;--primary:#5E6B32;--onPrimary:#EEE5D3;--primaryEdge:#5E6B32;--accent:#D2CABD;--onAccent:#2F302D;--accentStrong:#4D5829;--border:#7B6C5D;--focus:#2F302D;--topbar:#2F302D;--topbarText:#EEE5D3;--topbarFocus:#C98B4F;--brandIcon:#C98B4F;--navIndicator:#C98B4F;--newBg:#C98B4F;--newFg:#2F302D;--openBg:#CBDDC1;--openFg:#47553F;--chosenBg:#C98B4F;--chosenFg:#2F302D;--doneBg:#E3D3B3;--doneFg:#4D5829;--cancelBg:#D2CABD;--cancelFg:#5E5347;--error:#81432C;--success:#4D5829;--rcard:14px;--shadow:0 1px 2px rgba(47,48,45,.06), 0 4px 14px rgba(47,48,45,.07);}
+</style>
+</head>
+<body>
+<div class="page">
+<header>
+  <h1>D2 «Skogbunn, renere» i den nye paletten – tre balanser</h1>
+  <p>Runde 4: samme struktur som D2 (mørk topplinje, aksent bare i topplinjen og på «Hjelper valgt», grønn sekundærknapp, nøytralt kategorimerke, mørk fokusring, myke skygger, mye luft) – nå med statusmerker med kant og meldinger med stripe.</p>
+  <p>Alle farger er hentet fra paletten antrasitt, mørkebrun, mokka, pastellgrønn, salviegrønn, oliven, terrakotta, blush, champagne, karamell, sand, latte, cappuccino, greige, taupe og beige. Ingen hvit og ingen svart. Ett fargetema, ingen lys/mørk modus. Der en farge måtte gjøres mørkere for å nå kontrastkravet, står det i fargekartet.</p>
+  <p>P1 lar grønt lede, P2 lar brunt lede, P3 er nøytral og roligst. Brødtekst 18 px, knapper med tekst og minst 48 px høye, status vist med tekst, ikon, kant og fargetone.</p>
+</header>
+<div class="list">
+
+<section class="var v-P1" id="vP1" aria-labelledby="hP1">
+  <div class="var-head">
+    <h2 id="hP1"><span class="tag">P1</span>Salvie og sand</h2>
+    <p>Grønt leder: mørk salvie i topplinjen og på knappene, sand og beige som flater, blush og terrakotta som varm aksent, antrasitt tekst. Frisk og jordnær.</p>
+  </div>
+  <h3 class="section-label">Fargekart</h3>
+  <div class="palette">
+<div class="pchip"><div class="sw" style="background:#F4E8CF"></div><div class="meta"><span class="pname">Champagne</span><code>#F4E8CF</code><span class="proles">Rolle: tekst på primærknapp, menytekst, Utført (flate)</span></div></div>
+<div class="pchip"><div class="sw" style="background:#EEE5D3"></div><div class="meta"><span class="pname">Beige</span><code>#EEE5D3</code><span class="proles">Rolle: kort og flater</span></div></div>
+<div class="pchip"><div class="sw" style="background:#CBDDC1"></div><div class="meta"><span class="pname">Pastellgrønn</span><code>#CBDDC1</code><span class="proles">Rolle: Åpen (flate)</span></div></div>
+<div class="pchip"><div class="sw" style="background:#E3D3B3"></div><div class="meta"><span class="pname">Sand</span><code>#E3D3B3</code><span class="proles">Rolle: sidebakgrunn, kategorimerke</span></div></div>
+<div class="pchip"><div class="sw" style="background:#EBC7BC"></div><div class="meta"><span class="pname">Blush</span><code>#EBC7BC</code><span class="proles">Rolle: fokusring i topplinje, logo, aktiv-strek, «nye»-merke, Hjelper valgt (flate)</span></div></div>
+<div class="pchip"><div class="sw" style="background:#D2CABD"></div><div class="meta"><span class="pname">Greige</span><code>#D2CABD</code><span class="proles">Rolle: Avbrutt (flate)</span></div></div>
+<div class="pchip"><div class="sw" style="background:#7B6C5D"></div><div class="meta"><span class="pname">Taupe, mørkere</span><code>#7B6C5D</code><span class="pderiv">Nyanse av taupe – litt mørkere for kontrast: kantlinje ≥ 3:1 mot sand og greige med margin</span><span class="proles">Rolle: kantlinjer</span></div></div>
+<div class="pchip"><div class="sw" style="background:#6E4E3A"></div><div class="meta"><span class="pname">Mokka</span><code>#6E4E3A</code><span class="proles">Rolle: dempet tekst</span></div></div>
+<div class="pchip"><div class="sw" style="background:#5E5347"></div><div class="meta"><span class="pname">Taupe, mørk</span><code>#5E5347</code><span class="pderiv">Nyanse av taupe – mørkere for kontrast: dempet tekst og Avbrutt-tekst ≥ 4,5:1</span><span class="proles">Rolle: Avbrutt (tekst/kant)</span></div></div>
+<div class="pchip"><div class="sw" style="background:#81432C"></div><div class="meta"><span class="pname">Terrakotta, mørk</span><code>#81432C</code><span class="pderiv">Nyanse av terrakotta – mørkere for kontrast: feiltekst og «Hjelper valgt»-tekst ≥ 4,5:1</span><span class="proles">Rolle: Hjelper valgt (tekst/kant), feilmelding og stripe</span></div></div>
+<div class="pchip"><div class="sw" style="background:#4D5829"></div><div class="meta"><span class="pname">Oliven, mørk</span><code>#4D5829</code><span class="pderiv">Nyanse av oliven – mørkere for kontrast: olivengrønn tekst ≥ 4,5:1 også på greige, latte og sand</span><span class="proles">Rolle: Utført (tekst/kant)</span></div></div>
+<div class="pchip"><div class="sw" style="background:#47553F"></div><div class="meta"><span class="pname">Salviegrønn, mørk</span><code>#47553F</code><span class="pderiv">Nyanse av salviegrønn – mørkere for kontrast: lys tekst på grønt og grønn tekst på lyse flater</span><span class="proles">Rolle: primærknapp, primærknappens kant, sekundærknapp og lenke, topplinje, Åpen (tekst/kant), suksessmelding og stripe</span></div></div>
+<div class="pchip"><div class="sw" style="background:#4B3324"></div><div class="meta"><span class="pname">Mørkebrun</span><code>#4B3324</code><span class="proles">Rolle: tekst på kategorimerke, tekst på «nye»</span></div></div>
+<div class="pchip"><div class="sw" style="background:#2F302D"></div><div class="meta"><span class="pname">Antrasitt</span><code>#2F302D</code><span class="proles">Rolle: brødtekst, fokusring</span></div></div>
+  </div>
+  <div class="cols">
+    <div>
+      <h3 class="section-label">Eksempel</h3>
+      
+<div class="demo">
+  <header class="topbar">
+    <span class="brand"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" focusable="false"><path d="M3 11.5 12 4l9 7.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 10v9.5h13V10" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 17.2s-3-1.9-3-3.9a1.6 1.6 0 0 1 3-.8 1.6 1.6 0 0 1 3 .8c0 2-3 3.9-3 3.9z" fill="currentColor"/></svg>Nabolagshelten</span>
+    <nav aria-label="Hovedmeny (variasjon P1)"><ul>
+      <li><a href="#vP1" aria-current="page">Oppdrag</a></li>
+      <li><a href="#vP1">Mine oppdrag <span class="newbadge">2 nye</span></a></li>
+      <li><a href="#vP1">Profil</a></li>
+    </ul></nav>
+  </header>
+  <div class="content">
+    <div class="toolbar">
+      <h3>Ledige oppdrag i 0571</h3>
+      <a class="btn btn-outline" href="#vP1">+ Legg ut oppdrag</a>
+    </div>
+    <article class="card" aria-labelledby="tP1">
+      <div class="card-top">
+        <span class="cat"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><path d="M12 2v20M3.3 7l17.4 10M3.3 17 20.7 7M9 3.5l3 2 3-2M9 20.5l3-2 3 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Snømåking</span>
+        <span class="status s-open"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>Åpen</span>
+      </div>
+      <h4 id="tP1">Snømåking av innkjørsel</h4>
+      <p class="desc">Trenger noen som kan måke snø i innkjørselen min i morgen tidlig.</p>
+      <ul class="facts">
+        <li><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span><strong>I morgen kl. 07:00</strong></span></li>
+        <li><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M12 21s-6.5-6.1-6.5-11a6.5 6.5 0 0 1 13 0c0 4.9-6.5 11-6.5 11z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="10" r="2.3" fill="currentColor"/></svg><span>0571 Oslo · lagt ut av Kari</span></li>
+        <li><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9.5 8v8M9.5 12l4-4M10.5 11l3.5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span><strong class="price">200 kr</strong></span></li>
+        <li><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><circle cx="9" cy="8.5" r="3.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 19c.6-3.3 3-5 6-5s5.4 1.7 6 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M15.5 5.6a3 3 0 0 1 0 5.8M17.5 14.3c1.8.6 3 2.2 3.4 4.7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>2 har meldt interesse</span></li>
+      </ul>
+      <div class="actions">
+        <button class="btn btn-primary" type="button">Meld interesse</button>
+        <a class="btn btn-text" href="#vP1">Se detaljer</a>
+      </div>
+    </article>
+    <div class="row" role="group" aria-label="Alle statuser">
+      <span class="status s-open"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>Åpen</span>
+      <span class="status s-chosen"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><circle cx="8" cy="5" r="2.8" fill="currentColor"/><path d="M2.5 14.5c.5-3 2.6-4.5 5.5-4.5s5 1.5 5.5 4.5z" fill="currentColor"/></svg>Hjelper valgt</span>
+      <span class="status s-done"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><path d="M2.5 8.5l3.5 3.5 7.5-8" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Utført</span>
+      <span class="status s-cancel"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>Avbrutt</span>
+    </div>
+    <div class="msgs">
+      <p class="msg msg-err" role="note"><svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" focusable="false"><path d="M10 2.5 18.5 17h-17z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M10 8v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="10" cy="14.6" r="1.1" fill="currentColor"/></svg><span>Skriv en kort melding før du melder interesse.</span></p>
+      <p class="msg msg-ok" role="note"><svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M6.3 10.3l2.5 2.5 5-5.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Interessen din er sendt til Kari.</span></p>
+    </div>
+    <div class="focusdemo">
+      <p>Fokus med tastatur (statisk eksempel – Tab i snutten over viser det samme):</p>
+      <div class="actions">
+        <span class="btn btn-primary is-focus" aria-hidden="true">Meld interesse</span>
+        <span class="btn btn-text is-focus" aria-hidden="true">Se detaljer</span>
+      </div>
+    </div>
+  </div>
+</div>
+    </div>
+    <div>
+      <h3 class="section-label">Roller og kontrast</h3>
+      <div class="chips">
+<div class="chip"><div class="sw" style="background:#E3D3B3;color:#2F302D">Aa</div><div class="meta"><span class="role">Bakgrunn</span><code>#E3D3B3</code> sand<span class="pair">tekst: <span class="ok">✓ 9.00:1 AA</span></span><span class="pair">dempet: <span class="ok">✓ 5.06:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#EEE5D3;color:#2F302D">Aa</div><div class="meta"><span class="role">Kort / flate</span><code>#EEE5D3</code> beige<span class="pair">tekst: <span class="ok">✓ 10.61:1 AA</span></span><span class="pair">dempet: <span class="ok">✓ 5.96:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#47553F;color:#F4E8CF">Aa</div><div class="meta"><span class="role">Primærknapp</span><code>#47553F</code> salviegrønn, mørk / <code>#F4E8CF</code> champagne<span class="pair">tekst på knapp: <span class="ok">✓ 6.55:1 AA</span></span><span class="pair">kant mot kort: <span class="ok">✓ 6.36:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#EEE5D3;color:#47553F">Aa</div><div class="meta"><span class="role">Sekundærknapp / lenke</span><code>#47553F</code> salviegrønn, mørk<span class="pair">på kort: <span class="ok">✓ 6.36:1 AA</span></span><span class="pair">på bakgrunn: <span class="ok">✓ 5.39:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#E3D3B3;color:#4B3324">Aa</div><div class="meta"><span class="role">Kategorimerke</span><code>#E3D3B3</code> sand / <code>#4B3324</code> mørkebrun<span class="pair">tekst på merke: <span class="ok">✓ 7.92:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#7B6C5D;color:#EEE5D3">Aa</div><div class="meta"><span class="role">Kantlinje</span><code>#7B6C5D</code> taupe, mørkere<span class="pair">mot kort: <span class="ok">✓ 4.05:1 AA</span></span><span class="pair">mot bakgrunn: <span class="ok">✓ 3.43:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#2F302D;color:#EEE5D3">Aa</div><div class="meta"><span class="role">Fokusring</span><code>#2F302D</code> antrasitt<span class="pair">mot kort: <span class="ok">✓ 10.61:1 AA</span></span><span class="pair">mot bakgrunn: <span class="ok">✓ 9.00:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#47553F;color:#F4E8CF">Aa</div><div class="meta"><span class="role">Topplinje</span><code>#47553F</code> salviegrønn, mørk / <code>#F4E8CF</code> champagne<span class="pair">menytekst: <span class="ok">✓ 6.55:1 AA</span></span><span class="pair">logo: <span class="ok">✓ 5.09:1 AA</span></span><span class="pair">aktiv-strek: <span class="ok">✓ 5.09:1 AA</span></span><span class="pair">fokusring: <span class="ok">✓ 5.09:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#EBC7BC;color:#4B3324">Aa</div><div class="meta"><span class="role">«2 nye»-merke</span><code>#EBC7BC</code> blush / <code>#4B3324</code> mørkebrun<span class="pair">tekst på merke: <span class="ok">✓ 7.47:1 AA</span></span><span class="pair">merke mot topplinje: <span class="ok">✓ 5.09:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#CBDDC1;color:#47553F">Aa</div><div class="meta"><span class="role">Status: Åpen</span><code>#CBDDC1</code> pastellgrønn / <code>#47553F</code> salviegrønn, mørk<span class="pair">tekst på merke: <span class="ok">✓ 5.55:1 AA</span></span><span class="pair">kant mot kort: <span class="ok">✓ 6.36:1 AA</span></span><span class="pair">kant mot bakgrunn: <span class="ok">✓ 5.39:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#EBC7BC;color:#81432C">Aa</div><div class="meta"><span class="role">Status: Hjelper valgt</span><code>#EBC7BC</code> blush / <code>#81432C</code> terrakotta, mørk<span class="pair">tekst på merke: <span class="ok">✓ 4.84:1 AA</span></span><span class="pair">kant mot kort: <span class="ok">✓ 6.05:1 AA</span></span><span class="pair">kant mot bakgrunn: <span class="ok">✓ 5.13:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#F4E8CF;color:#4D5829">Aa</div><div class="meta"><span class="role">Status: Utført</span><code>#F4E8CF</code> champagne / <code>#4D5829</code> oliven, mørk<span class="pair">tekst på merke: <span class="ok">✓ 6.30:1 AA</span></span><span class="pair">kant mot kort: <span class="ok">✓ 6.12:1 AA</span></span><span class="pair">kant mot bakgrunn: <span class="ok">✓ 5.19:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#D2CABD;color:#5E5347">Aa</div><div class="meta"><span class="role">Status: Avbrutt</span><code>#D2CABD</code> greige / <code>#5E5347</code> taupe, mørk<span class="pair">tekst på merke: <span class="ok">✓ 4.61:1 AA</span></span><span class="pair">kant mot kort: <span class="ok">✓ 5.99:1 AA</span></span><span class="pair">kant mot bakgrunn: <span class="ok">✓ 5.08:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#EEE5D3;color:#81432C">Aa</div><div class="meta"><span class="role">Feil (tekst + stripe)</span><code>#81432C</code> terrakotta, mørk<span class="pair">på kort: <span class="ok">✓ 6.05:1 AA</span></span><span class="pair">på bakgrunn: <span class="ok">✓ 5.13:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#EEE5D3;color:#47553F">Aa</div><div class="meta"><span class="role">Suksess (tekst + stripe)</span><code>#47553F</code> salviegrønn, mørk<span class="pair">på kort: <span class="ok">✓ 6.36:1 AA</span></span><span class="pair">på bakgrunn: <span class="ok">✓ 5.39:1 AA</span></span></div></div>
+      </div>
+    </div>
+  </div>
+  <p class="note" style="margin-top:20px">Kontrast regnet med WCAG 2.1-formelen for relativ luminans. Krav: tekst ≥ 4,5:1; kanter, fokusring, aktiv-strek og merkekanter ≥ 3:1.</p>
+</section>
+<section class="var v-P2" id="vP2" aria-labelledby="hP2">
+  <div class="var-head">
+    <h2 id="hP2"><span class="tag">P2</span>Mokka og champagne</h2>
+    <p>Brunt leder: mørkebrun topplinje og mokka primærknapp, latte og champagne som flater, cappuccino i kantene, salviegrønn sekundærknapp, blush som aksent. Varm og kafé-lun.</p>
+  </div>
+  <h3 class="section-label">Fargekart</h3>
+  <div class="palette">
+<div class="pchip"><div class="sw" style="background:#F4E8CF"></div><div class="meta"><span class="pname">Champagne</span><code>#F4E8CF</code><span class="proles">Rolle: kort og flater, tekst på primærknapp, menytekst</span></div></div>
+<div class="pchip"><div class="sw" style="background:#CBDDC1"></div><div class="meta"><span class="pname">Pastellgrønn</span><code>#CBDDC1</code><span class="proles">Rolle: Åpen (flate)</span></div></div>
+<div class="pchip"><div class="sw" style="background:#E3D3B3"></div><div class="meta"><span class="pname">Sand</span><code>#E3D3B3</code><span class="proles">Rolle: Utført (flate)</span></div></div>
+<div class="pchip"><div class="sw" style="background:#EBC7BC"></div><div class="meta"><span class="pname">Blush</span><code>#EBC7BC</code><span class="proles">Rolle: fokusring i topplinje, logo, aktiv-strek, «nye»-merke, Hjelper valgt (flate)</span></div></div>
+<div class="pchip"><div class="sw" style="background:#DFCCB0"></div><div class="meta"><span class="pname">Latte</span><code>#DFCCB0</code><span class="proles">Rolle: sidebakgrunn, kategorimerke</span></div></div>
+<div class="pchip"><div class="sw" style="background:#D2CABD"></div><div class="meta"><span class="pname">Greige</span><code>#D2CABD</code><span class="proles">Rolle: Avbrutt (flate)</span></div></div>
+<div class="pchip"><div class="sw" style="background:#8B6B52"></div><div class="meta"><span class="pname">Cappuccino, mørk</span><code>#8B6B52</code><span class="pderiv">Nyanse av cappuccino – mørkere for kontrast: kantlinje ≥ 3:1 mot latte og champagne</span><span class="proles">Rolle: kantlinjer</span></div></div>
+<div class="pchip"><div class="sw" style="background:#6E4E3A"></div><div class="meta"><span class="pname">Mokka</span><code>#6E4E3A</code><span class="proles">Rolle: dempet tekst, primærknapp, primærknappens kant, Hjelper valgt (tekst/kant)</span></div></div>
+<div class="pchip"><div class="sw" style="background:#5E5347"></div><div class="meta"><span class="pname">Taupe, mørk</span><code>#5E5347</code><span class="pderiv">Nyanse av taupe – mørkere for kontrast: dempet tekst og Avbrutt-tekst ≥ 4,5:1</span><span class="proles">Rolle: Avbrutt (tekst/kant)</span></div></div>
+<div class="pchip"><div class="sw" style="background:#81432C"></div><div class="meta"><span class="pname">Terrakotta, mørk</span><code>#81432C</code><span class="pderiv">Nyanse av terrakotta – mørkere for kontrast: feiltekst og «Hjelper valgt»-tekst ≥ 4,5:1</span><span class="proles">Rolle: feilmelding og stripe</span></div></div>
+<div class="pchip"><div class="sw" style="background:#4D5829"></div><div class="meta"><span class="pname">Oliven, mørk</span><code>#4D5829</code><span class="pderiv">Nyanse av oliven – mørkere for kontrast: olivengrønn tekst ≥ 4,5:1 også på greige, latte og sand</span><span class="proles">Rolle: Utført (tekst/kant), suksessmelding og stripe</span></div></div>
+<div class="pchip"><div class="sw" style="background:#47553F"></div><div class="meta"><span class="pname">Salviegrønn, mørk</span><code>#47553F</code><span class="pderiv">Nyanse av salviegrønn – mørkere for kontrast: lys tekst på grønt og grønn tekst på lyse flater</span><span class="proles">Rolle: sekundærknapp og lenke, Åpen (tekst/kant)</span></div></div>
+<div class="pchip"><div class="sw" style="background:#4B3324"></div><div class="meta"><span class="pname">Mørkebrun</span><code>#4B3324</code><span class="proles">Rolle: brødtekst, tekst på kategorimerke, fokusring, topplinje, tekst på «nye»</span></div></div>
+  </div>
+  <div class="cols">
+    <div>
+      <h3 class="section-label">Eksempel</h3>
+      
+<div class="demo">
+  <header class="topbar">
+    <span class="brand"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" focusable="false"><path d="M3 11.5 12 4l9 7.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 10v9.5h13V10" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 17.2s-3-1.9-3-3.9a1.6 1.6 0 0 1 3-.8 1.6 1.6 0 0 1 3 .8c0 2-3 3.9-3 3.9z" fill="currentColor"/></svg>Nabolagshelten</span>
+    <nav aria-label="Hovedmeny (variasjon P2)"><ul>
+      <li><a href="#vP2" aria-current="page">Oppdrag</a></li>
+      <li><a href="#vP2">Mine oppdrag <span class="newbadge">2 nye</span></a></li>
+      <li><a href="#vP2">Profil</a></li>
+    </ul></nav>
+  </header>
+  <div class="content">
+    <div class="toolbar">
+      <h3>Ledige oppdrag i 0571</h3>
+      <a class="btn btn-outline" href="#vP2">+ Legg ut oppdrag</a>
+    </div>
+    <article class="card" aria-labelledby="tP2">
+      <div class="card-top">
+        <span class="cat"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><path d="M12 2v20M3.3 7l17.4 10M3.3 17 20.7 7M9 3.5l3 2 3-2M9 20.5l3-2 3 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Snømåking</span>
+        <span class="status s-open"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>Åpen</span>
+      </div>
+      <h4 id="tP2">Snømåking av innkjørsel</h4>
+      <p class="desc">Trenger noen som kan måke snø i innkjørselen min i morgen tidlig.</p>
+      <ul class="facts">
+        <li><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span><strong>I morgen kl. 07:00</strong></span></li>
+        <li><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M12 21s-6.5-6.1-6.5-11a6.5 6.5 0 0 1 13 0c0 4.9-6.5 11-6.5 11z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="10" r="2.3" fill="currentColor"/></svg><span>0571 Oslo · lagt ut av Kari</span></li>
+        <li><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9.5 8v8M9.5 12l4-4M10.5 11l3.5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span><strong class="price">200 kr</strong></span></li>
+        <li><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><circle cx="9" cy="8.5" r="3.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 19c.6-3.3 3-5 6-5s5.4 1.7 6 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M15.5 5.6a3 3 0 0 1 0 5.8M17.5 14.3c1.8.6 3 2.2 3.4 4.7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>2 har meldt interesse</span></li>
+      </ul>
+      <div class="actions">
+        <button class="btn btn-primary" type="button">Meld interesse</button>
+        <a class="btn btn-text" href="#vP2">Se detaljer</a>
+      </div>
+    </article>
+    <div class="row" role="group" aria-label="Alle statuser">
+      <span class="status s-open"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>Åpen</span>
+      <span class="status s-chosen"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><circle cx="8" cy="5" r="2.8" fill="currentColor"/><path d="M2.5 14.5c.5-3 2.6-4.5 5.5-4.5s5 1.5 5.5 4.5z" fill="currentColor"/></svg>Hjelper valgt</span>
+      <span class="status s-done"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><path d="M2.5 8.5l3.5 3.5 7.5-8" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Utført</span>
+      <span class="status s-cancel"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>Avbrutt</span>
+    </div>
+    <div class="msgs">
+      <p class="msg msg-err" role="note"><svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" focusable="false"><path d="M10 2.5 18.5 17h-17z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M10 8v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="10" cy="14.6" r="1.1" fill="currentColor"/></svg><span>Skriv en kort melding før du melder interesse.</span></p>
+      <p class="msg msg-ok" role="note"><svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M6.3 10.3l2.5 2.5 5-5.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Interessen din er sendt til Kari.</span></p>
+    </div>
+    <div class="focusdemo">
+      <p>Fokus med tastatur (statisk eksempel – Tab i snutten over viser det samme):</p>
+      <div class="actions">
+        <span class="btn btn-primary is-focus" aria-hidden="true">Meld interesse</span>
+        <span class="btn btn-text is-focus" aria-hidden="true">Se detaljer</span>
+      </div>
+    </div>
+  </div>
+</div>
+    </div>
+    <div>
+      <h3 class="section-label">Roller og kontrast</h3>
+      <div class="chips">
+<div class="chip"><div class="sw" style="background:#DFCCB0;color:#4B3324">Aa</div><div class="meta"><span class="role">Bakgrunn</span><code>#DFCCB0</code> latte<span class="pair">tekst: <span class="ok">✓ 7.45:1 AA</span></span><span class="pair">dempet: <span class="ok">✓ 4.76:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#F4E8CF;color:#4B3324">Aa</div><div class="meta"><span class="role">Kort / flate</span><code>#F4E8CF</code> champagne<span class="pair">tekst: <span class="ok">✓ 9.62:1 AA</span></span><span class="pair">dempet: <span class="ok">✓ 6.14:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#6E4E3A;color:#F4E8CF">Aa</div><div class="meta"><span class="role">Primærknapp</span><code>#6E4E3A</code> mokka / <code>#F4E8CF</code> champagne<span class="pair">tekst på knapp: <span class="ok">✓ 6.14:1 AA</span></span><span class="pair">kant mot kort: <span class="ok">✓ 6.14:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#F4E8CF;color:#47553F">Aa</div><div class="meta"><span class="role">Sekundærknapp / lenke</span><code>#47553F</code> salviegrønn, mørk<span class="pair">på kort: <span class="ok">✓ 6.55:1 AA</span></span><span class="pair">på bakgrunn: <span class="ok">✓ 5.08:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#DFCCB0;color:#4B3324">Aa</div><div class="meta"><span class="role">Kategorimerke</span><code>#DFCCB0</code> latte / <code>#4B3324</code> mørkebrun<span class="pair">tekst på merke: <span class="ok">✓ 7.45:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#8B6B52;color:#F4E8CF">Aa</div><div class="meta"><span class="role">Kantlinje</span><code>#8B6B52</code> cappuccino, mørk<span class="pair">mot kort: <span class="ok">✓ 4.00:1 AA</span></span><span class="pair">mot bakgrunn: <span class="ok">✓ 3.10:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#4B3324;color:#F4E8CF">Aa</div><div class="meta"><span class="role">Fokusring</span><code>#4B3324</code> mørkebrun<span class="pair">mot kort: <span class="ok">✓ 9.62:1 AA</span></span><span class="pair">mot bakgrunn: <span class="ok">✓ 7.45:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#4B3324;color:#F4E8CF">Aa</div><div class="meta"><span class="role">Topplinje</span><code>#4B3324</code> mørkebrun / <code>#F4E8CF</code> champagne<span class="pair">menytekst: <span class="ok">✓ 9.62:1 AA</span></span><span class="pair">logo: <span class="ok">✓ 7.47:1 AA</span></span><span class="pair">aktiv-strek: <span class="ok">✓ 7.47:1 AA</span></span><span class="pair">fokusring: <span class="ok">✓ 7.47:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#EBC7BC;color:#4B3324">Aa</div><div class="meta"><span class="role">«2 nye»-merke</span><code>#EBC7BC</code> blush / <code>#4B3324</code> mørkebrun<span class="pair">tekst på merke: <span class="ok">✓ 7.47:1 AA</span></span><span class="pair">merke mot topplinje: <span class="ok">✓ 7.47:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#CBDDC1;color:#47553F">Aa</div><div class="meta"><span class="role">Status: Åpen</span><code>#CBDDC1</code> pastellgrønn / <code>#47553F</code> salviegrønn, mørk<span class="pair">tekst på merke: <span class="ok">✓ 5.55:1 AA</span></span><span class="pair">kant mot kort: <span class="ok">✓ 6.55:1 AA</span></span><span class="pair">kant mot bakgrunn: <span class="ok">✓ 5.08:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#EBC7BC;color:#6E4E3A">Aa</div><div class="meta"><span class="role">Status: Hjelper valgt</span><code>#EBC7BC</code> blush / <code>#6E4E3A</code> mokka<span class="pair">tekst på merke: <span class="ok">✓ 4.77:1 AA</span></span><span class="pair">kant mot kort: <span class="ok">✓ 6.14:1 AA</span></span><span class="pair">kant mot bakgrunn: <span class="ok">✓ 4.76:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#E3D3B3;color:#4D5829">Aa</div><div class="meta"><span class="role">Status: Utført</span><code>#E3D3B3</code> sand / <code>#4D5829</code> oliven, mørk<span class="pair">tekst på merke: <span class="ok">✓ 5.19:1 AA</span></span><span class="pair">kant mot kort: <span class="ok">✓ 6.30:1 AA</span></span><span class="pair">kant mot bakgrunn: <span class="ok">✓ 4.88:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#D2CABD;color:#5E5347">Aa</div><div class="meta"><span class="role">Status: Avbrutt</span><code>#D2CABD</code> greige / <code>#5E5347</code> taupe, mørk<span class="pair">tekst på merke: <span class="ok">✓ 4.61:1 AA</span></span><span class="pair">kant mot kort: <span class="ok">✓ 6.17:1 AA</span></span><span class="pair">kant mot bakgrunn: <span class="ok">✓ 4.78:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#F4E8CF;color:#81432C">Aa</div><div class="meta"><span class="role">Feil (tekst + stripe)</span><code>#81432C</code> terrakotta, mørk<span class="pair">på kort: <span class="ok">✓ 6.24:1 AA</span></span><span class="pair">på bakgrunn: <span class="ok">✓ 4.83:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#F4E8CF;color:#4D5829">Aa</div><div class="meta"><span class="role">Suksess (tekst + stripe)</span><code>#4D5829</code> oliven, mørk<span class="pair">på kort: <span class="ok">✓ 6.30:1 AA</span></span><span class="pair">på bakgrunn: <span class="ok">✓ 4.88:1 AA</span></span></div></div>
+      </div>
+    </div>
+  </div>
+  <p class="note" style="margin-top:20px">Kontrast regnet med WCAG 2.1-formelen for relativ luminans. Krav: tekst ≥ 4,5:1; kanter, fokusring, aktiv-strek og merkekanter ≥ 3:1.</p>
+</section>
+<section class="var v-P3" id="vP3" aria-labelledby="hP3">
+  <div class="var-head">
+    <h2 id="hP3"><span class="tag">P3</span>Greige og oliven</h2>
+    <p>Nøytralt leder: antrasitt topplinje, greige og beige som flater, taupe i tekst og kanter, oliven primærknapp, karamell som eneste aksent. Den roligste.</p>
+  </div>
+  <h3 class="section-label">Fargekart</h3>
+  <div class="palette">
+<div class="pchip"><div class="sw" style="background:#EEE5D3"></div><div class="meta"><span class="pname">Beige</span><code>#EEE5D3</code><span class="proles">Rolle: kort og flater, tekst på primærknapp, menytekst</span></div></div>
+<div class="pchip"><div class="sw" style="background:#CBDDC1"></div><div class="meta"><span class="pname">Pastellgrønn</span><code>#CBDDC1</code><span class="proles">Rolle: Åpen (flate)</span></div></div>
+<div class="pchip"><div class="sw" style="background:#E3D3B3"></div><div class="meta"><span class="pname">Sand</span><code>#E3D3B3</code><span class="proles">Rolle: Utført (flate)</span></div></div>
+<div class="pchip"><div class="sw" style="background:#D2CABD"></div><div class="meta"><span class="pname">Greige</span><code>#D2CABD</code><span class="proles">Rolle: sidebakgrunn, kategorimerke, Avbrutt (flate)</span></div></div>
+<div class="pchip"><div class="sw" style="background:#C98B4F"></div><div class="meta"><span class="pname">Karamell</span><code>#C98B4F</code><span class="proles">Rolle: fokusring i topplinje, logo, aktiv-strek, «nye»-merke, Hjelper valgt (flate)</span></div></div>
+<div class="pchip"><div class="sw" style="background:#7B6C5D"></div><div class="meta"><span class="pname">Taupe, mørkere</span><code>#7B6C5D</code><span class="pderiv">Nyanse av taupe – litt mørkere for kontrast: kantlinje ≥ 3:1 mot sand og greige med margin</span><span class="proles">Rolle: kantlinjer</span></div></div>
+<div class="pchip"><div class="sw" style="background:#5E6B32"></div><div class="meta"><span class="pname">Oliven</span><code>#5E6B32</code><span class="proles">Rolle: primærknapp, primærknappens kant</span></div></div>
+<div class="pchip"><div class="sw" style="background:#5E5347"></div><div class="meta"><span class="pname">Taupe, mørk</span><code>#5E5347</code><span class="pderiv">Nyanse av taupe – mørkere for kontrast: dempet tekst og Avbrutt-tekst ≥ 4,5:1</span><span class="proles">Rolle: dempet tekst, Avbrutt (tekst/kant)</span></div></div>
+<div class="pchip"><div class="sw" style="background:#81432C"></div><div class="meta"><span class="pname">Terrakotta, mørk</span><code>#81432C</code><span class="pderiv">Nyanse av terrakotta – mørkere for kontrast: feiltekst og «Hjelper valgt»-tekst ≥ 4,5:1</span><span class="proles">Rolle: feilmelding og stripe</span></div></div>
+<div class="pchip"><div class="sw" style="background:#4D5829"></div><div class="meta"><span class="pname">Oliven, mørk</span><code>#4D5829</code><span class="pderiv">Nyanse av oliven – mørkere for kontrast: olivengrønn tekst ≥ 4,5:1 også på greige, latte og sand</span><span class="proles">Rolle: sekundærknapp og lenke, Utført (tekst/kant), suksessmelding og stripe</span></div></div>
+<div class="pchip"><div class="sw" style="background:#47553F"></div><div class="meta"><span class="pname">Salviegrønn, mørk</span><code>#47553F</code><span class="pderiv">Nyanse av salviegrønn – mørkere for kontrast: lys tekst på grønt og grønn tekst på lyse flater</span><span class="proles">Rolle: Åpen (tekst/kant)</span></div></div>
+<div class="pchip"><div class="sw" style="background:#2F302D"></div><div class="meta"><span class="pname">Antrasitt</span><code>#2F302D</code><span class="proles">Rolle: brødtekst, tekst på kategorimerke, fokusring, topplinje, tekst på «nye», Hjelper valgt (tekst/kant)</span></div></div>
+  </div>
+  <div class="cols">
+    <div>
+      <h3 class="section-label">Eksempel</h3>
+      
+<div class="demo">
+  <header class="topbar">
+    <span class="brand"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" focusable="false"><path d="M3 11.5 12 4l9 7.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 10v9.5h13V10" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 17.2s-3-1.9-3-3.9a1.6 1.6 0 0 1 3-.8 1.6 1.6 0 0 1 3 .8c0 2-3 3.9-3 3.9z" fill="currentColor"/></svg>Nabolagshelten</span>
+    <nav aria-label="Hovedmeny (variasjon P3)"><ul>
+      <li><a href="#vP3" aria-current="page">Oppdrag</a></li>
+      <li><a href="#vP3">Mine oppdrag <span class="newbadge">2 nye</span></a></li>
+      <li><a href="#vP3">Profil</a></li>
+    </ul></nav>
+  </header>
+  <div class="content">
+    <div class="toolbar">
+      <h3>Ledige oppdrag i 0571</h3>
+      <a class="btn btn-outline" href="#vP3">+ Legg ut oppdrag</a>
+    </div>
+    <article class="card" aria-labelledby="tP3">
+      <div class="card-top">
+        <span class="cat"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><path d="M12 2v20M3.3 7l17.4 10M3.3 17 20.7 7M9 3.5l3 2 3-2M9 20.5l3-2 3 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Snømåking</span>
+        <span class="status s-open"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>Åpen</span>
+      </div>
+      <h4 id="tP3">Snømåking av innkjørsel</h4>
+      <p class="desc">Trenger noen som kan måke snø i innkjørselen min i morgen tidlig.</p>
+      <ul class="facts">
+        <li><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span><strong>I morgen kl. 07:00</strong></span></li>
+        <li><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M12 21s-6.5-6.1-6.5-11a6.5 6.5 0 0 1 13 0c0 4.9-6.5 11-6.5 11z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="10" r="2.3" fill="currentColor"/></svg><span>0571 Oslo · lagt ut av Kari</span></li>
+        <li><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9.5 8v8M9.5 12l4-4M10.5 11l3.5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span><strong class="price">200 kr</strong></span></li>
+        <li><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><circle cx="9" cy="8.5" r="3.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 19c.6-3.3 3-5 6-5s5.4 1.7 6 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M15.5 5.6a3 3 0 0 1 0 5.8M17.5 14.3c1.8.6 3 2.2 3.4 4.7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>2 har meldt interesse</span></li>
+      </ul>
+      <div class="actions">
+        <button class="btn btn-primary" type="button">Meld interesse</button>
+        <a class="btn btn-text" href="#vP3">Se detaljer</a>
+      </div>
+    </article>
+    <div class="row" role="group" aria-label="Alle statuser">
+      <span class="status s-open"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>Åpen</span>
+      <span class="status s-chosen"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><circle cx="8" cy="5" r="2.8" fill="currentColor"/><path d="M2.5 14.5c.5-3 2.6-4.5 5.5-4.5s5 1.5 5.5 4.5z" fill="currentColor"/></svg>Hjelper valgt</span>
+      <span class="status s-done"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><path d="M2.5 8.5l3.5 3.5 7.5-8" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Utført</span>
+      <span class="status s-cancel"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>Avbrutt</span>
+    </div>
+    <div class="msgs">
+      <p class="msg msg-err" role="note"><svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" focusable="false"><path d="M10 2.5 18.5 17h-17z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M10 8v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="10" cy="14.6" r="1.1" fill="currentColor"/></svg><span>Skriv en kort melding før du melder interesse.</span></p>
+      <p class="msg msg-ok" role="note"><svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M6.3 10.3l2.5 2.5 5-5.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Interessen din er sendt til Kari.</span></p>
+    </div>
+    <div class="focusdemo">
+      <p>Fokus med tastatur (statisk eksempel – Tab i snutten over viser det samme):</p>
+      <div class="actions">
+        <span class="btn btn-primary is-focus" aria-hidden="true">Meld interesse</span>
+        <span class="btn btn-text is-focus" aria-hidden="true">Se detaljer</span>
+      </div>
+    </div>
+  </div>
+</div>
+    </div>
+    <div>
+      <h3 class="section-label">Roller og kontrast</h3>
+      <div class="chips">
+<div class="chip"><div class="sw" style="background:#D2CABD;color:#2F302D">Aa</div><div class="meta"><span class="role">Bakgrunn</span><code>#D2CABD</code> greige<span class="pair">tekst: <span class="ok">✓ 8.17:1 AA</span></span><span class="pair">dempet: <span class="ok">✓ 4.61:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#EEE5D3;color:#2F302D">Aa</div><div class="meta"><span class="role">Kort / flate</span><code>#EEE5D3</code> beige<span class="pair">tekst: <span class="ok">✓ 10.61:1 AA</span></span><span class="pair">dempet: <span class="ok">✓ 5.99:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#5E6B32;color:#EEE5D3">Aa</div><div class="meta"><span class="role">Primærknapp</span><code>#5E6B32</code> oliven / <code>#EEE5D3</code> beige<span class="pair">tekst på knapp: <span class="ok">✓ 4.63:1 AA</span></span><span class="pair">kant mot kort: <span class="ok">✓ 4.63:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#EEE5D3;color:#4D5829">Aa</div><div class="meta"><span class="role">Sekundærknapp / lenke</span><code>#4D5829</code> oliven, mørk<span class="pair">på kort: <span class="ok">✓ 6.12:1 AA</span></span><span class="pair">på bakgrunn: <span class="ok">✓ 4.71:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#D2CABD;color:#2F302D">Aa</div><div class="meta"><span class="role">Kategorimerke</span><code>#D2CABD</code> greige / <code>#2F302D</code> antrasitt<span class="pair">tekst på merke: <span class="ok">✓ 8.17:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#7B6C5D;color:#EEE5D3">Aa</div><div class="meta"><span class="role">Kantlinje</span><code>#7B6C5D</code> taupe, mørkere<span class="pair">mot kort: <span class="ok">✓ 4.05:1 AA</span></span><span class="pair">mot bakgrunn: <span class="ok">✓ 3.12:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#2F302D;color:#EEE5D3">Aa</div><div class="meta"><span class="role">Fokusring</span><code>#2F302D</code> antrasitt<span class="pair">mot kort: <span class="ok">✓ 10.61:1 AA</span></span><span class="pair">mot bakgrunn: <span class="ok">✓ 8.17:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#2F302D;color:#EEE5D3">Aa</div><div class="meta"><span class="role">Topplinje</span><code>#2F302D</code> antrasitt / <code>#EEE5D3</code> beige<span class="pair">menytekst: <span class="ok">✓ 10.61:1 AA</span></span><span class="pair">logo: <span class="ok">✓ 4.61:1 AA</span></span><span class="pair">aktiv-strek: <span class="ok">✓ 4.61:1 AA</span></span><span class="pair">fokusring: <span class="ok">✓ 4.61:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#C98B4F;color:#2F302D">Aa</div><div class="meta"><span class="role">«2 nye»-merke</span><code>#C98B4F</code> karamell / <code>#2F302D</code> antrasitt<span class="pair">tekst på merke: <span class="ok">✓ 4.61:1 AA</span></span><span class="pair">merke mot topplinje: <span class="ok">✓ 4.61:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#CBDDC1;color:#47553F">Aa</div><div class="meta"><span class="role">Status: Åpen</span><code>#CBDDC1</code> pastellgrønn / <code>#47553F</code> salviegrønn, mørk<span class="pair">tekst på merke: <span class="ok">✓ 5.55:1 AA</span></span><span class="pair">kant mot kort: <span class="ok">✓ 6.36:1 AA</span></span><span class="pair">kant mot bakgrunn: <span class="ok">✓ 4.90:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#C98B4F;color:#2F302D">Aa</div><div class="meta"><span class="role">Status: Hjelper valgt</span><code>#C98B4F</code> karamell / <code>#2F302D</code> antrasitt<span class="pair">tekst på merke: <span class="ok">✓ 4.61:1 AA</span></span><span class="pair">kant mot kort: <span class="ok">✓ 10.61:1 AA</span></span><span class="pair">kant mot bakgrunn: <span class="ok">✓ 8.17:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#E3D3B3;color:#4D5829">Aa</div><div class="meta"><span class="role">Status: Utført</span><code>#E3D3B3</code> sand / <code>#4D5829</code> oliven, mørk<span class="pair">tekst på merke: <span class="ok">✓ 5.19:1 AA</span></span><span class="pair">kant mot kort: <span class="ok">✓ 6.12:1 AA</span></span><span class="pair">kant mot bakgrunn: <span class="ok">✓ 4.71:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#D2CABD;color:#5E5347">Aa</div><div class="meta"><span class="role">Status: Avbrutt</span><code>#D2CABD</code> greige / <code>#5E5347</code> taupe, mørk<span class="pair">tekst på merke: <span class="ok">✓ 4.61:1 AA</span></span><span class="pair">kant mot kort: <span class="ok">✓ 5.99:1 AA</span></span><span class="pair">kant mot bakgrunn: <span class="ok">✓ 4.61:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#EEE5D3;color:#81432C">Aa</div><div class="meta"><span class="role">Feil (tekst + stripe)</span><code>#81432C</code> terrakotta, mørk<span class="pair">på kort: <span class="ok">✓ 6.05:1 AA</span></span><span class="pair">på bakgrunn: <span class="ok">✓ 4.66:1 AA</span></span></div></div>
+<div class="chip"><div class="sw" style="background:#EEE5D3;color:#4D5829">Aa</div><div class="meta"><span class="role">Suksess (tekst + stripe)</span><code>#4D5829</code> oliven, mørk<span class="pair">på kort: <span class="ok">✓ 6.12:1 AA</span></span><span class="pair">på bakgrunn: <span class="ok">✓ 4.71:1 AA</span></span></div></div>
+      </div>
+    </div>
+  </div>
+  <p class="note" style="margin-top:20px">Kontrast regnet med WCAG 2.1-formelen for relativ luminans. Krav: tekst ≥ 4,5:1; kanter, fokusring, aktiv-strek og merkekanter ≥ 3:1.</p>
+</section>
+</div>
+</div>
+</body>
+</html>
