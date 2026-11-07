@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Oppdragsoversikt – nøkkelskjerm</title>
+<style>
+/*
+Styrende spine-seksjoner for denne skjermen:
+DESIGN.md  Colors; Typography (heading-1, heading-2, price, meta, label); Layout & Spacing (Mobil 360 px,
+           PC >= 1280 px: 3 kolonner, content-max 1200, gutter); Elevation & Depth (kort); Shapes; Components:
+           topbar, bottom-nav, nav-badge, button-primary, category-button, input, card, category-chip,
+           empty-state, button-secondary («Vis», «Vis alle kategorier», «Velg et annet postnummer»), Fokus;
+           Do's and Don'ts.
+EXPERIENCE.md  Information Architecture (meny Oppdrag · Mine oppdrag · Profil; aktivt menyvalg; antall ved
+           «Mine oppdrag»; rad «Oppdragsoversikt»); Voice and Tone (Formater: postnummer med poststed;
+           «Tom oversikt»); Component Patterns (card, category-chip, category-button, input – postnummerfilter
+           med «Vis», nav-badge, topbar, bottom-nav, empty-state); State Patterns (Statusmodell: ingen status
+           på kort i oversikten; «Ingen treff»); Responsive & Platform; Key Flows UJ-2 steg 3, UJ-1 steg 1;
+           Endringer fra skissene #2, #3, #8, #11.
+
+Mockup i P1 «Salvie og sand». Spinene (DESIGN.md, EXPERIENCE.md) er kontrakten; mocken illustrerer.
+Ved konflikt gjelder spinene. Bildetekster under rammene er mock-annotasjoner, ikke produkttekst.
+*/
+
+:root{color-scheme:light;
+  /* DESIGN.md frontmatter colors – eksakte hex */
+  --surface-page:#E3D3B3;--surface-card:#EEE5D3;--surface-input:#F4E8CF;
+  --ink:#2F302D;--ink-muted:#6E4E3A;--border:#7B6C5D;--focus:#2F302D;--scrim:#2F302D;
+  --primary:#47553F;--on-primary:#F4E8CF;--link:#47553F;--disabled-bg:#D2CABD;--disabled-fg:#5E5347;
+  --topbar:#47553F;--topbar-text:#F4E8CF;--topbar-focus:#EBC7BC;--brand-icon:#EBC7BC;--nav-indicator:#EBC7BC;
+  --badge-bg:#EBC7BC;--badge-fg:#4B3324;--chip-bg:#EEE5D3;--chip-fg:#4B3324;--chip-border:#7B6C5D;
+  --status-open-bg:#CBDDC1;--status-open-fg:#47553F;
+  --status-chosen-bg:#EBC7BC;--status-chosen-fg:#81432C;
+  --status-done-bg:#F4E8CF;--status-done-fg:#4D5829;
+  --status-cancelled-bg:#D2CABD;--status-cancelled-fg:#5E5347;
+  --error:#81432C;--success:#47553F;
+  /* typography */
+  --font-head:ui-rounded,"SF Pro Rounded","Nunito","Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;
+  --font-body:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  /* rounded */
+  --r-sm:10px;--r-md:12px;--r-lg:14px;--r-xl:20px;--r-full:9999px;
+  /* elevation */
+  --shadow-card:0 1px 2px rgba(47,48,45,.06),0 4px 14px rgba(47,48,45,.07);
+  --shadow-dialog:0 8px 32px rgba(47,48,45,.25);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{font-size:100%}
+body{margin:0;background:var(--surface-card);color:var(--ink);font-family:var(--font-body);font-size:1.125rem;line-height:1.55}
+
+/* ---------- Mock-ramme (ikke produkt-UI) ---------- */
+.doc{max-width:1360px;margin:0 auto;padding:32px 16px 64px}
+.doc-head{max-width:72ch}
+.doc-title{font-family:var(--font-head);font-size:1.75rem;font-weight:700;line-height:1.25;margin:0 0 8px}
+.doc-head p{margin:0 0 8px;color:var(--ink-muted)}
+.doc-sec{margin-top:48px}
+.doc-sec-title{font-family:var(--font-head);font-size:1.5rem;font-weight:700;line-height:1.3;margin:0 0 16px}
+.cols{display:flex;flex-wrap:wrap;gap:48px;align-items:flex-start}
+.shot{margin:0}
+.shot figcaption{margin-top:12px;max-width:384px;color:var(--ink-muted)}
+.shot.wide figcaption{max-width:72ch}
+.browser-wrap{overflow-x:auto;padding:4px 4px 12px}
+.phone{position:relative;width:384px;padding:30px 12px 24px;background:var(--ink);border-radius:40px;box-shadow:var(--shadow-dialog)}
+.phone::before{content:"";position:absolute;top:12px;left:50%;width:72px;height:6px;margin-left:-36px;border-radius:var(--r-full);background:var(--ink-muted)}
+.screen{position:relative;width:360px;min-height:740px;background:var(--surface-page);border-radius:24px;overflow:hidden;display:flex;flex-direction:column}
+.screen.fixed{height:740px}
+.screen.fixed .main{flex:1 1 0;min-height:0;overflow:hidden}
+.browser{width:1280px;border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;background:var(--surface-page);box-shadow:var(--shadow-card)}
+.chrome{display:flex;align-items:center;gap:16px;padding:10px 16px;background:var(--disabled-bg);border-bottom:1px solid var(--border);color:var(--ink);font-size:1rem}
+.dots{display:flex;gap:8px}.dots span{width:12px;height:12px;border-radius:50%;border:1.5px solid var(--border)}
+.tabtitle{font-weight:700;padding:4px 14px;background:var(--surface-page);border:1px solid var(--border);border-radius:10px}
+.url{flex:1;padding:4px 14px;background:var(--surface-input);border:1px solid var(--border);border-radius:var(--r-full);color:var(--ink-muted)}
+.cut{height:32px;margin:16px -16px;background:repeating-linear-gradient(-45deg,transparent 0 8px,rgba(123,108,93,.35) 8px 10px)}
+
+/* ---------- Produkt: grunnlag ---------- */
+.h1,.h2,.h3{font-family:var(--font-head);font-weight:700;margin:0;color:var(--ink)}
+.h1{font-size:1.75rem;line-height:1.25}
+.h2{font-size:1.5rem;line-height:1.3}
+.h3{font-size:1.25rem;line-height:1.3}
+p{margin:0}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.icon{width:24px;height:24px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.icon.md{width:20px;height:20px}
+.icon.sm{width:18px;height:18px}
+.icon.xs{width:14px;height:14px}
+.icon.xl{width:48px;height:48px;stroke-width:1.6}
+.mt4{margin-top:4px}.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}.mt24{margin-top:24px}.mt32{margin-top:32px}.mt48{margin-top:48px}
+.main{flex:1;padding:24px 16px 32px}
+.main.wide{width:100%;max-width:1200px;margin:0 auto;padding:32px 24px 48px;flex:none}
+.muted{color:var(--ink-muted)}
+.strong{font-weight:700}
+
+/* topbar */
+.topbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;padding:8px 16px;background:var(--topbar);color:var(--topbar-text)}
+.brand{display:inline-flex;align-items:center;gap:8px;min-height:48px;font-family:var(--font-head);font-size:1.25rem;font-weight:800;line-height:1.2;letter-spacing:-.01em;color:var(--brand-icon);text-decoration:none;border-radius:var(--r-sm)}
+.brand .icon{width:28px;height:28px}
+.brand:focus-visible{outline:3px solid var(--topbar-focus);outline-offset:2px}
+.topnav ul{list-style:none;display:flex;flex-wrap:wrap;gap:4px;margin:0;padding:0}
+.topnav a{display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:0 12px;color:var(--topbar-text);text-decoration:none;font-weight:400;line-height:1.4;border-bottom:3px solid transparent;border-radius:10px 10px 0 0}
+.topnav a[aria-current]{font-weight:700;border-bottom-color:var(--nav-indicator)}
+.topnav a:focus-visible{outline:3px solid var(--topbar-focus);outline-offset:2px}
+.nav-badge{display:inline-flex;align-items:center;justify-content:center;padding:1px 9px;border-radius:var(--r-full);background:var(--badge-bg);color:var(--badge-fg);font-size:1rem;font-weight:700;line-height:1.3}
+
+/* bottom-nav (< 768 px) */
+.bottomnav{margin-top:auto;background:var(--topbar);color:var(--topbar-text)}
+.bottomnav ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr)}
+.bottomnav a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;height:56px;padding:0 2px;color:var(--topbar-text);text-decoration:none;font-weight:400;font-size:1.125rem;line-height:1.2;white-space:nowrap;border-top:3px solid transparent}
+.bottomnav a[aria-current]{font-weight:700;border-top-color:var(--nav-indicator)}
+.bottomnav a:focus-visible{outline:3px solid var(--topbar-focus);outline-offset:-3px}
+.bottomnav .ic{position:relative;display:inline-flex}
+.bottomnav .nav-badge{position:absolute;top:-7px;left:15px}
+
+/* knapper */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 22px;font-family:var(--font-body);font-size:1.125rem;font-weight:700;line-height:1.4;border-radius:var(--r-md);text-decoration:none;cursor:pointer;text-align:center}
+.btn-primary{background:var(--primary);color:var(--on-primary);border:2px solid var(--primary)}
+.btn-secondary{background:transparent;color:var(--link);border:1.5px solid var(--link)}
+.btn-text{background:transparent;color:var(--link);border:0;text-decoration:underline;text-underline-offset:3px;padding:0 14px}
+.btn[aria-disabled="true"]{background:var(--disabled-bg);color:var(--disabled-fg);border:1.5px solid var(--disabled-fg);cursor:default}
+.btn:focus-visible,.is-focus{outline:3px solid var(--focus);outline-offset:3px}
+.back{margin:-12px 0 8px -14px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+
+/* merker */
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 12px;border-radius:var(--r-full);background:var(--chip-bg);color:var(--chip-fg);border:1px solid var(--chip-border);font-size:1rem;font-weight:700;line-height:1.3}
+.status{display:inline-flex;align-items:center;gap:6px;padding:3px 12px;border-radius:var(--r-full);border:1.5px solid currentColor;font-size:1rem;font-weight:700;line-height:1.3;white-space:nowrap}
+.s-open{background:var(--status-open-bg);color:var(--status-open-fg)}
+.s-chosen{background:var(--status-chosen-bg);color:var(--status-chosen-fg)}
+.s-done{background:var(--status-done-bg);color:var(--status-done-fg)}
+.s-cancelled{background:var(--status-cancelled-bg);color:var(--status-cancelled-fg)}
+/* action-tag: kan brytes over to linjer; 16 px sidepolstring holder teksten innenfor pilleformen, ikonet følger første linje */
+.tag{display:inline-flex;align-items:flex-start;gap:6px;max-width:100%;padding:4px 16px;border-radius:var(--r-full);background:var(--badge-bg);color:var(--badge-fg);font-size:1rem;font-weight:700;line-height:1.3}
+.tag .icon{margin-top:3px}
+/* star-rating, visning: dekorativ, teksten bærer verdien */
+.rating{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px}
+.stars{display:inline-flex;gap:4px}
+.star{width:20px;height:20px;flex:none}
+.star.on{fill:var(--primary);stroke:var(--primary);stroke-width:1.5;stroke-linejoin:round}
+.star.off{fill:none;stroke:var(--border);stroke-width:1.5;stroke-linejoin:round}
+.situation{display:inline-flex;align-items:center;gap:8px;font-weight:700;color:var(--ink)}
+
+/* kort */
+.cards{list-style:none;margin:24px 0 0;padding:0;display:grid;gap:16px}
+.cards.three{grid-template-columns:repeat(3,1fr);gap:24px}
+.card{position:relative;background:var(--surface-card);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px;box-shadow:var(--shadow-card)}
+.card-title{margin:12px 0 8px}
+.card-link{color:var(--ink);text-decoration:none}
+.card-link::after{content:"";position:absolute;inset:0;border-radius:var(--r-lg)}
+.card-link:focus-visible{outline:none} /* ringen vises på hele kortet, se under */
+/* Bare kort/rader som er lenker: 2 px grønn kant ved hover og fokus + fokusring på hele flaten */
+.link-card:hover,.link-card:has(.card-link:focus-visible),.link-card.is-focus{border-color:var(--primary);box-shadow:var(--shadow-card),0 0 0 1px var(--primary)}
+.link-card:has(.card-link:focus-visible),.link-card.is-focus{outline:3px solid var(--focus);outline-offset:3px}
+.facts{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.facts li{display:flex;align-items:center;gap:8px}
+.fact-time{font-weight:700}
+.fact-place{color:var(--ink-muted)}
+.price{font-size:1.375rem;font-weight:700;line-height:1.3;margin-top:12px}
+
+/* skjema */
+.label{display:block;font-weight:700;line-height:1.4}
+.help{margin-top:4px;color:var(--ink-muted)}
+.input{display:block;width:100%;min-height:48px;padding:0 14px;margin-top:8px;background:var(--surface-input);color:var(--ink);border:1.5px solid var(--border);border-radius:var(--r-sm);font:inherit}
+textarea.input{padding:12px 14px;min-height:120px;resize:vertical}
+.input:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+.counter{margin-top:4px;color:var(--ink-muted)}
+.pnr{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:8px}
+.pnr .input{width:120px;margin-top:0}
+.fs{border:0;margin:24px 0 0;padding:0;min-width:0}
+.fs legend{padding:0}
+.catrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.catbtn{display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:0 16px;background:var(--surface-card);color:var(--ink);border:1px solid var(--border);border-radius:var(--r-md);font:inherit;font-weight:400;line-height:1.3;cursor:pointer}
+.catbtn[aria-pressed="true"],.catbtn.selected{border:3px solid var(--primary);padding:0 14px;font-weight:700}
+.catbtn:focus-visible,.catbtn:focus-within{outline:3px solid var(--focus);outline-offset:3px}
+.catgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.catgrid .catbtn{flex-direction:column;justify-content:center;min-height:80px;padding:8px;text-align:center;overflow-wrap:anywhere}
+
+/* meldinger */
+.msg{display:flex;gap:8px;align-items:flex-start;background:var(--surface-card);border:1px solid var(--border);border-left-width:6px;border-radius:var(--r-sm);padding:12px 16px}
+.msg-error{color:var(--error);border-left-color:var(--error)}
+.msg-success{color:var(--success);border-left-color:var(--success)}
+.msg .icon{margin-top:3px}
+
+/* KI-forslag */
+.ki{margin-top:12px;background:var(--surface-page);color:var(--ink);border:1.5px dashed var(--border);border-radius:var(--r-md);padding:16px}
+.ki p{margin:8px 0 12px}
+.ki .tip{display:flex;gap:8px;align-items:flex-start;margin:0 0 12px}
+
+/* tomtilstand */
+.empty{text-align:center;padding:32px 16px;color:var(--ink)}
+.empty .icon{margin:0 auto 12px;display:block}
+.empty p+p{margin-top:8px}
+.empty .btn{margin-top:24px}
+
+/* faner og grupper (Mine oppdrag) */
+.tabs{display:grid;grid-template-columns:1fr 1fr;margin-top:16px}
+.tabs a{display:flex;align-items:center;justify-content:center;min-height:48px;padding:8px;text-align:center;color:var(--ink);text-decoration:none;font-weight:400;line-height:1.3;border-bottom:1px solid var(--border)}
+.tabs a[aria-current="page"]{font-weight:700;border-bottom:4px solid var(--primary)}
+.tabs a:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+.group{margin-top:32px}
+/* list-row (DESIGN.md): lenkerad = hele lenkedelen er lenken + pil ›; ikke-lenkerad = ingen pil.
+   Knapper står aldri inne i lenken, men i .row-actions under en skillelinje. */
+.rows{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:12px}
+.row{position:relative;background:var(--surface-card);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-card)}
+.row-main{position:relative;padding:24px;border-radius:var(--r-lg)}
+.link-row .row-title{padding-right:40px} /* pila står på tittellinja; resten av raden bruker hele bredden */
+.row-title{margin:0;font-family:var(--font-body);font-size:1.125rem;font-weight:700;line-height:1.4;color:var(--ink)}
+.row-link{color:var(--ink);text-decoration:none}
+.row-link::after{content:"";position:absolute;inset:0;border-radius:var(--r-lg)}
+.row-link:focus-visible{outline:none}
+.row-main:has(.row-link:focus-visible){outline:3px solid var(--focus);outline-offset:3px}
+.link-row:has(.row-main:hover),.link-row:has(.row-link:focus-visible){border-color:var(--primary);box-shadow:var(--shadow-card),0 0 0 1px var(--primary)}
+.chev{position:absolute;top:25px;right:16px;color:var(--link)}
+.row-meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
+.row-line{display:flex;align-items:center;gap:8px;margin-top:8px}
+.row-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:16px 24px;border-top:1px solid var(--border)}
+
+/* interesserte */
+.person .stats{margin-top:4px}
+.person .quote{margin-top:12px}
+.person .row-actions{justify-content:space-between}
+
+/* profil */
+.catcount{list-style:none;margin:0;padding:0}
+.catcount li{display:flex;align-items:center;gap:8px;min-height:48px}
+.catcount li+li{border-top:1px solid var(--border)}
+.catcount .n{margin-left:auto;font-weight:700}
+.card.static{padding:8px 24px}
+.fb-text{margin-top:4px}
+.fb-meta{margin-top:8px;color:var(--ink-muted)}
+.fb-meta a{padding:12px 0;color:var(--link);font-weight:700;text-decoration:underline;text-underline-offset:3px} /* 48 px trykkflate via polstring */
+
+/* dialog */
+.scrim{position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(47,48,45,.55)}
+.dialog{width:100%;max-width:480px;background:var(--surface-card);border-radius:var(--r-xl);padding:24px;box-shadow:var(--shadow-dialog)}
+.dialog p{margin:8px 0 24px}
+.dialog .btns{display:flex;flex-direction:column;gap:8px}
+
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+<symbol id="i-logo" viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M12 17.2s-3-1.9-3-3.9a1.6 1.6 0 0 1 3-.8 1.6 1.6 0 0 1 3 .8c0 2-3 3.9-3 3.9z" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-snow" viewBox="0 0 24 24"><path d="M12 2v20M3.3 7l17.4 10M3.3 17 20.7 7M9 3.5l3 2 3-2M9 20.5l3-2 3 2"/></symbol>
+<symbol id="i-hage" viewBox="0 0 24 24"><path d="M12 21v-9"/><path d="M12 12c0-4.4 3.1-7.5 8-7.5 0 4.4-3.1 7.5-8 7.5z"/><path d="M12 15c0-3.3-2.4-5.6-7-5.6 0 3.3 2.4 5.6 7 5.6z"/></symbol>
+<symbol id="i-flytt" viewBox="0 0 24 24"><path d="M3.5 7.5 12 3.5l8.5 4v9L12 20.5l-8.5-4z"/><path d="M3.5 7.5 12 11.5l8.5-4M12 11.5v9"/></symbol>
+<symbol id="i-dyr" viewBox="0 0 24 24"><circle cx="6.5" cy="10.5" r="1.8"/><circle cx="10" cy="6.5" r="1.8"/><circle cx="14" cy="6.5" r="1.8"/><circle cx="17.5" cy="10.5" r="1.8"/><path d="M12 12.5c-2.8 0-5 3-5 5.2 0 1.3 1 2 2.2 2 1.1 0 1.8-.6 2.8-.6s1.7.6 2.8.6c1.2 0 2.2-.7 2.2-2 0-2.2-2.2-5.2-5-5.2z"/></symbol>
+<symbol id="i-tek" viewBox="0 0 24 24"><rect x="5" y="2.5" width="14" height="19" rx="2.5"/><path d="M10.5 18h3"/></symbol>
+<symbol id="i-annet" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12h.01M12 12h.01M16 12h.01" stroke-width="3"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+<symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6.5-6.1-6.5-11a6.5 6.5 0 0 1 13 0c0 4.9-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3.2"/><path d="M3 19c.6-3.3 3-5 6-5s5.4 1.7 6 5"/><path d="M15.5 5.6a3 3 0 0 1 0 5.8M17.5 14.3c1.8.6 3 2.2 3.4 4.7"/></symbol>
+<symbol id="i-person" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.7-3.6 3.4-5.5 7-5.5s6.3 1.9 7 5.5"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+<symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol>
+<symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01" stroke-width="3"/></symbol>
+<symbol id="i-clip" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2.8h6V4M9 10h6M9 14h6"/></symbol>
+<symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 21c.8-4 3.8-6 7.5-6s6.7 2 7.5 6"/></symbol>
+<symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.3-4.3"/></symbol>
+<symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5.5 15.5 12 9 18.5"/></symbol>
+<symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.2l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 17l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z"/></symbol>
+<symbol id="s-open" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5"/></symbol>
+<symbol id="s-chosen" viewBox="0 0 16 16"><circle cx="8" cy="5" r="2.8" fill="currentColor" stroke="none"/><path d="M2.5 14.5c.5-3 2.6-4.5 5.5-4.5s5 1.5 5.5 4.5z" fill="currentColor" stroke="none"/></symbol>
+<symbol id="s-done" viewBox="0 0 16 16"><path d="M2.5 8.5l3.5 3.5 7.5-8" stroke-width="2.4"/></symbol>
+<symbol id="s-cancelled" viewBox="0 0 16 16"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9" stroke-width="2.4"/></symbol>
+<symbol id="t-arrow" viewBox="0 0 16 16"><path d="M2.5 8h10M9 4.5 12.5 8 9 11.5"/></symbol>
+<symbol id="m-warn" viewBox="0 0 20 20"><path d="M10 2.5 18.5 17h-17z"/><path d="M10 8v4"/><circle cx="10" cy="14.6" r="1.1" fill="currentColor" stroke="none"/></symbol>
+<symbol id="u-wait" viewBox="0 0 24 24"><path d="M7 3h10M7 21h10"/><path d="M8 3c0 4.5 8 4.5 8 9s-8 4.5-8 9M16 3c0 4.5-8 4.5-8 9s8 4.5 8 9"/></symbol>
+<symbol id="u-chosen" viewBox="0 0 24 24"><circle cx="10" cy="8" r="3.5"/><path d="M3.5 20c.6-3.6 3.2-5.5 6.5-5.5 1.3 0 2.5.3 3.5.9"/><path d="M15 18l2 2 4-4.5"/></symbol>
+<symbol id="u-not" viewBox="0 0 24 24"><circle cx="10" cy="8" r="3.5"/><path d="M3.5 20c.6-3.6 3.2-5.5 6.5-5.5 1.3 0 2.5.3 3.5.9"/><path d="M15.5 18h5.5"/></symbol>
+<symbol id="u-left" viewBox="0 0 24 24"><path d="M14 4h5v16h-5"/><path d="M15 12H4M7.5 8.5 4 12l3.5 3.5"/></symbol>
+</svg>
+<div class="doc">
+<div class="doc-head"><p class="doc-title">Nøkkelskjerm 1 – Oppdragsoversikt</p><p>Amir (21) i 0571 Oslo ser ledige oppdrag. Menytallet 2 er antall oppdrag under «Trenger handling» hos Amir (se key-mine-oppdrag.html).</p><p>Rendret etter DESIGN.md og EXPERIENCE.md. Ingen JavaScript; tilstander er vist statisk.</p></div>
+<section class="doc-sec"><p class="doc-sec-title">Ledige oppdrag – mobil og PC</p><div class="cols"><figure class="shot"><div class="phone"><div class="screen"><header class="topbar"><a class="brand" href="#"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-logo"/></svg>Nabolagshelten<span class="sr">, til oversikten</span></a></header><main class="main"><a class="btn btn-primary" href="#"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg>Legg ut oppdrag</a><h1 class="h1 mt24">Ledige oppdrag i 0571 Oslo</h1><div class="mt16" role="group" aria-labelledby="kat-m"><p class="label" id="kat-m">Kategori</p><div class="catrow"><button class="catbtn" type="button" aria-pressed="true"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-check"/></svg>Alle</button><button class="catbtn" type="button" aria-pressed="false"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-snow"/></svg>Snømåking</button><button class="catbtn" type="button" aria-pressed="false"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-hage"/></svg>Hage</button><button class="catbtn" type="button" aria-pressed="false"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-flytt"/></svg>Bærehjelp/flytting</button><button class="catbtn" type="button" aria-pressed="false"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-dyr"/></svg>Dyrepass</button><button class="catbtn" type="button" aria-pressed="false"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-tek"/></svg>Teknologihjelp</button><button class="catbtn" type="button" aria-pressed="false"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-annet"/></svg>Annet</button></div></div><div class="mt16"><label class="label" for="pnr-m">Postnummer</label><div class="pnr"><input class="input" id="pnr-m" value="0571" inputmode="numeric" autocomplete="postal-code" aria-describedby="pst-m"><span id="pst-m">Oslo</span><button class="btn btn-secondary" type="button">Vis</button></div></div><p class="sr" aria-live="polite">4 ledige oppdrag</p><ul class="cards"><li class="card link-card"><span class="chip"><svg class="icon sm" aria-hidden="true" focusable="false"><use href="#i-snow"/></svg>Snømåking</span><h2 class="h2 card-title"><a class="card-link" href="#">Måke snø i innkjørselen</a></h2><ul class="facts"><li class="fact-time"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-clock"/></svg>I morgen kl. 07:00</li><li class="fact-place"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-pin"/></svg>0571 Oslo</li></ul><p class="price">200 kr</p></li><li class="card link-card"><span class="chip"><svg class="icon sm" aria-hidden="true" focusable="false"><use href="#i-tek"/></svg>Teknologihjelp</span><h2 class="h2 card-title"><a class="card-link" href="#">Sette opp ny iPad</a></h2><ul class="facts"><li class="fact-time"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-clock"/></svg>Onsdag 11. nov. kl. 18:00</li><li class="fact-place"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-pin"/></svg>0571 Oslo</li></ul><p class="price">Uten betaling</p></li><li class="card link-card"><span class="chip"><svg class="icon sm" aria-hidden="true" focusable="false"><use href="#i-flytt"/></svg>Bærehjelp/flytting</span><h2 class="h2 card-title"><a class="card-link" href="#">Bære sofa til 2. etasje</a></h2><ul class="facts"><li class="fact-time"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-clock"/></svg>Lørdag 14. nov. kl. 12:00</li><li class="fact-place"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-pin"/></svg>0571 Oslo</li></ul><p class="price">400 kr</p></li><li class="card link-card"><span class="chip"><svg class="icon sm" aria-hidden="true" focusable="false"><use href="#i-dyr"/></svg>Dyrepass</span><h2 class="h2 card-title"><a class="card-link" href="#">Lufte hunden</a></h2><ul class="facts"><li class="fact-time"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-clock"/></svg>Mandag 16. nov. kl. 08:00</li><li class="fact-place"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-pin"/></svg>0571 Oslo</li></ul><p class="price">100 kr</p></li></ul></main><nav class="bottomnav" aria-label="Hovedmeny"><ul><li><a href="#" aria-current="page"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-list"/></svg></span>Oppdrag</a></li><li><a href="#"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-clip"/></svg><span class="nav-badge" aria-hidden="true">2</span></span>Mine oppdrag<span class="sr">, 2 trenger handling</span></a></li><li><a href="#"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-user"/></svg></span>Profil</a></li></ul></nav></div></div><figcaption>Mobil 360 px. Filter «Alle» valgt (3 px grønn kant + hake). Kategoriknappene virker med en gang; postnummeret brukes med «Vis». Kategorimerket på kortene: beige flate med tynn kant. Hele kortet er lenke; ingen knapper på kortene. Menyen er fast nederst; hele siden er vist.</figcaption></figure><figure class="shot wide"><div class="browser-wrap"><div class="browser"><div class="chrome" aria-hidden="true"><span class="dots"><span></span><span></span><span></span></span><span class="tabtitle">Oppdrag – Nabolagshelten</span><span class="url">localhost/oppdrag</span></div><header class="topbar"><a class="brand" href="#"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-logo"/></svg>Nabolagshelten<span class="sr">, til oversikten</span></a><nav class="topnav" aria-label="Hovedmeny"><ul><li><a href="#" aria-current="page">Oppdrag</a></li><li><a href="#">Mine oppdrag <span class="nav-badge" aria-hidden="true">2</span><span class="sr">, 2 trenger handling</span></a></li><li><a href="#">Profil</a></li></ul></nav></header><main class="main wide"><a class="btn btn-primary" href="#"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg>Legg ut oppdrag</a><h1 class="h1 mt24">Ledige oppdrag i 0571 Oslo</h1><div class="mt16" role="group" aria-labelledby="kat-w"><p class="label" id="kat-w">Kategori</p><div class="catrow"><button class="catbtn" type="button" aria-pressed="true"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-check"/></svg>Alle</button><button class="catbtn" type="button" aria-pressed="false"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-snow"/></svg>Snømåking</button><button class="catbtn" type="button" aria-pressed="false"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-hage"/></svg>Hage</button><button class="catbtn" type="button" aria-pressed="false"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-flytt"/></svg>Bærehjelp/flytting</button><button class="catbtn" type="button" aria-pressed="false"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-dyr"/></svg>Dyrepass</button><button class="catbtn" type="button" aria-pressed="false"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-tek"/></svg>Teknologihjelp</button><button class="catbtn" type="button" aria-pressed="false"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-annet"/></svg>Annet</button></div></div><div class="mt16"><label class="label" for="pnr-w">Postnummer</label><div class="pnr"><input class="input" id="pnr-w" value="0571" inputmode="numeric" autocomplete="postal-code" aria-describedby="pst-w"><span id="pst-w">Oslo</span><button class="btn btn-secondary" type="button">Vis</button></div></div><ul class="cards three"><li class="card link-card"><span class="chip"><svg class="icon sm" aria-hidden="true" focusable="false"><use href="#i-snow"/></svg>Snømåking</span><h2 class="h2 card-title"><a class="card-link" href="#">Måke snø i innkjørselen</a></h2><ul class="facts"><li class="fact-time"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-clock"/></svg>I morgen kl. 07:00</li><li class="fact-place"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-pin"/></svg>0571 Oslo</li></ul><p class="price">200 kr</p></li><li class="card link-card is-focus"><span class="chip"><svg class="icon sm" aria-hidden="true" focusable="false"><use href="#i-tek"/></svg>Teknologihjelp</span><h2 class="h2 card-title"><a class="card-link" href="#">Sette opp ny iPad</a></h2><ul class="facts"><li class="fact-time"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-clock"/></svg>Onsdag 11. nov. kl. 18:00</li><li class="fact-place"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-pin"/></svg>0571 Oslo</li></ul><p class="price">Uten betaling</p></li><li class="card link-card"><span class="chip"><svg class="icon sm" aria-hidden="true" focusable="false"><use href="#i-flytt"/></svg>Bærehjelp/flytting</span><h2 class="h2 card-title"><a class="card-link" href="#">Bære sofa til 2. etasje</a></h2><ul class="facts"><li class="fact-time"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-clock"/></svg>Lørdag 14. nov. kl. 12:00</li><li class="fact-place"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-pin"/></svg>0571 Oslo</li></ul><p class="price">400 kr</p></li><li class="card link-card"><span class="chip"><svg class="icon sm" aria-hidden="true" focusable="false"><use href="#i-dyr"/></svg>Dyrepass</span><h2 class="h2 card-title"><a class="card-link" href="#">Lufte hunden</a></h2><ul class="facts"><li class="fact-time"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-clock"/></svg>Mandag 16. nov. kl. 08:00</li><li class="fact-place"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-pin"/></svg>0571 Oslo</li></ul><p class="price">100 kr</p></li></ul></main></div></div><figcaption>PC 1280 px. Menyen i topplinjen, innhold maks 1200 px, 3 kolonner. Kort nr. 2 vist med tastaturfokus: 2 px grønn kant + 3 px fokusring.</figcaption></figure></div></section><section class="doc-sec"><p class="doc-sec-title">Ingen treff</p><div class="cols"><figure class="shot"><div class="phone"><div class="screen"><header class="topbar"><a class="brand" href="#"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-logo"/></svg>Nabolagshelten<span class="sr">, til oversikten</span></a></header><main class="main"><a class="btn btn-primary" href="#"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg>Legg ut oppdrag</a><h1 class="h1 mt24">Ledige oppdrag i 0571 Oslo</h1><div class="mt16" role="group" aria-labelledby="kat-a"><p class="label" id="kat-a">Kategori</p><div class="catrow"><button class="catbtn" type="button" aria-pressed="true"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-check"/></svg>Alle</button><button class="catbtn" type="button" aria-pressed="false"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-snow"/></svg>Snømåking</button><button class="catbtn" type="button" aria-pressed="false"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-hage"/></svg>Hage</button><button class="catbtn" type="button" aria-pressed="false"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-flytt"/></svg>Bærehjelp/flytting</button><button class="catbtn" type="button" aria-pressed="false"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-dyr"/></svg>Dyrepass</button><button class="catbtn" type="button" aria-pressed="false"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-tek"/></svg>Teknologihjelp</button><button class="catbtn" type="button" aria-pressed="false"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-annet"/></svg>Annet</button></div></div><div class="mt16"><label class="label" for="pnr-a">Postnummer</label><div class="pnr"><input class="input" id="pnr-a" value="0571" inputmode="numeric" autocomplete="postal-code" aria-describedby="pst-a"><span id="pst-a">Oslo</span><button class="btn btn-secondary" type="button">Vis</button></div></div><div class="empty mt24"><svg class="icon xl" aria-hidden="true" focusable="false"><use href="#i-search"/></svg><p>Ingen ledige oppdrag i 0571 Oslo akkurat nå.</p><p>Prøv et annet postnummer.</p><button class="btn btn-secondary" type="button" aria-controls="pnr-a">Velg et annet postnummer</button></div></main><nav class="bottomnav" aria-label="Hovedmeny"><ul><li><a href="#" aria-current="page"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-list"/></svg></span>Oppdrag</a></li><li><a href="#"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-clip"/></svg><span class="nav-badge" aria-hidden="true">2</span></span>Mine oppdrag<span class="sr">, 2 trenger handling</span></a></li><li><a href="#"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-user"/></svg></span>Profil</a></li></ul></nav></div></div><figcaption>Tomtilstand med «Alle» valgt: forklaring, forslag og «Velg et annet postnummer», som flytter fokus til postnummerfeltet (FR-10). Ingen «Se alle postnumre».</figcaption></figure><figure class="shot"><div class="phone"><div class="screen"><header class="topbar"><a class="brand" href="#"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-logo"/></svg>Nabolagshelten<span class="sr">, til oversikten</span></a></header><main class="main"><a class="btn btn-primary" href="#"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg>Legg ut oppdrag</a><h1 class="h1 mt24">Ledige oppdrag i 0571 Oslo</h1><div class="mt16" role="group" aria-labelledby="kat-h"><p class="label" id="kat-h">Kategori</p><div class="catrow"><button class="catbtn" type="button" aria-pressed="false">Alle</button><button class="catbtn" type="button" aria-pressed="false"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-snow"/></svg>Snømåking</button><button class="catbtn" type="button" aria-pressed="true"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-check"/></svg><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-hage"/></svg>Hage</button><button class="catbtn" type="button" aria-pressed="false"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-flytt"/></svg>Bærehjelp/flytting</button><button class="catbtn" type="button" aria-pressed="false"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-dyr"/></svg>Dyrepass</button><button class="catbtn" type="button" aria-pressed="false"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-tek"/></svg>Teknologihjelp</button><button class="catbtn" type="button" aria-pressed="false"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-annet"/></svg>Annet</button></div></div><div class="mt16"><label class="label" for="pnr-h">Postnummer</label><div class="pnr"><input class="input" id="pnr-h" value="0571" inputmode="numeric" autocomplete="postal-code" aria-describedby="pst-h"><span id="pst-h">Oslo</span><button class="btn btn-secondary" type="button">Vis</button></div></div><div class="empty mt24"><svg class="icon xl" aria-hidden="true" focusable="false"><use href="#i-search"/></svg><p>Ingen ledige oppdrag i 0571 Oslo akkurat nå.</p><p>Prøv en annen kategori eller et annet postnummer.</p><button class="btn btn-secondary" type="button">Vis alle kategorier</button></div></main><nav class="bottomnav" aria-label="Hovedmeny"><ul><li><a href="#" aria-current="page"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-list"/></svg></span>Oppdrag</a></li><li><a href="#"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-clip"/></svg><span class="nav-badge" aria-hidden="true">2</span></span>Mine oppdrag<span class="sr">, 2 trenger handling</span></a></li><li><a href="#"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-user"/></svg></span>Profil</a></li></ul></nav></div></div><figcaption>Tomtilstand med kategori «Hage» valgt: forklaring, forslag og «Vis alle kategorier». Valgt kategoriknapp beholder ikonet og får hake.</figcaption></figure></div></section>
+</div>
+</body>
+</html>
