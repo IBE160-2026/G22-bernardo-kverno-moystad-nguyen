@@ -204,7 +204,7 @@ En innlogget bruker kan slette sin egen konto etter å ha bekreftet det. Brief: 
 
 ### 4.2 Oppdrag
 
-Oppdragsgiveren legger ut, redigerer og avbryter egne oppdrag. Skjemaet er delt i to steg, så det ikke blir for mange felter på én skjerm (se skissene). Realiserer UJ-1.
+Oppdragsgiveren legger ut, redigerer og avbryter egne oppdrag. Skjemaet skal ikke vise for mange felter på én skjerm; skissene foreslår to steg, og endelig oppsett avgjøres i UX-steget. Realiserer UJ-1.
 
 #### FR-5: Legge ut oppdrag
 En innlogget bruker kan legge ut et oppdrag. Realiserer UJ-1. Brief: SK2.
@@ -368,12 +368,15 @@ Oppdragsgiveren og valgt hjelper kan gi hverandre én tilbakemelding per oppdrag
 
 Profilen er «erfaringsbeviset» en hjelper kan vise til i en jobbsøknad. Realiserer UJ-2.
 
+**Kjent begrensning:** Erfaringen i profilen er ikke verifisert. Brukerne er ikke identitetsverifisert i v1, og navn og fødselsdato er egenerklært. Profilen dokumenterer derfor hva andre brukere har gitt tilbakemelding på i appen, ikke en attest. Det står i profilen at erfaringen er registrert av brukere i Nabolagshelten. Identitetsverifisering er utsatt (§7.2).
+
 #### FR-21: Vise profil
 En innlogget bruker kan se profilen til en annen bruker. Realiserer UJ-1, UJ-2. Brief: R9, SK9.
 
 **Konsekvenser (testbare):**
 - Profilen viser navn, postnummer, om meg, antall fullførte oppdrag per kategori, gjennomsnittlig vurdering og alle mottatte tilbakemeldinger (vurdering, kommentar, hvem som ga den, dato).
 - Bruker uten vurderinger vises med «Ingen vurderinger ennå».
+- Profilen har en kort tekst om at fullførte oppdrag og tilbakemeldinger er registrert av brukere i Nabolagshelten og ikke er verifisert.
 - Tilbakemeldinger fra brukere som har slettet kontoen, vises med «Slettet bruker» (FR-4).
 - Profilen viser aldri telefonnummer, e-post eller fødselsdato.
 - «Fullførte oppdrag» teller oppdrag med status Utført der brukeren var valgt hjelper. Oppdrag brukeren selv har lagt ut, teller ikke.
@@ -445,7 +448,13 @@ Når ingen API-nøkkel er satt, brukes en innebygd mock-tjeneste med faste svar.
 Appen kan startes lokalt ved å følge README, uten betalte tjenester, eksterne kontoer eller gruppens egne nøkler. README har forutsetninger med versjoner, eksakte kommandoer, og kommandoen som kjører de automatiske testene. Testes ved at noen utenfor gruppen (eller en ren maskin/container) følger README fra start, innenfor 15–20 minutter.
 
 #### NFR-2: Eksempeldata og testbrukere
-Repoet har oppdiktede eksempeldata: minst 6 testbrukere i 2–3 postnumre og 10–15 oppdrag fordelt på alle fire statuser, inkludert minst ett utgått oppdrag og tilbakemeldinger. Innloggingsinformasjon for testbrukerne står i README.
+Repoet har oppdiktede eksempeldata: minst 6 testbrukere i 2–3 postnumre og 10–15 oppdrag, slik at hvert steg i kjerneflyten kan prøves uten å lage data først. Dataene inneholder minst:
+- åpne oppdrag i alle kategorier, og minst ett oppdrag med flere interesserte
+- minst ett oppdrag med status Hjelper valgt, ett Utført med tilbakemelding fra begge parter, ett Utført der tilbakemelding ennå ikke er gitt, og ett Avbrutt
+- minst ett utgått oppdrag
+- minst én bruker med vurderinger og én uten («Ingen vurderinger ennå»)
+
+Innloggingsinformasjon for testbrukerne står i README, med en kort beskrivelse av hva hver testbruker kan brukes til å prøve.
 
 #### NFR-3: Ingen hemmeligheter i repoet
 Hemmeligheter ligger i `.env`, som ikke er i repoet. `.env.example` viser alle variabler uten ekte verdier. `.gitignore` holder ute `.env`, avhengigheter og byggmapper. Prompten til KI-tjenesten ligger i en egen fil i koden.
@@ -498,6 +507,8 @@ Alle FR-er og NFR-er i dette dokumentet. KI-forslag (FR-23–FR-26) bygges etter
 - Kart og avstandsbasert matching (erstatter postnummer)
 - Meldinger/chat i appen
 - Varsler på e-post eller push – uten varsler må brukeren selv åpne «Mine oppdrag» for å se endringer
+- Glemt passord (tilbakestilling via e-post) – krever utsending av e-post, som er utsatt sammen med varsler. I v1 kan passord ikke tilbakestilles; passordene til testbrukerne står i README (NFR-2)
+- Rapportering og blokkering av brukere – i v1 bygges tillit gjennom vurderinger og tilbakemeldinger (FR-20, FR-21), og oppdragsgiveren velger selv hjelper og kan fjerne hen (FR-15, FR-17)
 - Eksport av erfaringsoversikt til PDF
 - Flere KI-funksjoner (forslag til godtgjørelse, sjekk av upassende innhold, KI-generert CV-tekst)
 
@@ -539,6 +550,10 @@ Briefen v2.2 avgjør ikke alt. Tabellen viser hvor PRD-en presiserer eller legge
 | Tidssone | Ikke sagt | Norsk tid, Europe/Oslo (FR-5) | Appen er for norske nabolag |
 | Tidsavbrudd for KI | «tidsavbrudd» | 10 sekunder (FR-25) | Gjør kravet testbart |
 | Tekst og trykkflater | «stor nok» | Brødtekst ≥ 18 px, trykkflater ≥ 48 px (NFR-7) | Fra skissene |
+| Glemt passord | Ikke nevnt | Utsatt (§7.2) | Krever e-postutsending, som er utsatt sammen med varsler |
+| Rapportering og blokkering | Ikke nevnt | Utsatt (§7.2) | Tillit bygges gjennom vurderinger; oppdragsgiver velger og kan fjerne hjelper |
+| Verifisert erfaring | «Erfaringsbevis» | Kjent begrensning: ikke verifisert, og det står i profilen (§4.7, FR-21) | Ærlig om hva profilen dokumenterer uten identitetsverifisering |
+| Eksempeldata | 6 brukere, 10–15 oppdrag i ulike statuser | Dekker hvert steg i kjerneflyten (NFR-2) | Sensor skal kunne prøve alt uten å lage data selv |
 | Universell utforming, robusthet og repo | Delvis | WCAG 2.1 AA (NFR-7), robust mot feil input (NFR-10), `.gitignore` og testkommando i README (NFR-1, NFR-3) | Fra sensorveiledningen |
 
 ## Endringslogg
@@ -548,4 +563,4 @@ Briefen v2.2 avgjør ikke alt. Tabellen viser hvor PRD-en presiserer eller legge
 | 2026-11-05 | 0.1 | Arbeidet startet. Form: webapp, coaching, brukerreiser først. |
 | 2026-11-07 | 0.2 | UJ-1 (Kari) og UJ-2 (Amir) skrevet med gruppen. Utkast til ordliste, FR-1–FR-26, NFR-1–NFR-9, omfang og suksessmål laget fra briefen v2.2. |
 | 2026-11-07 | 0.3 | Avklaringer: vurdering med 1–5 stjerner som i briefen (store knapper, jf. NFR-7); «om meg» skrives og postnummer kan endres i profilen etter registrering (FR-22); egne oppdrag vises bare under «Mine oppdrag» (FR-10); bare oppdrag som hjelper teller som fullført (FR-21); maks 500 tegn for melding, kommentar og «om meg». |
-| 2026-11-07 | 1.0 | Ferdigstilt. Avstemt mot brief, skisser, faglærers tilbakemelding og sensorveiledning (rettet FR-9, FR-10, FR-18, FR-24, NFR-1, NFR-3, NFR-7, NFR-8; ny NFR-10). Review-funn rettet: sporingstabell R1–R13 og SK1–SK10 → FR i §4, KI-tidsavbrudd 10 s, testbar ventetilstand, NFR-4, NFR-5, NFR-8, SM-1, SM-4. Tidssone og interesser ved redigering avgjort. Ny §10 med alle presiseringer i forhold til briefen. Språkvask. |
+| 2026-11-07 | 1.0 | Ferdigstilt. Avstemt mot brief, skisser, faglærers tilbakemelding og sensorveiledning (rettet FR-9, FR-10, FR-18, FR-24, NFR-1, NFR-3, NFR-7, NFR-8; ny NFR-10). Review-funn rettet: sporingstabell R1–R13 og SK1–SK10 → FR i §4, KI-tidsavbrudd 10 s, testbar ventetilstand, NFR-4, NFR-5, NFR-8, SM-1, SM-4. Tidssone og interesser ved redigering avgjort. Ny §10 med alle presiseringer i forhold til briefen. Utsatte funn fra reviewen av briefen tatt inn: glemt passord og rapportering/blokkering utsatt (§7.2), uverifisert erfaring som kjent begrensning (§4.7, FR-21), eksempeldata som dekker hele kjerneflyten (NFR-2). Språkvask. |
