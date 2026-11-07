@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<!--
+  UX Design Validation Report — fylt ut fra validation-report-template.html.
+  Kilder: review-accessibility.md (eneste gjennomgang som ble kjørt).
+  Rubrikkgjennomgangen (review-rubric.md) ble ikke kjørt.
+-->
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UX-validering: Nabolagshelten</title>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --surface: #ffffff;
+    --border: #e7e5e4;
+    --text: #1c1917;
+    --muted: #78716c;
+
+    --verdict-strong: #16a34a;
+    --verdict-adequate: #65a30d;
+    --verdict-thin: #d97706;
+    --verdict-broken: #dc2626;
+    --verdict-unrated: #57534e;
+
+    --sev-low: #64748b;
+    --sev-medium: #ca8a04;
+    --sev-high: #ea580c;
+    --sev-critical: #dc2626;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 32px 24px 64px; }
+
+  header.report-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .title h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+  .title .subtitle { color: var(--muted); font-size: 13px; margin-top: 4px; font-family: ui-monospace, "SF Mono", Menlo, monospace; overflow-wrap: anywhere; }
+
+  .synthesis {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--muted);
+    border-radius: 8px;
+    padding: 18px 22px;
+    margin-bottom: 24px;
+    font-size: 15.5px;
+  }
+  .synthesis p { margin: 0 0 10px; }
+  .synthesis p:last-child { margin-bottom: 0; }
+
+  .dimension-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .dim-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .dim-card .dim-name { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .dim-card .dim-verdict { font-size: 14px; font-weight: 600; }
+
+  section.dimension, section.reviewer-section { margin-bottom: 14px; }
+  section.dimension details, section.reviewer-section details {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  section summary {
+    padding: 14px 20px;
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  section summary::-webkit-details-marker { display: none; }
+  section summary::before {
+    content: "▸";
+    display: inline-block;
+    color: var(--muted);
+    transition: transform 0.15s ease;
+  }
+  section details[open] summary::before { transform: rotate(90deg); }
+  section summary h2 {
+    display: inline;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    flex: 1;
+  }
+  .verdict-pill {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: white;
+  }
+  .verdict-strong { background: var(--verdict-strong); }
+  .verdict-adequate { background: var(--verdict-adequate); }
+  .verdict-thin { background: var(--verdict-thin); }
+  .verdict-broken { background: var(--verdict-broken); }
+  .verdict-unrated { background: var(--verdict-unrated); }
+
+  .dim-body { padding: 4px 20px 18px; }
+  .dim-judgment { color: var(--text); font-size: 14.5px; }
+  .dim-judgment p { margin: 0 0 10px; }
+
+  .findings-list { padding: 0 20px 4px; }
+  .sev-heading { margin: 18px 0 4px; font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  article.finding {
+    padding: 14px 0;
+    border-top: 1px solid var(--border);
+  }
+  article.finding:first-child { border-top: none; }
+  article.finding header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+  .badge {
+    font-size: 10.5px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1.4;
+  }
+  .badge-sev-low { background: rgba(100, 116, 139, 0.12); color: var(--sev-low); }
+  .badge-sev-medium { background: rgba(202, 138, 4, 0.14); color: var(--sev-medium); }
+  .badge-sev-high { background: rgba(234, 88, 12, 0.14); color: var(--sev-high); }
+  .badge-sev-critical { background: rgba(220, 38, 38, 0.14); color: var(--sev-critical); }
+  .finding-title { margin: 0; font-size: 15px; font-weight: 500; flex: 1; min-width: 200px; }
+  .finding-location { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px; color: var(--muted); }
+  .finding-note, .finding-fix { margin-top: 6px; font-size: 14px; }
+  .finding-note ul { margin: 4px 0 0; padding-left: 20px; }
+  .finding-fix strong { color: var(--muted); font-weight: 500; }
+  code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.92em; overflow-wrap: anywhere; }
+
+  .reviewer-source {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  .mechanical {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-top: 24px;
+    font-size: 14px;
+  }
+  .mechanical h3 { margin: 0 0 10px; font-size: 14px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .mechanical ul { margin: 0; padding-left: 20px; }
+  .mechanical li { margin-bottom: 4px; color: var(--text); }
+
+  footer.report-footer {
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  footer .meta { display: flex; gap: 8px 24px; flex-wrap: wrap; }
+  footer .meta span { overflow-wrap: anywhere; }
+
+  @media (max-width: 600px) {
+    .container { padding: 24px 16px 48px; }
+    section summary { padding: 12px 14px; }
+    .dim-body, .findings-list { padding-left: 14px; padding-right: 14px; }
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+
+    <header class="report-header">
+      <div class="title">
+        <h1>Nabolagshelten — UX-valideringsrapport</h1>
+        <div class="subtitle">_bmad-output/planning-artifacts/ux-designs/ux-G22-bernardo-kverno-moystad-nguyen-2026-11-07/</div>
+      </div>
+    </header>
+
+    <div class="synthesis">
+      <p><strong>Bare én gjennomgang ble kjørt: universell utforming.</strong> Rubrikkgjennomgangen (de åtte kategoriene nedenfor) ble ikke kjørt, og det finnes ingen <code>review-rubric.md</code>. Kategoriene står derfor som «ikke vurdert». Rapporten gir ingen dom over flytdekning, tokenfullstendighet, komponentdekning, tilstandsdekning, visuelle referanser, overspesifisering, arv eller form. Der UU-gjennomgangen berører en kategori, er funnene nevnt med ID, men det er ikke en kategoridom.</p>
+      <p>Ifølge UU-gjennomgangen er spinene et sterkt utgangspunkt. Alle kontrasttallene i DESIGN.md stemmer når de regnes ut på nytt (laveste tekst 4,61:1, laveste kant 3,43:1, altså liten margin). Farge bærer aldri mening alene, og mockupene har ingen nestede interaktive elementer, ingen dupliserte id-er og ingen hull i overskriftsnivåene. Det som gjenstår, er kontrakten for <strong>dynamikk og mekanikk</strong>: statusmeldinger og fokus etter sidelasting, kategorifilteret, <code>autocomplete</code>, steg 2 i nytt oppdrag (dato og klokkeslett), den faste bunnmenyen ved zoom og skjermtastatur, og at testplanen ikke dekker 320 px.</p>
+      <p><strong>Funn: 0 kritiske, 4 høye, 10 medium, 13 lave (27 i alt).</strong> Ingen funn er kritiske, men gjennomgangen sier at de fire høye (H1–H4) bør løses før spinene settes til ferdig.</p>
+    </div>
+
+    <div class="dimension-summary">
+      <div class="dim-card">
+        <div class="dim-name">1. Flytdekning (Flow coverage)</div>
+        <div class="dim-verdict" style="color: var(--verdict-unrated)">Ikke vurdert</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">2. Tokenfullstendighet (Token completeness)</div>
+        <div class="dim-verdict" style="color: var(--verdict-unrated)">Ikke vurdert</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">3. Komponentdekning (Component coverage)</div>
+        <div class="dim-verdict" style="color: var(--verdict-unrated)">Ikke vurdert</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">4. Tilstandsdekning (State coverage)</div>
+        <div class="dim-verdict" style="color: var(--verdict-unrated)">Ikke vurdert</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">5. Visuelle referanser (Visual reference coverage)</div>
+        <div class="dim-verdict" style="color: var(--verdict-unrated)">Ikke vurdert</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">6. Overspesifisering (Bloat &amp; overspecification)</div>
+        <div class="dim-verdict" style="color: var(--verdict-unrated)">Ikke vurdert</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">7. Arv (Inheritance discipline)</div>
+        <div class="dim-verdict" style="color: var(--verdict-unrated)">Ikke vurdert</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">8. Form (Shape fit)</div>
+        <div class="dim-verdict" style="color: var(--verdict-unrated)">Ikke vurdert</div>
+      </div>
+    </div>
+
+    <!-- Rubrikkategorier: ikke vurdert. Lukket, siden ingen er tynn eller brutt. -->
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>1. Flytdekning (Flow coverage)</h2>
+          <span class="verdict-pill verdict-unrated">Ikke vurdert</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Rubrikkgjennomgangen ble ikke kjørt. Ingen har kontrollert at hver UJ og hvert krav fra kildene har en Key Flow med hovedperson, nummererte steg, klimaks og feilvei.</p>
+            <p>UU-gjennomgangen berører dette indirekte: H4 sier at steg 2 i nytt oppdrag (UJ-1 steg 4) verken er spesifisert eller vist, og M10 at skjermlesertesten bare dekker UJ-1, ikke UJ-2.</p>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>2. Tokenfullstendighet (Token completeness)</h2>
+          <span class="verdict-pill verdict-unrated">Ikke vurdert</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Rubrikkgjennomgangen ble ikke kjørt. Ingen har kontrollert at hvert token i frontmatter og hver <code>{path.to.token}</code>-referanse i prosaen er definert.</p>
+            <p>Delvis belyst av UU-gjennomgangen: alle fargepar med krav (50+) består, og alle kontrasttallene i DESIGN.md § Colors stemmer med to desimaler. Det sier at kontrastmålene er oppgitt og riktige for de bærende kombinasjonene. Det sier ikke at tokensettet er komplett.</p>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>3. Komponentdekning (Component coverage)</h2>
+          <span class="verdict-pill verdict-unrated">Ikke vurdert</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Rubrikkgjennomgangen ble ikke kjørt. Ingen har kontrollert at hver komponent har en rad både i DESIGN.md § Components og i EXPERIENCE.md § Component Patterns.</p>
+            <p>UU-gjennomgangen peker på komponentregler som mangler eller er uklare: «Når?» og «Hva tilbyr du?» (H4), <code>input</code> uten <code>autocomplete</code>-tabell (H3), <code>category-button</code> (H2), <code>bottom-nav</code> (M1, M2), <code>action-tag</code> (M3), <code>dialog</code> (M5), <code>list-row</code> (M7) og <code>star-rating</code> (L4).</p>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>4. Tilstandsdekning (State coverage)</h2>
+          <span class="verdict-pill verdict-unrated">Ikke vurdert</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Rubrikkgjennomgangen ble ikke kjørt. Ingen har gått gjennom hver flate i informasjonsarkitekturen og listet tilstandene den burde ha.</p>
+            <p>UU-gjennomgangen berører dette: kvittering og valideringsfeil etter sidelasting er motstridende (H1), fokus og tilbake-tilstand mellom steg 1 og 2 mangler (L8), utløpt innlogging med utfylt skjema er ikke dekket (L13), og flere tilstander mangler i testplanen (M10).</p>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>5. Visuelle referanser (Visual reference coverage)</h2>
+          <span class="verdict-pill verdict-unrated">Ikke vurdert</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Rubrikkgjennomgangen ble ikke kjørt. Ingen har kontrollert at spinene lenker til hver fil i <code>mockups/</code>, <code>wireframes/</code> og <code>imports/</code>.</p>
+            <p>UU-gjennomgangen gikk gjennom fem mockuper i <code>.working/</code> og fant at steg 2 i nytt oppdrag ikke er mocket (H4), og at ingen mockup har snarveien «Hopp til innholdet» (M9).</p>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>6. Overspesifisering (Bloat &amp; overspecification)</h2>
+          <span class="verdict-pill verdict-unrated">Ikke vurdert</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Rubrikkgjennomgangen ble ikke kjørt. UU-gjennomgangen sier ingenting om overspesifisering. M2 og M3 går den andre veien: faste mål (<code>height: 56px</code>, <code>maxLines: 2</code>) som er for stramme, ikke for mange.</p>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>7. Arv (Inheritance discipline)</h2>
+          <span class="verdict-pill verdict-unrated">Ikke vurdert</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Rubrikkgjennomgangen ble ikke kjørt. Ingen har kontrollert <code>sources</code>, ordrett UJ- og kravnavn, ordliste eller tokenreferanser mellom spinene.</p>
+            <p>UU-gjennomgangen berører sporbarhet mot PRD: kravet om reflow ved 320 px står i DESIGN.md, men ikke i NFR-6 eller testplanen (M4), og NFR-7-punktene er ikke knyttet til hver sin test (M10).</p>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>8. Form (Shape fit)</h2>
+          <span class="verdict-pill verdict-unrated">Ikke vurdert</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Rubrikkgjennomgangen ble ikke kjørt. Ingen har kontrollert seksjonsrekkefølgen i DESIGN.md eller at de påkrevde standardseksjonene i EXPERIENCE.md finnes. UU-gjennomgangen sier ingenting om dette.</p>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <!-- Ekstra gjennomgang: universell utforming. Lukket, gjennomgangens egen stemme er bevart. -->
+    <section class="reviewer-section">
+      <details>
+        <summary>
+          <h2>Gjennomgang: universell utforming</h2>
+          <span class="reviewer-source">review-accessibility.md</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Linse universell utforming, gjennomgått 2026-11-07: <code>DESIGN.md</code>, <code>EXPERIENCE.md</code> og fem mockuper i <code>.working/</code> (oversikt, nytt oppdrag, detaljer, mine oppdrag, profil), målt mot WCAG 2.1 AA, PRD NFR-6, NFR-7, NFR-8, NFR-11, SM-4 og SM-5, og sensorveiledningen, kriterium 4. Kontrasten er regnet ut på nytt med skript for alle fargepar. HTML-en er analysert maskinelt, og mockupene er målt i headless Chrome ved 360 og 320 px, med og uten tekstavstand etter 1.4.12 og med 200 % rot-skriftstørrelse.</p>
+            <p>«Spinene er et sterkt utgangspunkt. Hvert eneste kontrasttall i DESIGN.md stemmer når det regnes ut på nytt. […] Det som gjenstår, er kontrakten for <strong>dynamikk og mekanikk</strong>. […] Testplanen dekker heller ikke 320 px. Ingen funn er kritiske, men de fire høye bør løses før spinene settes til ferdig.»</p>
+            <p><strong>Funn:</strong> 0 kritiske, 4 høye, 10 medium, 13 lave. Kontrasttabellen, «Det som er bra» og testdekningstabellen (NFR-7/SM-5) står i kildefila.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+
+          <h3 class="sev-heading">Kritisk (0)</h3>
+          <p>Ingen.</p>
+
+          <h3 class="sev-heading">Høy (4)</h3>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">Høy</span>
+              <h4 class="finding-title">H1. Kvitteringer, feiloppsummering og fokus etter sidelasting er motstridende og ikke spesifisert</h4>
+              <span class="finding-location">4.1.3, 2.4.3, 3.3.1 · EXPERIENCE.md § Component Patterns message-success / message-error, § State Patterns «Valideringsfeil», § Interaction Primitives «Fokus»</span>
+            </header>
+            <div class="finding-note">
+              <ul>
+                <li><code>role="status"</code> og <code>role="alert"</code> blir ikke lest opp når de allerede finnes i HTML-en ved sidelasting. Live-regioner leser bare opp endringer. Spinene legger opp til server-rendrede sider («vanlig sidelasting»), og da blir «Oppdraget er lagt ut.» og «Skjemaet har 2 feil.» stille.</li>
+                <li>«Kvittering øverst i innholdet» og «fokus til sidens overskrift, så kvitteringen leses først» kan ikke begge stemme. Står kvitteringen over <code>h1</code>, hopper skjermleseren over den når fokus settes på <code>h1</code>.</li>
+                <li>«Fokus til første ugyldige felt» og samtidig <code>role="alert"</code> gir to kunngjøringer som avbryter hverandre.</li>
+              </ul>
+            </div>
+            <div class="finding-fix"><strong>Fix:</strong> Velg mønster i spinen, uavhengig av rammeverk. (a) Kvitteringen står rett <strong>etter</strong> <code>h1</code>, eller fokus settes på selve kvitteringen (<code>tabindex="-1"</code>). (b) Ved valideringsfeil etter sidelasting: en feiloppsummering øverst i skjemaet med <code>tabindex="-1"</code> får fokus, med overskriften «Skjemaet har 2 feil» og hver feil som lenke til feltet. <code>&lt;title&gt;</code> får forstavelsen «Feil: ». (c) <code>aria-live</code> brukes bare for endringer uten sidelasting (KI, filter). Legg inn [NOTE FOR ARCHITECTURE] om at valget mellom server- og klientrendring avgjør hvilket mønster som gjelder.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">Høy</span>
+              <h4 class="finding-title">H2. Kategorifilteret i oversikten: mekanismen er uklar og kan gi brudd på 3.2.2</h4>
+              <span class="finding-location">3.2.2, 4.1.3, 4.1.2, 2.4.3 · EXPERIENCE.md § Component Patterns category-button, § Interaction Primitives</span>
+            </header>
+            <div class="finding-note">
+              <ul>
+                <li>Spinen sier både «<code>aria-pressed</code>», «ett valg om gangen» og «unntak fra automatisk innsending ved valg i skjema». «Ett valg om gangen» er radiosemantikk, og med radioknapper og <code>onchange</code>-innsending gir hver piltast en ny sidelasting. Det er brudd på 3.2.2 (F36/F37), og tastaturbrukeren kommer ikke forbi «Alle».</li>
+                <li>«Antall treff leses opp» går ikke sammen med en vanlig sidelasting (se H1), og fokus havner øverst på siden etter lasting.</li>
+                <li>Spinen sier ikke hva som skjer når brukeren trykker på en knapp som allerede er valgt.</li>
+              </ul>
+            </div>
+            <div class="finding-fix"><strong>Fix:</strong> Lås mønsteret til <code>&lt;button aria-pressed&gt;</code> (aldri radio med automatisk innsending), og skriv «knapper, ikke radioknapper» i spinen. Uten sidelasting: fokus blir på knappen, og en <strong>synlig</strong> linje «3 ledige oppdrag» står i <code>aria-live="polite"</code>. Med sidelasting: lenker (<code>?kategori=hage</code>) med <code>aria-current="true"</code>, fokus tilbake til valgt knapp og antallet i <code>h1</code> eller i en synlig linje rett etter. Trykk på knappen som allerede er valgt, gjør ingenting. Etter «Vis alle kategorier» går fokus til «Alle».</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">Høy</span>
+              <h4 class="finding-title">H3. Formålet med feltene (autocomplete) er ikke spesifisert</h4>
+              <span class="finding-location">1.3.5 · EXPERIENCE.md § Information Architecture «Registrering», «Innlogging», «Rediger profil», § Component Patterns input</span>
+            </header>
+            <div class="finding-note">Spinene nevner verken <code>autocomplete</code> eller felttyper. Bare postnummerfilteret i mockupen har <code>autocomplete="postal-code"</code>. Registrering, innlogging og rediger profil er med i SM-5, og axe melder ikke manglende <code>autocomplete</code>. Feilen blir derfor ikke oppdaget av testen.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Legg til en tabell i <code>input</code>. Navn → <code>name</code>. E-post → <code>type="email" autocomplete="email"</code>. Telefon → <code>type="tel" autocomplete="tel"</code>. Postnummer → <code>inputmode="numeric" autocomplete="postal-code"</code>. Fødselsdato → <code>autocomplete="bday"</code> med synlig format «dd.mm.åååå». Passord ved registrering → <code>new-password</code>, ved innlogging og sletting av konto → <code>current-password</code>. «Vis passord» får <code>aria-pressed</code> eller bytter tekst til «Skjul passord». Påkrevde felt får <code>required</code>.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">Høy</span>
+              <h4 class="finding-title">H4. Steg 2 i nytt oppdrag («Når?», «Hva tilbyr du?», forhåndsvisning) er verken spesifisert eller vist</h4>
+              <span class="finding-location">2.1.1, 1.3.1, 3.3.2, NFR-7 · EXPERIENCE.md § Accessibility Floor, NOTE FOR ARCHITECTURE, Åpne punkter</span>
+            </header>
+            <div class="finding-note">NFR-7 nevner dato og klokkeslett særskilt, og dette er den risikable delen av kjerneflyten (UJ-1 steg 4). Likevel er valget mellom native felt og tekstfelt utsatt, og flere ting mangler. «Når?» er ikke en gruppe med <code>fieldset</code>/<code>legend</code>. Radiogruppen «Beløp / Uten betaling» og beløpsfeltet som vises når «Beløp» velges, mangler regler for plassering, etikett («Beløp i kr»), <code>inputmode</code> og feiltekst. Native <code>type="date"</code> viser formatet etter nettleserens språk, ikke <code>lang="nb"</code> (mm/dd/åååå hos en engelsk Chrome), og det kan forvirre Kari.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Skriv komponentregler for «Når?» (<code>fieldset</code>, <code>legend</code> «Når?», etikettene «Dato» og «Klokkeslett», synlig format, feiltekster) og for «Hva tilbyr du?» (radiogruppe, beløpsfeltet rett etter «Beløp» i DOM, det nye feltet flytter ikke fokus). Ta en beslutning i arkitekturen før stories, og legg til en mockup av steg 2. Forhåndsvisningen er en region med etikett, uten lenke, og får ikke en overskrift som kan forveksles med sidens.</div>
+          </article>
+
+          <h3 class="sev-heading">Medium (10)</h3>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">Medium</span>
+              <h4 class="finding-title">M1. Den faste bunnmenyen kan dekke fokus ved skjermtastatur, liggende skjerm og zoom</h4>
+              <span class="finding-location">2.4.7, 1.4.10, 1.4.4 · DESIGN.md § Layout, EXPERIENCE.md bottom-nav</span>
+            </header>
+            <div class="finding-note"><code>padding-bottom</code> hindrer bare at innholdet er dekket nederst på siden. Den hindrer ikke at et felt med fokus havner bak menyen når brukeren ruller eller tabber. Ved 400 % zoom (320 × 256 CSS px) tar 56 px meny pluss safe-area over 20 % av høyden. Mobilnettlesere legger dessuten faste elementer bak tastaturet, så antakelsen «alltid synlig, også når skjermtastaturet er oppe» er verken realistisk eller ønsket.</div>
+            <div class="finding-fix"><strong>Fix:</strong> <code>scroll-padding-bottom</code> lik menyhøyden på <code>html</code>. Menyen blir <code>position: static</code> ved <code>@media (max-height: 30em)</code> og ved stor tekst. Fjern antakelsen om at menyen alltid er synlig over tastaturet. Test i liggende format og ved 400 %.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">Medium</span>
+              <h4 class="finding-title">M2. Bunnmenyen har fast høyde og white-space: nowrap, og det gir overflyt ved stor tekst</h4>
+              <span class="finding-location">1.4.4, 1.4.12, 1.4.10 · DESIGN.md bottom-nav itemHeight; mockup-CSS .bottomnav a</span>
+            </header>
+            <div class="finding-note">Målt i headless Chrome: ved 200 % rot-skriftstørrelse er menylista 478 px bred på en skjerm som er 360 px. «Mine oppdrag» trenger 245 px, og teksten klippes eller gir vannrett rulling. Ikon, tekst og mellomrom trenger cirka 69 px høyde mot 56 px. Ved 320 px blir kolonnene ulike (98/124/98 px), og med tekstavstand (1.4.12) 90/153/76 px. Altså er de ikke «like brede».</div>
+            <div class="finding-fix"><strong>Fix:</strong> <code>min-height: 56px</code> i stedet for <code>height</code>, tillat linjebryting (<code>white-space: normal</code>, <code>overflow-wrap: break-word</code>), og bruk <code>grid-template-columns: repeat(3, minmax(0, 1fr))</code>. Skriv i DESIGN.md at 56 px er en minstehøyde.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">Medium</span>
+              <h4 class="finding-title">M3. action-tag med maxLines: 2 kan bli implementert som avkorting</h4>
+              <span class="finding-location">1.4.4, 1.4.10 · DESIGN.md frontmatter action-tag, § Components</span>
+            </header>
+            <div class="finding-note">Målt: ved 200 % tekst brytes «Oppdraget er endret etter at du meldte interesse» over 4–5 linjer (174–200 px høyt) og «Gi tilbakemelding» over 3 linjer. «Høyst to linjer» stemmer bare ved 100 %. En utvikler som leser <code>maxLines</code> som <code>line-clamp</code>, skjuler innhold.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Erstatt med «normalt to linjer på 360 px ved 100 %. Aldri <code>line-clamp</code>, ellipse eller <code>overflow: hidden</code>, og teksten brytes så mange linjer som trengs.»</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">Medium</span>
+              <h4 class="finding-title">M4. Reflow ved 320 px står i DESIGN, men verken i NFR-6 eller testplanen</h4>
+              <span class="finding-location">1.4.10 · DESIGN.md § Layout, PRD NFR-6, EXPERIENCE.md «Testes ved» punkt 4</span>
+            </header>
+            <div class="finding-note">1.4.10 krever innhold uten vannrett rulling ved 320 CSS px, som tilsvarer 400 % zoom på 1280 px. NFR-6 og test 4 sjekker bare 360, 768 og 1280 px og 200 % zoom. Mockupene flyter riktig om ved 320 px (målt, unntatt M2), men ingen test sikrer det i koden.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Legg til «320 px / 400 % zoom på 1280 px» i test 4. Foreslå for PRD-en (bmad-prd) at NFR-6 eller NFR-7 får «Innhold flyter om ved 320 CSS px (WCAG 1.4.10)», så kravet kan spores.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">Medium</span>
+              <h4 class="finding-title">M5. Dialogen mangler regler for liten høyde og stor tekst</h4>
+              <span class="finding-location">1.4.10, 2.1.1 · DESIGN.md dialog, EXPERIENCE.md dialog</span>
+            </header>
+            <div class="finding-note">Ved 400 % zoom eller i liggende format med stor tekst kan dialogen med knapper under hverandre bli høyere enn skjermen. Uten rulling inne i dialogen kan ikke knappene nås.</div>
+            <div class="finding-fix"><strong>Fix:</strong> <code>max-height: calc(100dvh - 32px); overflow-y: auto</code> på dialogen, og bruk native <code>&lt;dialog&gt;</code> med <code>showModal()</code> (det gir <code>inert</code> bakgrunn og Esc gratis). Skriv det inn i DESIGN.md og i NOTE FOR ARCHITECTURE.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">Medium</span>
+              <h4 class="finding-title">M6. «Avbryt» som angre-valg og dialoger som ikke sier hvilket oppdrag det gjelder (kognitivt, Kari 72)</h4>
+              <span class="finding-location">3.2.4, 3.3.4, NFR-8 · EXPERIENCE.md § Interaction Primitives, Bekreftelser</span>
+            </header>
+            <div class="finding-note">Spinen har løst problemet med to «Avbryt» for «Avbryte oppdrag» ved å bruke «Behold oppdraget». Men «Fjerne Amir …», «Trekke deg …» og «Marker som utført …» bruker fortsatt «Avbryt» som angre-valg, i en app der «Avbryt oppdrag» er en ugjenkallelig handling. «Avbryt oppdrag» i en rad i Mine oppdrag åpner dessuten «Avbryte oppdraget?» uten tittel. Kari kan ikke se hvilket oppdrag hun avbryter.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Bruk angre-tekster med verb: «Nei, behold Amir», «Nei, jeg blir», «Ikke ennå». Ta med oppdragstittelen i dialogen: «Avbryte «Henge opp gardiner»? Det kan ikke angres.»</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">Medium</span>
+              <h4 class="finding-title">M7. Status, situasjon og merke skilles bare visuelt, og radlenken mangler beskrivelse</h4>
+              <span class="finding-location">1.3.1, 2.4.4 · EXPERIENCE.md list-row, situation-label, action-tag; key-mine-oppdrag.html</span>
+            </header>
+            <div class="finding-note">I mockupen leser skjermleseren «Åpen Venter på svar Oppdraget er endret etter at du meldte interesse» som tre løse tekstbiter. Forskjellen mellom oppdragets status, brukerens situasjon og et merke som krever handling vises bare med form og farge. Når brukeren tabber, hører hen bare tittelen på radlenken, uten merket «Gi tilbakemelding».</div>
+            <div class="finding-fix"><strong>Fix:</strong> Skjult tekst foran: «Status: Åpen.», «Din situasjon: Venter på svar.», «Må gjøres: Gi tilbakemelding.» Gi radlenken <code>aria-describedby</code> som peker til merkelinja. Skriv begge deler inn i <code>list-row</code>.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">Medium</span>
+              <h4 class="finding-title">M8. Feilmeldingene er ikke komplette</h4>
+              <span class="finding-location">3.3.1, 3.3.3 · EXPERIENCE.md § Voice and Tone «Tekster som mangler»; sensorveiledningen kriterium 4</span>
+            </header>
+            <div class="finding-note">Disse mangler: tittel tom eller over 80 tegn, beskrivelse under 10 eller over 1000 tegn, ingen kategori valgt, ugyldig datoformat, ugyldig klokkeslett, ugyldig beløp, ugyldig telefonnummer, passordregler, fødselsdato i ugyldig format og ugyldig e-postadresse. Påkrevde felt er ikke merket med <code>required</code>/<code>aria-required</code>.</div>
+            <div class="finding-fix"><strong>Fix:</strong> En fullstendig tabell (felt → regel → feiltekst med forslag til retting, f.eks. «Skriv datoen som dd.mm.åååå, for eksempel 14.11.2026.») og regelen «påkrevde felt har <code>required</code>, valgfrie står med «(valgfritt)»».</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">Medium</span>
+              <h4 class="finding-title">M9. Snarveien «Hopp til innholdet» og sidetitlene er bare antakelser, og mockupene mangler snarveien</h4>
+              <span class="finding-location">2.4.1, 2.4.2 · EXPERIENCE.md § Accessibility Floor</span>
+            </header>
+            <div class="finding-note">Fra 768 px kommer logoen og tre menyvalg før <code>main</code>. Landemerkene oppfyller 2.4.1 formelt, men NFR-7 og sensor ser etter tastaturnavigasjon. Ingen av de fem mockupene har snarveien. For <code>&lt;title&gt;</code> finnes bare ett eksempel.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Gjør snarveien bindende (første fokuserbare element, synlig ved fokus, mål <code>main</code> med <code>tabindex="-1"</code>). Legg til en tabell med <code>&lt;title&gt;</code> per side og tilstand, for eksempel «Nytt oppdrag, steg 1 av 2 – Nabolagshelten», «Feil: Registrering – Nabolagshelten» og «Amir – profil – Nabolagshelten».</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">Medium</span>
+              <h4 class="finding-title">M10. Testplanen knytter ikke hvert NFR-7-punkt til en test, og flere tilstander mangler</h4>
+              <span class="finding-location">NFR-7, SM-5 · EXPERIENCE.md «Testes ved»</span>
+            </header>
+            <div class="finding-note">Testene er ikke knyttet til NFR-7-punktene. axe-lista mangler steg 2 og nettbrettskjemaet, KI-forslag og KI-feil, tilbakemelding med stjerner, tomtilstander, feilside, slettet bruker og detaljer for hjelperen. Skjermlesertesten dekker bare UJ-1, så kunngjøringen fra filteret (UJ-2) testes ikke.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Legg til en kolonne «Testes ved» i tabellen i § Accessibility Floor, og utvid lista over sider og tilstander (forslag i testdekningstabellen i <code>review-accessibility.md</code>).</div>
+          </article>
+
+          <h3 class="sev-heading">Lav (13)</h3>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">Lav</span>
+              <h4 class="finding-title">L1. Fokusringen på kort og rader avhenger av :has() uten reserveløsning</h4>
+              <span class="finding-location">2.4.7 · mockup-CSS .card-link:focus-visible, .link-card:has(...)</span>
+            </header>
+            <div class="finding-note">Støtter ikke nettleseren <code>:has()</code>, får hele kortet ingen fokusindikator. Ringen er dessuten bare 1,67:1 mot <code>primary</code> hvis offset settes til 0.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Skriv i DESIGN.md: «fokusringen tegnes på lenkens <code>::after</code> (som dekker kortet), <code>outline-offset</code> ≥ 2 px, aldri <code>outline: none</code> uten erstatning i samme regel.»</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">Lav</span>
+              <h4 class="finding-title">L2. Like knappenavn i samme visning</h4>
+              <span class="finding-location">2.4.6, 2.4.4 · key-nytt-oppdrag.html, key-detaljer.html, key-mine-oppdrag.html</span>
+            </header>
+            <div class="finding-note">«Bruk»/«Forkast» × 3, «Se profil» × 3, «Endre tidspunkt»/«Avbryt oppdrag» per rad. Mockupen gir «Se profil» <code>aria-describedby</code> til navnet, og det er bra, men spinen krever det ikke.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Skriv i spinen at «Bruk», «Forkast», «Se profil» og snarveiene i rader får <code>aria-describedby</code> til tittelen på forslaget, navnet eller oppdraget. Behold den synlige teksten først (2.5.3).</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">Lav</span>
+              <h4 class="finding-title">L3. Merket «Velg hjelper» står over overskriften «3 har meldt interesse»</h4>
+              <span class="finding-location">1.3.2 · EXPERIENCE.md detaljer-tabellen, key-detaljer.html</span>
+            </header>
+            <div class="finding-note">Den som navigerer med overskrifter, lander på <code>h2</code> og går glipp av merket.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Plasser merket rett etter overskriften i DOM-en (visuelt kan det stå over), eller ta det med i overskriften.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">Lav</span>
+              <h4 class="finding-title">L4. Stjernene ved tilbakemelding: synlige ytterpunkter, legend og tilstand</h4>
+              <span class="finding-location">2.5.3, 1.3.1, 2.4.7 · EXPERIENCE.md star-rating</span>
+            </header>
+            <div class="finding-note">«Dårlig» og «Veldig bra» står synlig ved stjerne 1 og 5, men er ikke med i navnene («1 av 5 stjerner»). <code>legend</code> «Vurdering» er ikke synlig, og spørsmålet «Hvordan gikk det med Amir?» er den synlige etiketten. Det står ikke hvordan fokus og valgt tilstand tegnes når radioknappen er visuelt skjult, eller om stjerne 1 til n fylles.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Navn «1 av 5 stjerner, dårlig» og «5 av 5 stjerner, veldig bra». <code>legend</code> = det synlige spørsmålet. <code>label:has(:focus-visible)</code> tegner ringen og <code>:has(:checked)</code> fyller stjernene til og med valgt verdi. Det samme gjelder kategori-radioene i skjemaet, som i mockupen bare har CSS for <code>aria-pressed</code>/<code>.selected</code> og ikke for <code>:checked</code>.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">Lav</span>
+              <h4 class="finding-title">L5. Små lenker i tekst bryter med «også lenker har 48 px trykkflate»</h4>
+              <span class="finding-location">NFR-7 · key-profil.html, phone-box</span>
+            </header>
+            <div class="finding-note">Giver-navnet «Kari» er cirka 38 px bredt. NFR-7 sier bare høyde, og 2.5.5 er AAA, men spinen lover mer.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Presiser: «Lenker inne i løpende tekst er unntatt; frittstående lenker er minst 48 × 48 px.» Gi telefonlenken minst 48 px høyde.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">Lav</span>
+              <h4 class="finding-title">L6. Kategoriknappene i skjemaet bryter ord midt i ordet ved tekstavstand</h4>
+              <span class="finding-location">1.4.12 · DESIGN.md category-button, mockup-CSS overflow-wrap:anywhere</span>
+            </header>
+            <div class="finding-note">Målt: med tekstavstand etter 1.4.12 brytes «Teknologihjelp» over to linjer ved 360 og 320 px, selv om spinen sier «aldri midt i et ord».</div>
+            <div class="finding-fix"><strong>Fix:</strong> <code>hyphens: auto</code> (virker med <code>lang="nb"</code>) i stedet for <code>anywhere</code>, eller én kolonne under cirka 22em.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">Lav</span>
+              <h4 class="finding-title">L7. Tvungne farger, redusert bevegelse og skjermretning er ikke nevnt</h4>
+              <span class="finding-location">1.3.4, 1.4.11 · EXPERIENCE.md § Accessibility Floor</span>
+            </header>
+            <div class="finding-note">I Windows høykontrast forsvinner <code>box-shadow</code>-delen av fokus og hover og flata på <code>action-tag</code>. Teksten og omrisset består, så det er trolig i orden, men det er ikke testet.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Én linje hver: «Låser ikke skjermretning», «<code>prefers-reduced-motion</code>: ingen myk rulling ved fokusflytting» og «Sjekkes i <code>forced-colors: active</code>».</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">Lav</span>
+              <h4 class="finding-title">L8. «Tilbake» betyr to ting i nytt oppdrag, og fokus ved tilbake til steg 1 er ikke spesifisert</h4>
+              <span class="finding-location">3.2.4, 2.4.3 · EXPERIENCE.md § Interaction Primitives «To steg»</span>
+            </header>
+            <div class="finding-fix"><strong>Fix:</strong> På steg 2 heter knappen «Tilbake til steg 1». Fokus går til <code>h1</code> «Nytt oppdrag 1 av 2». <code>&lt;title&gt;</code> byttes per steg.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">Lav</span>
+              <h4 class="finding-title">L9. Antall treff og tallet i menyen er ikke forklart for den som ser</h4>
+              <span class="finding-location">kognitivt · key-oversikt.html, nav-badge</span>
+            </header>
+            <div class="finding-note">Antallet «4 ledige oppdrag» finnes bare som skjult tekst. «2» ved «Mine oppdrag» står uten forklaring for Kari.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Vis antallet synlig under overskriften. Vurder en kort linje øverst i Mine oppdrag: «2 oppdrag trenger at du gjør noe.»</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">Lav</span>
+              <h4 class="finding-title">L10. Ord og forkortelser som kan være uklare for Kari</h4>
+              <span class="finding-location">NFR-8, kognitivt</span>
+            </header>
+            <div class="finding-note">«Forkast», forkortede måneder («14. nov.»; skjermlesere kan lese «nov punktum») og «Meldt før endring».</div>
+            <div class="finding-fix"><strong>Fix:</strong> Vurder «Ikke bruk» for «Forkast» og måneder skrevet fullt på detaljer og profil. Ta det med i SM-4-testen.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">Lav</span>
+              <h4 class="finding-title">L11. Angre-kolonnen heter «(lenke)», og aria-disabled stopper ikke innsending med Enter</h4>
+              <span class="finding-location">4.1.2 · EXPERIENCE.md Bekreftelser, button-disabled</span>
+            </header>
+            <div class="finding-fix"><strong>Fix:</strong> «Angre-valget er en <code>&lt;button&gt;</code> med utseende som tekstknapp, ikke <code>&lt;a&gt;</code>.» Skjemaet stopper innsending mens forespørselen pågår (ikke bare knappen).</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">Lav</span>
+              <h4 class="finding-title">L12. To aria-current="page" på Mine oppdrag</h4>
+              <span class="finding-location">4.1.2 · key-mine-oppdrag.html (menyvalget og fanen)</span>
+            </header>
+            <div class="finding-fix"><strong>Fix:</strong> Fanen får <code>aria-current="page"</code>, og menyvalget <code>aria-current="true"</code> når en fane er aktiv. Alternativt: skriv i spinen at begge er tillatt.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">Lav</span>
+              <h4 class="finding-title">L13. Når innloggingen utløper, kan utfylt skjema gå tapt</h4>
+              <span class="finding-location">2.2.1, 2.2.5 · EXPERIENCE.md «Innlogging utløpt»</span>
+            </header>
+            <div class="finding-note">7 dager er godt over unntaket på 20 timer i 2.2.1, og sperren på 15 minutter er en sikkerhetsgrense med tydelig melding. Begge er i orden. Men hvis innloggingen utløper ved «Publiser», sier spinen ikke at innholdet beholdes.</div>
+            <div class="finding-fix"><strong>Fix:</strong> «Utfylt innhold beholdes ved ny innlogging, eller brukeren får beskjed før det går tapt.»</div>
+          </article>
+
+        </div>
+      </details>
+    </section>
+
+    <div class="mechanical">
+      <h3>Mekaniske merknader</h3>
+      <ul>
+        <li>Rubrikkgjennomgangen ble ikke kjørt, så navneavvik, brutte kryssreferanser, fullstendig frontmatter og Mermaid-syntaks er ikke kontrollert.</li>
+        <li>UU-gjennomgangen bekrefter at alle kontrasttallene i DESIGN.md § Colors stemmer med to desimaler. Margin er liten (laveste tekst 4,61:1, laveste kant 3,43:1), så nye bakgrunnskombinasjoner må kontrolleres på nytt (T6 i testdekningstabellen).</li>
+        <li>Mockupene er maskinelt kontrollert: ingen nestede interaktive elementer, ingen dupliserte id-er, ingen hull i overskriftsnivåene, og alle 70+ SVG-er har <code>aria-hidden="true" focusable="false"</code>.</li>
+        <li>Steg 2 i nytt oppdrag har ingen mockup (H4).</li>
+      </ul>
+    </div>
+
+    <footer class="report-footer">
+      <div class="meta">
+        <span>Rubrikk: ikke kjørt (review-rubric.md finnes ikke)</span>
+        <span>Gjennomganger: review-accessibility.md</span>
+        <span>DESIGN.md · EXPERIENCE.md i _bmad-output/planning-artifacts/ux-designs/ux-G22-bernardo-kverno-moystad-nguyen-2026-11-07/</span>
+        <span>Generert: 2026-11-07T21:05:23+01:00</span>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>
