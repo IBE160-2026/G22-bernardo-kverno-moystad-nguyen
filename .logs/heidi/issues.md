@@ -11,3 +11,4 @@
 - [ ] 2026-11-07 [prd](998-2026-11-05-22-16-33-prd.md) — `bmad-ux`: oppdater skissene (1–5 stjerner i stedet for tallknapper, dato og klokkeslett i stedet for «Fleksibelt denne uken») og lag skjermene som mangler (registrering, rediger profil, slett konto)
 - [ ] 2026-11-07 [prd](998-2026-11-05-22-16-33-prd.md) — `bmad-architecture` med PRD v1.0 som grunnlag
 - [ ] 2026-11-07 [prd](998-2026-11-05-22-16-33-prd.md) — gruppen bør godkjenne valgene i PRD v1.0 §10, særlig at glemt passord og rapportering/blokkering er utsatt
+- [ ] 2026-11-07 [python-installasjon](997-2026-11-07-16-15-21-python-installasjon.md) — README: beskriv Python-kravet (3.11 eller nyere for BMAD-skriptene) og oppsett av `.venv` hvis appen bruker Python; avklares etter `bmad-architecture`
