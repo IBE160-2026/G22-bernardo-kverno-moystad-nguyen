@@ -1,8 +1,10 @@
 # Skisser av skjermbilder – Nabolagshelten v1
 
+> **Erstattet 2026-11-07.** Skissene er innspill og oppdateres ikke lenger. Utseende og atferd står nå i UX-spinene [DESIGN.md](ux-designs/ux-G22-bernardo-kverno-moystad-nguyen-2026-11-07/DESIGN.md) og [EXPERIENCE.md](ux-designs/ux-G22-bernardo-kverno-moystad-nguyen-2026-11-07/EXPERIENCE.md), med mockups i samme mappe. Endringene fra skissene står i EXPERIENCE.md § Endringer fra skissene. Ved konflikt gjelder spinene.
+
 | | |
 |---|---|
-| **Status** | Forslag til gruppen |
+| **Status** | Erstattet av UX-spinene (se over) |
 | **Bygger på** | [Product brief](product-brief-nabolagshelten.md), delene «Viktigste skjermbilder», «Regler» og «Suksesskriterier» |
 | **Neste steg** | Diskuter i gruppen og bruk som innspill til PRD og UX (`bmad-ux`) |
 
