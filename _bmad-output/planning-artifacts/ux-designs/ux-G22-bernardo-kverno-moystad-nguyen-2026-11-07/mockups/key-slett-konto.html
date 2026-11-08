@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Slett konto – Nabolagshelten</title>
+<style>
+/*
+Styrende spine-seksjoner for denne skjermen:
+DESIGN.md  Colors; Typography (heading-1, heading-3, body, label); Layout & Spacing (Mobil 360 px, «Bunnmenyen og
+           plass nederst»); Shapes; Components: input, field-error, Feiloppsummering (message-error),
+           button-primary («Slett kontoen min»), button-secondary («Vis passord»), button-text («Tilbake til
+           profilen»), topbar, bottom-nav (aktivt valg på underside), Fokus, Hopp til innholdet.
+EXPERIENCE.md  Information Architecture (rad «Slett konto»: egen side, siden er bekreftelsen; aktivt menyvalg:
+           slett konto → «Profil»); Voice and Tone (Ordrette tekster: «Slettet bruker»; Tekster som mangler:
+           «Passordet er feil. Kontoen er ikke slettet.», Feiloppsummering); Component Patterns (input med
+           «Vis passord», «Felttyper og formål»: current-password, field-error, Feiloppsummering, button-text,
+           Lenken «Hopp til innholdet»); Interaction Primitives (Bekreftelser: Slette konto – egen side, ikke
+           dialog; Fokus); Accessibility Floor (Sidetitler: «Slett konto» / «Feil: Slett konto»);
+           Key Flows Støtteflyter «Slett konto» steg 2–4.
+PRD        FR-4 (hva som skjer, tabellen over hva som slettes og beholdes, passord kreves).
+
+Mockup i P1 «Salvie og sand». Spinene (DESIGN.md, EXPERIENCE.md) er kontrakten; mocken illustrerer.
+Ved konflikt gjelder spinene. Bildetekster under rammene er mock-annotasjoner, ikke produkttekst.
+Klassen .is-focus etterligner fokus i en statisk mock (feiloppsummeringen har fått fokus fra appen).
+*/
+
+:root{color-scheme:light;
+  /* DESIGN.md frontmatter colors – eksakte hex */
+  --surface-page:#E3D3B3;--surface-card:#EEE5D3;--surface-input:#F4E8CF;
+  --ink:#2F302D;--ink-muted:#6E4E3A;--border:#7B6C5D;--focus:#2F302D;
+  --primary:#47553F;--on-primary:#F4E8CF;--link:#47553F;
+  --topbar:#47553F;--topbar-text:#F4E8CF;--topbar-focus:#EBC7BC;--brand-icon:#EBC7BC;--nav-indicator:#EBC7BC;
+  --badge-bg:#EBC7BC;--badge-fg:#4B3324;
+  --error:#81432C;
+  --font-head:ui-rounded,"SF Pro Rounded","Nunito","Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;
+  --font-body:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --r-sm:10px;--r-md:12px;--r-lg:14px;--r-full:9999px;
+  --shadow-dialog:0 8px 32px rgba(47,48,45,.25);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{font-size:100%;scroll-padding-bottom:72px} /* felt med fokus havner ikke bak bunnmenyen */
+body{margin:0;background:var(--surface-card);color:var(--ink);font-family:var(--font-body);font-size:1.125rem;line-height:1.55}
+
+/* ---------- Mock-ramme (ikke produkt-UI) ---------- */
+.doc{max-width:1360px;margin:0 auto;padding:32px 16px 64px}
+.doc-head{max-width:72ch}
+.doc-title{font-family:var(--font-head);font-size:1.75rem;font-weight:700;line-height:1.25;margin:0 0 8px}
+.doc-head p{margin:0 0 8px;color:var(--ink-muted)}
+.doc-sec{margin-top:48px}
+.doc-sec-title{font-family:var(--font-head);font-size:1.5rem;font-weight:700;line-height:1.3;margin:0 0 16px}
+.doc-note{max-width:72ch;margin-top:32px}
+.doc-note p{margin:0 0 8px}
+.cols{display:flex;flex-wrap:wrap;gap:48px;align-items:flex-start}
+.shot{margin:0;max-width:100%}
+.shot figcaption{margin-top:12px;max-width:384px;color:var(--ink-muted)}
+.phone{position:relative;width:384px;max-width:100%;padding:30px 12px 24px;background:var(--ink);border-radius:40px;box-shadow:var(--shadow-dialog)}
+.phone::before{content:"";position:absolute;top:12px;left:50%;width:72px;height:6px;margin-left:-36px;border-radius:var(--r-full);background:var(--ink-muted)}
+.screen{position:relative;width:360px;max-width:100%;min-height:740px;background:var(--surface-page);border-radius:24px;overflow:hidden;display:flex;flex-direction:column}
+
+/* ---------- Produkt: grunnlag ---------- */
+.h1,.h2,.h3{font-family:var(--font-head);font-weight:700;margin:0;color:var(--ink)}
+.h1{font-size:1.75rem;line-height:1.25}
+.h2{font-size:1.5rem;line-height:1.3}
+.h3{font-size:1.25rem;line-height:1.3}
+p{margin:0}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.icon{width:24px;height:24px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.icon.md{width:20px;height:20px}
+.mt8{margin-top:8px}.mt16{margin-top:16px}.mt24{margin-top:24px}.mt32{margin-top:32px}
+.main{flex:1;padding:24px 16px 32px}
+.main:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
+
+/* Hopp til innholdet: første fokuserbare element, usynlig til fokus, da som button-primary øverst til venstre
+   over topplinjen, med blush fokusring fordi den ligger over den grønne topplinjen. */
+.skip{position:absolute;top:8px;left:8px;z-index:10;transform:translateY(-300%)}
+.skip:focus{transform:none}
+
+/* topbar (bare logo under 768 px) */
+.topbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;padding:8px 16px;background:var(--topbar);color:var(--topbar-text)}
+.brand{display:inline-flex;align-items:center;gap:8px;min-height:48px;font-family:var(--font-head);font-size:1.25rem;font-weight:800;line-height:1.2;letter-spacing:-.01em;color:var(--brand-icon);text-decoration:none;border-radius:var(--r-sm)}
+.brand .icon{width:28px;height:28px}
+.brand:focus-visible{outline:3px solid var(--topbar-focus);outline-offset:2px}
+.nav-badge{display:inline-flex;align-items:center;justify-content:center;padding:1px 9px;border-radius:var(--r-full);background:var(--badge-bg);color:var(--badge-fg);font-size:1rem;font-weight:700;line-height:1.3}
+
+/* bottom-nav (< 768 px): fast nederst (her: sticky innenfor telefonrammen), statisk når skjermen er lav.
+   56 px er minstehøyde; teksten får bryte linje. */
+.bottomnav{position:sticky;bottom:0;margin-top:auto;background:var(--topbar);color:var(--topbar-text)}
+.bottomnav ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.bottomnav a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:56px;padding:4px 2px;color:var(--topbar-text);text-decoration:none;font-weight:400;font-size:1.125rem;line-height:1.2;text-align:center;white-space:normal;overflow-wrap:break-word;border-top:3px solid transparent}
+.bottomnav a[aria-current]{font-weight:700;border-top-color:var(--nav-indicator)}
+.bottomnav a:focus-visible{outline:3px solid var(--topbar-focus);outline-offset:-3px}
+.bottomnav .ic{position:relative;display:inline-flex}
+.bottomnav .nav-badge{position:absolute;top:-7px;left:15px}
+@media (max-height:30em){.bottomnav{position:static}}
+
+/* knapper */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 22px;font-family:var(--font-body);font-size:1.125rem;font-weight:700;line-height:1.4;border-radius:var(--r-md);text-decoration:none;cursor:pointer;text-align:center}
+.btn-primary{background:var(--primary);color:var(--on-primary);border:2px solid var(--primary)}
+.btn-secondary{background:transparent;color:var(--link);border:1.5px solid var(--link)}
+.btn-secondary[aria-pressed="true"]{border-width:3px;padding:0 20.5px}
+.btn-text{background:transparent;color:var(--link);border:0;text-decoration:underline;text-underline-offset:3px;padding:0 14px}
+.btn:focus-visible,.is-focus{outline:3px solid var(--focus);outline-offset:3px}
+.skip:focus,.skip:focus-visible{outline:3px solid var(--topbar-focus);outline-offset:3px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+
+/* forklaring */
+.explain ul{margin:8px 0 0;padding-left:24px}
+.explain li+li{margin-top:4px}
+
+/* skjema */
+.label{display:block;font-weight:700;line-height:1.4}
+.help{margin-top:4px;color:var(--ink-muted)}
+.input{display:block;width:100%;min-height:48px;padding:0 14px;margin-top:8px;background:var(--surface-input);color:var(--ink);border:1.5px solid var(--border);border-radius:var(--r-sm);font:inherit}
+.input:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+.input[aria-invalid="true"]{border:2px solid var(--error);padding:0 13.5px}
+.field-error{display:flex;gap:8px;align-items:flex-start;margin-top:8px;color:var(--error);font-weight:700}
+.field-error .icon{margin-top:4px}
+/* Passord + «Vis passord» på samme linje når de får plass, ellers under hverandre */
+.pw{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px}
+.pw .input{flex:1 1 8em;width:auto;min-width:0;margin-top:0}
+
+/* feiloppsummering (message-error) – får fokus fra appen, derfor :focus og ikke bare :focus-visible */
+.summary{display:block;margin-top:24px;background:var(--surface-card);color:var(--error);border:1px solid var(--border);border-left:6px solid var(--error);border-radius:var(--r-sm);padding:12px 16px}
+.summary:focus{outline:3px solid var(--focus);outline-offset:3px}
+.summary .h3{display:flex;align-items:flex-start;gap:8px;color:var(--error)}
+.summary .h3 .icon{margin-top:2px}
+.summary ul{margin:8px 0 0;padding-left:24px;color:var(--ink)}
+.summary a{display:block;min-height:48px;padding:11px 0;color:var(--link);font-weight:700;text-decoration:underline;text-underline-offset:3px}
+.summary a:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+
+/* Beslutning 2026-11-07: knapper nederst i skjema under hverandre under 768 px, primærknappen øverst i full bredde */
+.form-actions{flex-direction:column;align-items:stretch}
+.form-actions .btn{width:100%}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+<symbol id="i-logo" viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M12 17.2s-3-1.9-3-3.9a1.6 1.6 0 0 1 3-.8 1.6 1.6 0 0 1 3 .8c0 2-3 3.9-3 3.9z" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01" stroke-width="3"/></symbol>
+<symbol id="i-clip" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2.8h6V4M9 10h6M9 14h6"/></symbol>
+<symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 21c.8-4 3.8-6 7.5-6s6.7 2 7.5 6"/></symbol>
+<symbol id="m-warn" viewBox="0 0 20 20"><path d="M10 2.5 18.5 17h-17z"/><path d="M10 8v4"/><circle cx="10" cy="14.6" r="1.1" fill="currentColor" stroke="none"/></symbol>
+</svg>
+<div class="doc">
+<div class="doc-head"><p class="doc-title">Nøkkelskjerm – Slett konto</p><p>Amir (21) på mobil har trykket «Slett konto» nederst på sin egen profil (Støtteflyter «Slett konto», steg 1–4). Sletting er en egen side, ikke en dialog: siden er bekreftelsen, og passordet bekrefter.</p><p>Menytallet 2 er Amirs oppdrag under «Trenger handling», som på profilen (key-profil.html).</p></div>
+
+<section class="doc-sec" aria-label="Rammer"><p class="doc-sec-title">Siden – og feil passord</p><div class="cols">
+
+<!-- ================= Ramme 1: Siden ================= -->
+<figure class="shot"><div class="phone"><div class="screen">
+<a class="btn btn-primary skip" href="#main">Hopp til innholdet</a>
+<header class="topbar"><a class="brand" href="#"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-logo"/></svg>Nabolagshelten<span class="sr">, til oversikten</span></a></header>
+<main class="main" id="main" tabindex="-1">
+<h1 class="h1">Slett konto</h1>
+<div class="explain">
+<p class="mt16">Når kontoen er slettet, kan du ikke angre.</p>
+<h2 class="h3 mt24">Dette slettes</h2>
+<ul>
+<li>Navnet, e-posten, passordet, telefonnummeret, postnummeret, fødselsdatoen og «om meg».</li>
+<li>Tilbakemeldingene du har fått.</li>
+<li>Oppdragene dine som er åpne eller avbrutt, og interessene du har meldt.</li>
+<li>Har du valgt en hjelper på et oppdrag, blir oppdraget avbrutt. Er du valgt hjelper, blir oppdraget åpent igjen.</li>
+</ul>
+<h2 class="h3 mt24">Dette blir stående</h2>
+<ul>
+<li>Tilbakemeldinger du har gitt, blir stående hos den som fikk dem, med navnet «Slettet bruker». Det du skrev i en kommentar, kan likevel vise hvem du er.</li>
+<li>Utførte oppdrag blir stående hos den andre, med «Slettet bruker» i stedet for navnet ditt.</li>
+</ul>
+</div>
+<form class="mt32" novalidate>
+<label class="label" for="pw-a">Passord</label><p class="help" id="pw-h-a">Skriv passordet ditt for å bekrefte.</p><div class="pw"><input class="input" id="pw-a" name="passord" type="password" autocomplete="current-password" required aria-describedby="pw-h-a"><button class="btn btn-secondary" type="button" aria-pressed="false" aria-controls="pw-a">Vis passord</button></div>
+<div class="actions form-actions mt24"><button class="btn btn-primary" type="button">Slett kontoen min</button><a class="btn btn-text" href="#">Tilbake til profilen</a></div>
+</form>
+</main>
+<nav class="bottomnav" aria-label="Hovedmeny"><ul><li><a href="#"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-list"/></svg></span>Oppdrag</a></li><li><a href="#"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-clip"/></svg><span class="nav-badge" aria-hidden="true">2</span></span>Mine oppdrag<span class="sr">, 2 trenger handling</span></a></li><li><a href="#" aria-current="true"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-user"/></svg></span>Profil</a></li></ul></nav>
+</div></div><figcaption>Siden, mobil 360 px. &lt;title&gt;: «Slett konto – Nabolagshelten». Forklaringen etter FR-4 i to korte lister, så passordfeltet (current-password) med «Vis passord». «Slett kontoen min» er primærknappen; «Tilbake til profilen» er tekstlenke og havner under når linja er for smal. Menyvalget «Profil» er markert (aria-current="true"). Hele siden er vist.</figcaption></figure>
+
+<!-- ================= Ramme 2: Feil passord ================= -->
+<figure class="shot"><div class="phone"><div class="screen">
+<a class="btn btn-primary skip" href="#main-b">Hopp til innholdet</a>
+<header class="topbar"><a class="brand" href="#"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-logo"/></svg>Nabolagshelten<span class="sr">, til oversikten</span></a></header>
+<main class="main" id="main-b" tabindex="-1">
+<h1 class="h1">Slett konto</h1>
+<div class="summary is-focus" id="sum-b" tabindex="-1"><h2 class="h3"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#m-warn"/></svg>Skjemaet har 1 feil</h2><ul><li><a href="#pw-b">Passordet er feil. Kontoen er ikke slettet.</a></li></ul></div>
+<div class="explain">
+<p class="mt16">Når kontoen er slettet, kan du ikke angre.</p>
+<h2 class="h3 mt24">Dette slettes</h2>
+<ul>
+<li>Navnet, e-posten, passordet, telefonnummeret, postnummeret, fødselsdatoen og «om meg».</li>
+<li>Tilbakemeldingene du har fått.</li>
+<li>Oppdragene dine som er åpne eller avbrutt, og interessene du har meldt.</li>
+<li>Har du valgt en hjelper på et oppdrag, blir oppdraget avbrutt. Er du valgt hjelper, blir oppdraget åpent igjen.</li>
+</ul>
+<h2 class="h3 mt24">Dette blir stående</h2>
+<ul>
+<li>Tilbakemeldinger du har gitt, blir stående hos den som fikk dem, med navnet «Slettet bruker». Det du skrev i en kommentar, kan likevel vise hvem du er.</li>
+<li>Utførte oppdrag blir stående hos den andre, med «Slettet bruker» i stedet for navnet ditt.</li>
+</ul>
+</div>
+<form class="mt32" novalidate>
+<label class="label" for="pw-b">Passord</label><p class="help" id="pw-h-b">Skriv passordet ditt for å bekrefte.</p><div class="pw"><input class="input" id="pw-b" name="passord" type="password" autocomplete="current-password" required value="" aria-invalid="true" aria-describedby="pw-h-b pw-e-b"><button class="btn btn-secondary" type="button" aria-pressed="false" aria-controls="pw-b">Vis passord</button></div><p class="field-error" id="pw-e-b"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#m-warn"/></svg><span>Passordet er feil. Kontoen er ikke slettet.</span></p>
+<div class="actions form-actions mt24"><button class="btn btn-primary" type="button">Slett kontoen min</button><a class="btn btn-text" href="#">Tilbake til profilen</a></div>
+</form>
+</main>
+<nav class="bottomnav" aria-label="Hovedmeny"><ul><li><a href="#"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-list"/></svg></span>Oppdrag</a></li><li><a href="#"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-clip"/></svg><span class="nav-badge" aria-hidden="true">2</span></span>Mine oppdrag<span class="sr">, 2 trenger handling</span></a></li><li><a href="#" aria-current="true"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-user"/></svg></span>Profil</a></li></ul></nav>
+</div></div><figcaption>Feil passord etter «Slett kontoen min». &lt;title&gt;: «Feil: Slett konto – Nabolagshelten». Samme mønster som andre skjema: feiloppsummeringen «Skjemaet har 1 feil» rett etter h1 har fått fokus (ringen vist), uten role="alert", og lenken fører til feltet. Feltet har 2 px feilkant, aria-invalid og feilteksten under, og passordet er tømt. Kontoen er ikke slettet.</figcaption></figure>
+
+</div>
+<div class="doc-note"><p>Ramme 1 viser «Slett konto» som egen side, ikke dialog: forklaringen av hva som slettes og hva som blir stående etter tabellen i FR-4, med «Slettet bruker» og at kommentarer kan avsløre hvem som skrev dem, så passord, «Slett kontoen min» og angre-valget «Tilbake til profilen» (EXPERIENCE.md § Information Architecture «Slett konto», Interaction Primitives «Bekreftelser», Støtteflyter «Slett konto»; DESIGN.md § Components: input, button-primary, button-text).</p><p>Ramme 2 viser steg 4 i støtteflyten: feil passord gir «Passordet er feil. Kontoen er ikke slettet.» både i feiloppsummeringen med fokus og ved feltet, og sidetittelen får «Feil: » foran (EXPERIENCE.md § Feiltekster ved felt, Feiloppsummering, field-error, Accessibility Floor «Sidetitler»).</p><p>Forklaringens ordlyd, overskriftene «Dette slettes» og «Dette blir stående», hjelpeteksten ved passordet og at feil passord vises med feiloppsummering «Skjemaet har 1 feil» (ikke bare ved feltet) er antakelser.</p></div>
+</section>
+</div>
+</body>
+</html>

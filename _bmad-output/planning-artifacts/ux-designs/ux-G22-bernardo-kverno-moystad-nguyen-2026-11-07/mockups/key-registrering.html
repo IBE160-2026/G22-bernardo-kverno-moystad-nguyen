@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Registrering – Nabolagshelten</title>
+<style>
+/*
+Styrende spine-seksjoner for denne skjermen:
+DESIGN.md  Colors; Typography (heading-1, heading-3 i feiloppsummering og personvern, body, body-strong, label);
+           Layout & Spacing (Mobil 360 px, gutter 16 px); Shapes (sm felt, md knapper); Components: input,
+           field-error, Feiloppsummering (message-error), button-primary («Opprett konto»), button-secondary
+           («Vis passord»), button-text («Logg inn»), topbar (bare logo, ingen meny), Fokus, Hopp til innholdet.
+EXPERIENCE.md  Foundation (uten innlogging: topplinje med bare logo); Information Architecture (rad «Registrering»:
+           feltrekkefølge, personverntekst over knappen); Voice and Tone (Feiltekster ved felt: E-post,
+           Fødselsdato; Tekster som mangler: Feiloppsummering); Component Patterns (input med «Vis passord» og
+           aria-pressed, tabellen «Felttyper og formål», field-error, Feiloppsummering, Lenken «Hopp til
+           innholdet»); State Patterns (Valideringsfeil); Interaction Primitives (Fokus); Accessibility Floor
+           (Sidetitler: «Registrering» / «Feil: Registrering»); Key Flows UJ-2 steg 2 + «Under 18 eller e-post i bruk».
+PRD        FR-1 (felt, regler, personverntekstens innhold), FR-16 (e-post og fødselsdato vises ikke for andre).
+
+Mockup i P1 «Salvie og sand». Spinene (DESIGN.md, EXPERIENCE.md) er kontrakten; mocken illustrerer.
+Ved konflikt gjelder spinene. Bildetekster under rammene er mock-annotasjoner, ikke produkttekst.
+Klassen .is-focus etterligner fokus i en statisk mock (feiloppsummeringen har fått fokus fra appen).
+*/
+
+:root{color-scheme:light;
+  /* DESIGN.md frontmatter colors – eksakte hex */
+  --surface-page:#E3D3B3;--surface-card:#EEE5D3;--surface-input:#F4E8CF;
+  --ink:#2F302D;--ink-muted:#6E4E3A;--border:#7B6C5D;--focus:#2F302D;
+  --primary:#47553F;--on-primary:#F4E8CF;--link:#47553F;--disabled-bg:#D2CABD;--disabled-fg:#5E5347;
+  --topbar:#47553F;--topbar-text:#F4E8CF;--topbar-focus:#EBC7BC;--brand-icon:#EBC7BC;
+  --error:#81432C;--success:#47553F;
+  --font-head:ui-rounded,"SF Pro Rounded","Nunito","Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;
+  --font-body:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --r-sm:10px;--r-md:12px;--r-lg:14px;--r-full:9999px;
+  --shadow-dialog:0 8px 32px rgba(47,48,45,.25);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{font-size:100%}
+body{margin:0;background:var(--surface-card);color:var(--ink);font-family:var(--font-body);font-size:1.125rem;line-height:1.55}
+
+/* ---------- Mock-ramme (ikke produkt-UI) ---------- */
+.doc{max-width:1360px;margin:0 auto;padding:32px 16px 64px}
+.doc-head{max-width:72ch}
+.doc-title{font-family:var(--font-head);font-size:1.75rem;font-weight:700;line-height:1.25;margin:0 0 8px}
+.doc-head p{margin:0 0 8px;color:var(--ink-muted)}
+.doc-sec{margin-top:48px}
+.doc-sec-title{font-family:var(--font-head);font-size:1.5rem;font-weight:700;line-height:1.3;margin:0 0 16px}
+.doc-note{max-width:72ch;margin-top:32px}
+.doc-note p{margin:0 0 8px}
+.cols{display:flex;flex-wrap:wrap;gap:48px;align-items:flex-start}
+.shot{margin:0;max-width:100%}
+.shot figcaption{margin-top:12px;max-width:384px;color:var(--ink-muted)}
+.phone{position:relative;width:384px;max-width:100%;padding:30px 12px 24px;background:var(--ink);border-radius:40px;box-shadow:var(--shadow-dialog)}
+.phone::before{content:"";position:absolute;top:12px;left:50%;width:72px;height:6px;margin-left:-36px;border-radius:var(--r-full);background:var(--ink-muted)}
+.screen{position:relative;width:360px;max-width:100%;min-height:740px;background:var(--surface-page);border-radius:24px;overflow:hidden;display:flex;flex-direction:column}
+
+/* ---------- Produkt: grunnlag ---------- */
+.h1,.h2,.h3{font-family:var(--font-head);font-weight:700;margin:0;color:var(--ink)}
+.h1{font-size:1.75rem;line-height:1.25}
+.h2{font-size:1.5rem;line-height:1.3}
+.h3{font-size:1.25rem;line-height:1.3}
+p{margin:0}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.icon{width:24px;height:24px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.icon.md{width:20px;height:20px}
+.mt8{margin-top:8px}.mt16{margin-top:16px}.mt24{margin-top:24px}.mt32{margin-top:32px}
+.main{flex:1;padding:24px 16px 32px}
+.main:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
+
+/* Hopp til innholdet: første fokuserbare element, usynlig til fokus, da som button-primary øverst til venstre
+   over topplinjen, med blush fokusring fordi den ligger over den grønne topplinjen. */
+.skip{position:absolute;top:8px;left:8px;z-index:10;transform:translateY(-300%)}
+.skip:focus{transform:none}
+
+/* topbar: uten innlogging bare logo, ingen meny (EXPERIENCE.md § Foundation) */
+.topbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;padding:8px 16px;background:var(--topbar);color:var(--topbar-text)}
+.brand{display:inline-flex;align-items:center;gap:8px;min-height:48px;font-family:var(--font-head);font-size:1.25rem;font-weight:800;line-height:1.2;letter-spacing:-.01em;color:var(--brand-icon);text-decoration:none;border-radius:var(--r-sm)}
+.brand .icon{width:28px;height:28px}
+.brand:focus-visible{outline:3px solid var(--topbar-focus);outline-offset:2px}
+
+/* knapper */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 22px;font-family:var(--font-body);font-size:1.125rem;font-weight:700;line-height:1.4;border-radius:var(--r-md);text-decoration:none;cursor:pointer;text-align:center}
+.btn-primary{background:var(--primary);color:var(--on-primary);border:2px solid var(--primary)}
+.btn-secondary{background:transparent;color:var(--link);border:1.5px solid var(--link)}
+.btn-secondary[aria-pressed="true"]{border-width:3px;padding:0 20.5px}
+.btn-text{background:transparent;color:var(--link);border:0;text-decoration:underline;text-underline-offset:3px;padding:0 14px}
+.btn:focus-visible,.is-focus{outline:3px solid var(--focus);outline-offset:3px}
+.skip:focus,.skip:focus-visible{outline:3px solid var(--topbar-focus);outline-offset:3px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+
+/* skjema */
+.field{margin-top:24px}
+.label{display:block;font-weight:700;line-height:1.4}
+.help{margin-top:4px;color:var(--ink-muted)}
+.input{display:block;width:100%;min-height:48px;padding:0 14px;margin-top:8px;background:var(--surface-input);color:var(--ink);border:1.5px solid var(--border);border-radius:var(--r-sm);font:inherit}
+.input:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+.input[aria-invalid="true"]{border:2px solid var(--error);padding:0 13.5px}
+.field-error{display:flex;gap:8px;align-items:flex-start;margin-top:8px;color:var(--error);font-weight:700}
+.field-error .icon{margin-top:4px}
+.pnr{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:8px}
+.pnr .input{width:120px;margin-top:0}
+.short{max-width:10.5em}
+/* Passord + «Vis passord» på samme linje når de får plass, ellers under hverandre */
+.pw{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px}
+.pw .input{flex:1 1 8em;width:auto;min-width:0;margin-top:0}
+
+/* personvern: vanlig tekst over knappen, ikke en boks */
+.privacy{margin-top:32px}
+.privacy ul{margin:8px 0 0;padding-left:24px}
+.privacy li+li{margin-top:4px}
+
+/* feiloppsummering (message-error) – får fokus fra appen, derfor :focus og ikke bare :focus-visible */
+.summary{display:block;margin-top:24px;background:var(--surface-card);color:var(--error);border:1px solid var(--border);border-left:6px solid var(--error);border-radius:var(--r-sm);padding:12px 16px}
+.summary:focus{outline:3px solid var(--focus);outline-offset:3px}
+.summary .h3{display:flex;align-items:flex-start;gap:8px;color:var(--error)}
+.summary .h3 .icon{margin-top:2px}
+.summary ul{margin:8px 0 0;padding-left:24px;color:var(--ink)}
+.summary a{display:block;min-height:48px;padding:11px 0;color:var(--link);font-weight:700;text-decoration:underline;text-underline-offset:3px}
+.summary a:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+
+.login{margin-top:32px;padding-top:24px;border-top:1px solid var(--border)}
+.login .btn-text{margin-left:-14px}
+
+/* Beslutning 2026-11-07: knapper nederst i skjema under hverandre under 768 px, primærknappen øverst i full bredde */
+.form-actions{flex-direction:column;align-items:stretch}
+.form-actions .btn{width:100%}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+<symbol id="i-logo" viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M12 17.2s-3-1.9-3-3.9a1.6 1.6 0 0 1 3-.8 1.6 1.6 0 0 1 3 .8c0 2-3 3.9-3 3.9z" fill="currentColor" stroke="none"/></symbol>
+<symbol id="m-warn" viewBox="0 0 20 20"><path d="M10 2.5 18.5 17h-17z"/><path d="M10 8v4"/><circle cx="10" cy="14.6" r="1.1" fill="currentColor" stroke="none"/></symbol>
+</svg>
+<div class="doc">
+<div class="doc-head"><p class="doc-title">Nøkkelskjerm – Registrering</p><p>Amir (21) på mobil, uten konto, har trykket lenken til registrering fra innloggingssiden (UJ-2 steg 1–2). Han er ikke innlogget, så topplinjen har bare logoen og det er ingen meny. I dag er lørdag 7. november 2026.</p><p>Feltene står i rekkefølgen fra EXPERIENCE.md § Information Architecture, med felttype og autocomplete fra tabellen «Felttyper og formål».</p></div>
+
+<section class="doc-sec" aria-label="Rammer"><p class="doc-sec-title">Tomt skjema – og feil etter innsending</p><div class="cols">
+
+<!-- ================= Ramme 1: Tomt skjema ================= -->
+<figure class="shot"><div class="phone"><div class="screen">
+<a class="btn btn-primary skip" href="#main">Hopp til innholdet</a>
+<header class="topbar"><a class="brand" href="#"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-logo"/></svg>Nabolagshelten<span class="sr">, til oversikten</span></a></header>
+<main class="main" id="main" tabindex="-1">
+<h1 class="h1">Registrering</h1>
+<form novalidate>
+<div class="field"><label class="label" for="navn-a">Navn</label><input class="input" id="navn-a" name="navn" type="text" autocomplete="name" required></div>
+
+<div class="field"><label class="label" for="epost-a">E-post</label><input class="input" id="epost-a" name="epost" type="email" autocomplete="email" required></div>
+
+<div class="field"><label class="label" for="pw-a">Passord</label><p class="help" id="pw-h-a">8–64 tegn</p><div class="pw"><input class="input" id="pw-a" name="passord" type="password" autocomplete="new-password" required aria-describedby="pw-h-a"><button class="btn btn-secondary" type="button" aria-pressed="false" aria-controls="pw-a">Vis passord</button></div></div>
+
+<div class="field"><label class="label" for="tlf-a">Telefonnummer</label><input class="input short" id="tlf-a" name="telefon" type="tel" autocomplete="tel" required></div>
+
+<div class="field"><label class="label" for="pnr-a">Postnummer</label><div class="pnr"><input class="input" id="pnr-a" name="postnummer" type="text" inputmode="numeric" autocomplete="postal-code" required></div></div>
+
+<div class="field"><label class="label" for="fdato-a">Fødselsdato</label><p class="help" id="fdato-h-a">dd.mm.åååå, for eksempel 03.05.1954</p><input class="input short" id="fdato-a" name="fodselsdato" type="text" autocomplete="bday" required aria-describedby="fdato-h-a"></div>
+
+<section class="privacy" aria-labelledby="pv-a"><h2 class="h3" id="pv-a">Personvern</h2>
+<ul>
+<li>Vi lagrer det du skriver her. Passordet lagres slik at ingen kan lese det.</li>
+<li>Navnet, postnummeret og profilen din vises for alle som er logget inn.</li>
+<li>Telefonnummeret ditt vises bare for den andre i et oppdrag, når en hjelper er valgt. E-post og fødselsdato vises ikke for andre.</li>
+<li>Trykker du «Få forslag» når du legger ut et oppdrag, sendes beskrivelsen til en ekstern KI-tjeneste.</li>
+<li>Du kan slette kontoen din når du vil, under Profil.</li>
+</ul>
+</section>
+
+<div class="actions form-actions mt24"><button class="btn btn-primary" type="button">Opprett konto</button></div>
+</form>
+<div class="login"><p>Har du konto fra før?</p><a class="btn btn-text" href="#">Logg inn</a></div>
+</main>
+</div></div><figcaption>Tomt skjema, mobil 360 px. &lt;title&gt;: «Registrering – Nabolagshelten». Topplinje med bare logo, ingen meny. Etikett over hvert felt, format som hjelpetekst (aldri plassholdertekst), «Vis passord» som knapp med aria-pressed. Personvernteksten står over «Opprett konto»; lenken til innlogging nederst. Hele siden er vist.</figcaption></figure>
+
+<!-- ================= Ramme 2: Feil etter innsending ================= -->
+<figure class="shot"><div class="phone"><div class="screen">
+<a class="btn btn-primary skip" href="#main-b">Hopp til innholdet</a>
+<header class="topbar"><a class="brand" href="#"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-logo"/></svg>Nabolagshelten<span class="sr">, til oversikten</span></a></header>
+<main class="main" id="main-b" tabindex="-1">
+<h1 class="h1">Registrering</h1>
+<div class="summary is-focus" id="sum-b" tabindex="-1"><h2 class="h3"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#m-warn"/></svg>Skjemaet har 2 feil</h2><ul><li><a href="#epost-b">Det finnes allerede en konto med denne e-posten.</a></li><li><a href="#fdato-b">Du må være minst 18 år for å bruke Nabolagshelten.</a></li></ul></div>
+<form novalidate>
+<div class="field"><label class="label" for="navn-b">Navn</label><input class="input" id="navn-b" name="navn" type="text" autocomplete="name" required value="Amir"></div>
+
+<div class="field"><label class="label" for="epost-b">E-post</label><input class="input" id="epost-b" name="epost" type="email" autocomplete="email" required value="amir@epost.no" aria-invalid="true" aria-describedby="epost-e-b"><p class="field-error" id="epost-e-b"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#m-warn"/></svg><span>Det finnes allerede en konto med denne e-posten.</span></p></div>
+
+<div class="field"><label class="label" for="pw-b">Passord</label><p class="help" id="pw-h-b">8–64 tegn</p><div class="pw"><input class="input" id="pw-b" name="passord" type="password" autocomplete="new-password" required value="" aria-describedby="pw-h-b"><button class="btn btn-secondary" type="button" aria-pressed="false" aria-controls="pw-b">Vis passord</button></div></div>
+
+<div class="field"><label class="label" for="tlf-b">Telefonnummer</label><input class="input short" id="tlf-b" name="telefon" type="tel" autocomplete="tel" required value="481 23 456"></div>
+
+<div class="field"><label class="label" for="pnr-b">Postnummer</label><div class="pnr"><input class="input" id="pnr-b" name="postnummer" type="text" inputmode="numeric" autocomplete="postal-code" required value="0571" aria-describedby="sted-b"><span id="sted-b">Oslo</span></div></div>
+
+<div class="field"><label class="label" for="fdato-b">Fødselsdato</label><p class="help" id="fdato-h-b">dd.mm.åååå, for eksempel 03.05.1954</p><input class="input short" id="fdato-b" name="fodselsdato" type="text" autocomplete="bday" required value="14.03.2015" aria-invalid="true" aria-describedby="fdato-h-b fdato-e-b"><p class="field-error" id="fdato-e-b"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#m-warn"/></svg><span>Du må være minst 18 år for å bruke Nabolagshelten.</span></p></div>
+
+<section class="privacy" aria-labelledby="pv-b"><h2 class="h3" id="pv-b">Personvern</h2>
+<ul>
+<li>Vi lagrer det du skriver her. Passordet lagres slik at ingen kan lese det.</li>
+<li>Navnet, postnummeret og profilen din vises for alle som er logget inn.</li>
+<li>Telefonnummeret ditt vises bare for den andre i et oppdrag, når en hjelper er valgt. E-post og fødselsdato vises ikke for andre.</li>
+<li>Trykker du «Få forslag» når du legger ut et oppdrag, sendes beskrivelsen til en ekstern KI-tjeneste.</li>
+<li>Du kan slette kontoen din når du vil, under Profil.</li>
+</ul>
+</section>
+
+<div class="actions form-actions mt24"><button class="btn btn-primary" type="button">Opprett konto</button></div>
+</form>
+<div class="login"><p>Har du konto fra før?</p><a class="btn btn-text" href="#">Logg inn</a></div>
+</main>
+</div></div><figcaption>Feil etter «Opprett konto». &lt;title&gt;: «Feil: Registrering – Nabolagshelten». Feiloppsummeringen rett etter h1 har fått fokus (ringen vist), uten role="alert"; lenkene fører til feltene. E-posten er i bruk, og fødselsåret er skrevet feil (2015 i stedet for 2005), så Amir blir under 18. Feilfeltene har 2 px feilkant, aria-invalid og feiltekst under. Alt annet er beholdt, unntatt passordet, som er tomt.</figcaption></figure>
+
+</div>
+<div class="doc-note"><p>Ramme 1 viser registreringen slik Amir møter den i UJ-2 steg 2: seks felt i rekkefølgen fra Information Architecture, med type og autocomplete fra «Felttyper og formål», fødselsdato som tekstfelt med fast format, «Vis passord» med aria-pressed, og personverntekst med innholdet FR-1 krever rett over knappen (EXPERIENCE.md § Information Architecture, § Component Patterns «input»; DESIGN.md § Components: input, button-primary, Hopp til innholdet).</p><p>Ramme 2 viser «Under 18 eller e-post i bruk» fra UJ-2: feiloppsummeringen «Skjemaet har 2 feil» står rett etter h1 og har fått fokus, feilene står også ved feltene, og sidetittelen får «Feil: » foran (EXPERIENCE.md § Feiltekster ved felt, Feiloppsummering, field-error, State Patterns «Valideringsfeil», Accessibility Floor «Sidetitler»).</p><p>Knappeteksten «Opprett konto», hjelpeteksten «8–64 tegn» ved passord, overskriften «Personvern», personverntekstens ordlyd, «Har du konto fra før?» og feilteksten for e-post i bruk står ikke i spinene og er antakelser.</p></div>
+</section>
+</div>
+</body>
+</html>

@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Oppdragsdetaljer – nøkkelskjerm</title>
+<title>Måke snø i innkjørselen – Nabolagshelten</title>
 <style>
 /*
 Styrende spine-seksjoner for denne skjermen:
 DESIGN.md  Colors; Typography (heading-2 for oppdragstittel og dialogspørsmål, heading-3, price, body-strong,
            meta); Shapes; Elevation & Depth (dialog + slør 55 %); Components: button-text («Tilbake»,
-           «Se profil», «Avbryt»), status-badge (open), category-chip, button-secondary («Rediger»,
-           «Avbryt oppdrag», «Velg Amir»), action-tag (over «N har meldt interesse»), list-row uten lenke
+           «Se profil», «Ikke ennå»), status-badge (open), category-chip, button-secondary («Rediger»,
+           «Avbryt oppdrag», «Velg Amir»), action-tag (rett under «N har meldt interesse»), list-row uten lenke
            (interessert), dialog, button-primary («Ja, velg Amir»), Fokus, bottom-nav (aktivt valg på
            underside), nav-badge; Do's and Don'ts (én primærknapp; ikke «Velg» fylt).
 EXPERIENCE.md  Information Architecture (aktivt menyvalg: eget oppdrag → «Mine oppdrag»; rad «Oppdragsdetaljer»;
@@ -24,6 +24,9 @@ EXPERIENCE.md  Information Architecture (aktivt menyvalg: eget oppdrag → «Min
 
 Mockup i P1 «Salvie og sand». Spinene (DESIGN.md, EXPERIENCE.md) er kontrakten; mocken illustrerer.
 Ved konflikt gjelder spinene. Bildetekster under rammene er mock-annotasjoner, ikke produkttekst.
+Oppdatert etter UU-gjennomgangen 2026-11-07 (review-accessibility.md): «Hopp til innholdet» i hver ramme,
+bunnmeny med minstehøyde og linjebryting, fokusring på lenkens ::after (uten :has()), kategoriknapper med
+hyphens:auto, <title> etter EXPERIENCE.md § Accessibility Floor «Sidetitler».
 */
 
 :root{color-scheme:light;
@@ -48,7 +51,7 @@ Ved konflikt gjelder spinene. Bildetekster under rammene er mock-annotasjoner, i
   --shadow-dialog:0 8px 32px rgba(47,48,45,.25);
 }
 *,*::before,*::after{box-sizing:border-box}
-html{font-size:100%}
+html{font-size:100%;scroll-padding-bottom:56px} /* = bunnmenyens minstehøyde: felt og lenker med fokus rulles fram over menyen */
 body{margin:0;background:var(--surface-card);color:var(--ink);font-family:var(--font-body);font-size:1.125rem;line-height:1.55}
 
 /* ---------- Mock-ramme (ikke produkt-UI) ---------- */
@@ -68,7 +71,7 @@ body{margin:0;background:var(--surface-card);color:var(--ink);font-family:var(--
 .screen{position:relative;width:360px;min-height:740px;background:var(--surface-page);border-radius:24px;overflow:hidden;display:flex;flex-direction:column}
 .screen.fixed{height:740px}
 .screen.fixed .main{flex:1 1 0;min-height:0;overflow:hidden}
-.browser{width:1280px;border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;background:var(--surface-page);box-shadow:var(--shadow-card)}
+.browser{position:relative;width:1280px;border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;background:var(--surface-page);box-shadow:var(--shadow-card)}
 .chrome{display:flex;align-items:center;gap:16px;padding:10px 16px;background:var(--disabled-bg);border-bottom:1px solid var(--border);color:var(--ink);font-size:1rem}
 .dots{display:flex;gap:8px}.dots span{width:12px;height:12px;border-radius:50%;border:1.5px solid var(--border)}
 .tabtitle{font-weight:700;padding:4px 14px;background:var(--surface-page);border:1px solid var(--border);border-radius:10px}
@@ -105,9 +108,13 @@ p{margin:0}
 .nav-badge{display:inline-flex;align-items:center;justify-content:center;padding:1px 9px;border-radius:var(--r-full);background:var(--badge-bg);color:var(--badge-fg);font-size:1rem;font-weight:700;line-height:1.3}
 
 /* bottom-nav (< 768 px) */
+/* I appen: position:fixed; bottom:0. I mocken ligger menyen nederst i rammen via flex (margin-top:auto). */
 .bottomnav{margin-top:auto;background:var(--topbar);color:var(--topbar-text)}
-.bottomnav ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr)}
-.bottomnav a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;height:56px;padding:0 2px;color:var(--topbar-text);text-decoration:none;font-weight:400;font-size:1.125rem;line-height:1.2;white-space:nowrap;border-top:3px solid transparent}
+.bottomnav ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+/* 56 px er minstehøyde: teksten bryter linje, og menyen blir høyere ved stor tekst */
+.bottomnav a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:56px;padding:4px 2px;color:var(--topbar-text);text-decoration:none;font-weight:400;font-size:1.125rem;line-height:1.2;text-align:center;white-space:normal;overflow-wrap:break-word;border-top:3px solid transparent}
+/* Lav skjerm (liggende telefon, stor zoom, skjermtastatur): menyen ligger nederst i sideflyten, ikke fast */
+@media (max-height:30em){.bottomnav{position:static}}
 .bottomnav a[aria-current]{font-weight:700;border-top-color:var(--nav-indicator)}
 .bottomnav a:focus-visible{outline:3px solid var(--topbar-focus);outline-offset:-3px}
 .bottomnav .ic{position:relative;display:inline-flex}
@@ -119,7 +126,12 @@ p{margin:0}
 .btn-secondary{background:transparent;color:var(--link);border:1.5px solid var(--link)}
 .btn-text{background:transparent;color:var(--link);border:0;text-decoration:underline;text-underline-offset:3px;padding:0 14px}
 .btn[aria-disabled="true"]{background:var(--disabled-bg);color:var(--disabled-fg);border:1.5px solid var(--disabled-fg);cursor:default}
-.btn:focus-visible,.is-focus{outline:3px solid var(--focus);outline-offset:3px}
+.btn:focus-visible,.btn.is-focus{outline:3px solid var(--focus);outline-offset:3px}
+/* Hopp til innholdet: første fokuserbare element; skjult til fokus, da button-primary øverst til venstre.
+   Den ligger over topplinjen, så ringen er topbar-focus (DESIGN.md Fokus: i topplinjen 3 px topbar-focus). */
+.skip{position:absolute;top:8px;left:8px;z-index:10;display:inline-flex;align-items:center;min-height:48px;padding:0 22px;background:var(--primary);color:var(--on-primary);border:2px solid var(--primary);border-radius:var(--r-md);font-size:1.125rem;font-weight:700;line-height:1.4;text-decoration:none}
+.skip:not(:focus){width:1px;height:1px;min-height:0;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
+.skip:focus{outline:3px solid var(--topbar-focus);outline-offset:3px}
 .back{margin:-12px 0 8px -14px}
 .actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 
@@ -130,7 +142,8 @@ p{margin:0}
 .s-chosen{background:var(--status-chosen-bg);color:var(--status-chosen-fg)}
 .s-done{background:var(--status-done-bg);color:var(--status-done-fg)}
 .s-cancelled{background:var(--status-cancelled-bg);color:var(--status-cancelled-fg)}
-/* action-tag: kan brytes over to linjer; 16 px sidepolstring holder teksten innenfor pilleformen, ikonet følger første linje */
+/* action-tag: brytes så mange linjer som trengs (aldri line-clamp, ellipse eller overflow hidden);
+   16 px sidepolstring holder teksten innenfor pilleformen, ikonet følger første linje */
 .tag{display:inline-flex;align-items:flex-start;gap:6px;max-width:100%;padding:4px 16px;border-radius:var(--r-full);background:var(--badge-bg);color:var(--badge-fg);font-size:1rem;font-weight:700;line-height:1.3}
 .tag .icon{margin-top:3px}
 /* star-rating, visning: dekorativ, teksten bærer verdien */
@@ -148,10 +161,12 @@ p{margin:0}
 .card-title{margin:12px 0 8px}
 .card-link{color:var(--ink);text-decoration:none}
 .card-link::after{content:"";position:absolute;inset:0;border-radius:var(--r-lg)}
-.card-link:focus-visible{outline:none} /* ringen vises på hele kortet, se under */
-/* Bare kort/rader som er lenker: 2 px grønn kant ved hover og fokus + fokusring på hele flaten */
+/* Fokusringen tegnes på lenkens ::after, som dekker hele kortet – virker uten :has().
+   Lenken selv får gjennomsiktig outline (ikke none), så ringen ikke dobles, men synes med tvungne farger. */
+.card-link:focus-visible{outline:3px solid transparent}
+.card-link:focus-visible::after,.link-card.is-focus .card-link::after{outline:3px solid var(--focus);outline-offset:3px}
+/* 2 px grønn kant ved hover og fokus (tillegg; :has() er bare forbedring, ringen over avhenger ikke av den) */
 .link-card:hover,.link-card:has(.card-link:focus-visible),.link-card.is-focus{border-color:var(--primary);box-shadow:var(--shadow-card),0 0 0 1px var(--primary)}
-.link-card:has(.card-link:focus-visible),.link-card.is-focus{outline:3px solid var(--focus);outline-offset:3px}
 .facts{list-style:none;margin:0;padding:0;display:grid;gap:8px}
 .facts li{display:flex;align-items:center;gap:8px}
 .fact-time{font-weight:700}
@@ -170,11 +185,14 @@ textarea.input{padding:12px 14px;min-height:120px;resize:vertical}
 .fs{border:0;margin:24px 0 0;padding:0;min-width:0}
 .fs legend{padding:0}
 .catrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-.catbtn{display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:0 16px;background:var(--surface-card);color:var(--ink);border:1px solid var(--border);border-radius:var(--r-md);font:inherit;font-weight:400;line-height:1.3;cursor:pointer}
-.catbtn[aria-pressed="true"],.catbtn.selected{border:3px solid var(--primary);padding:0 14px;font-weight:700}
-.catbtn:focus-visible,.catbtn:focus-within{outline:3px solid var(--focus);outline-offset:3px}
+/* category-button: lenker i filteret (valgt = aria-current="true"), radioknapper i skjemaet (valgt = :checked) */
+.catbtn{display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:0 16px;background:var(--surface-card);color:var(--ink);border:1px solid var(--border);border-radius:var(--r-md);font:inherit;font-weight:400;line-height:1.3;text-decoration:none;cursor:pointer;hyphens:auto;-webkit-hyphens:auto}
+.catbtn[aria-current="true"],label.catbtn:has(:checked){border:3px solid var(--primary);padding:0 14px;font-weight:700}
+.catbtn:focus-visible,label.catbtn:has(:focus-visible){outline:3px solid var(--focus);outline-offset:3px}
 .catgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
-.catgrid .catbtn{flex-direction:column;justify-content:center;min-height:80px;padding:8px;text-align:center;overflow-wrap:anywhere}
+/* hyphens:auto (virker med lang="nb"), aldri overflow-wrap:anywhere; «Bærehjelp/» + «flytting» brytes med <wbr> */
+.catgrid .catbtn{flex-direction:column;justify-content:center;min-height:80px;padding:8px;text-align:center}
+.catgrid .catbtn:has(:checked){padding:6px}
 
 /* meldinger */
 .msg{display:flex;gap:8px;align-items:flex-start;background:var(--surface-card);border:1px solid var(--border);border-left-width:6px;border-radius:var(--r-sm);padding:12px 16px}
@@ -208,8 +226,10 @@ textarea.input{padding:12px 14px;min-height:120px;resize:vertical}
 .row-title{margin:0;font-family:var(--font-body);font-size:1.125rem;font-weight:700;line-height:1.4;color:var(--ink)}
 .row-link{color:var(--ink);text-decoration:none}
 .row-link::after{content:"";position:absolute;inset:0;border-radius:var(--r-lg)}
-.row-link:focus-visible{outline:none}
-.row-main:has(.row-link:focus-visible){outline:3px solid var(--focus);outline-offset:3px}
+/* Fokusringen tegnes på lenkens ::after, som dekker lenkedelen av raden – virker uten :has() */
+.row-link:focus-visible{outline:3px solid transparent}
+.row-link:focus-visible::after{outline:3px solid var(--focus);outline-offset:3px}
+/* 2 px grønn kant på hele raden ved hover og fokus (tillegg; :has() er bare forbedring) */
 .link-row:has(.row-main:hover),.link-row:has(.row-link:focus-visible){border-color:var(--primary);box-shadow:var(--shadow-card),0 0 0 1px var(--primary)}
 .chev{position:absolute;top:25px;right:16px;color:var(--link)}
 .row-meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
@@ -229,13 +249,15 @@ textarea.input{padding:12px 14px;min-height:120px;resize:vertical}
 .card.static{padding:8px 24px}
 .fb-text{margin-top:4px}
 .fb-meta{margin-top:8px;color:var(--ink-muted)}
-.fb-meta a{padding:12px 0;color:var(--link);font-weight:700;text-decoration:underline;text-underline-offset:3px} /* 48 px trykkflate via polstring */
+.fb-meta a{padding:12px 0;color:var(--link);font-weight:700;text-decoration:underline;text-underline-offset:3px} /* lenke i løpende tekst: unntatt fra 48 px; polstringen gir likevel større trykkflate */
 
 /* dialog */
 .scrim{position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(47,48,45,.55)}
-.dialog{width:100%;max-width:480px;background:var(--surface-card);border-radius:var(--r-xl);padding:24px;box-shadow:var(--shadow-dialog)}
-.dialog p{margin:8px 0 24px}
-.dialog .btns{display:flex;flex-direction:column;gap:8px}
+/* Native <dialog>. I appen åpnes den med showModal() og sløret er ::backdrop; i mocken vises den med open
+   og sløret er .scrim. Ruller inne i dialogen når den er høyere enn skjermen. */
+.dialog{position:static;width:100%;max-width:480px;max-height:calc(100dvh - 32px);overflow-y:auto;margin:0;border:0;background:var(--surface-card);color:var(--ink);border-radius:var(--r-xl);padding:24px;box-shadow:var(--shadow-dialog)}
+.dialog p{margin:8px 0 0}
+.dialog .btns{display:flex;flex-direction:column;gap:8px;margin-top:24px}
 
 </style>
 </head>
@@ -275,7 +297,7 @@ textarea.input{padding:12px 14px;min-height:120px;resize:vertical}
 </svg>
 <div class="doc">
 <div class="doc-head"><p class="doc-title">Nøkkelskjerm 3 – Oppdragsdetaljer for oppdragsgiver</p><p>Kari (72) åpner sitt eget oppdrag med status Åpen. Tre har meldt interesse, eldste først. Menytallet 3 = Karis oppdrag under «Trenger handling» (se key-mine-oppdrag.html).</p><p>Alle «Velg»-knapper er sekundære og har navnet i teksten; det er ingen fylt knapp på siden før dialogen åpnes.</p></div>
-<section class="doc-sec"><p class="doc-sec-title">Detaljer og bekreftelsesdialog</p><div class="cols"><figure class="shot"><div class="phone"><div class="screen"><header class="topbar"><a class="brand" href="#"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-logo"/></svg>Nabolagshelten<span class="sr">, til oversikten</span></a></header><main class="main"><a class="btn btn-text back" href="#"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-back"/></svg>Tilbake</a><h1 class="h2">Måke snø i innkjørselen</h1><div class="actions mt12"><span class="status s-open"><svg class="icon xs" aria-hidden="true" focusable="false"><use href="#s-open"/></svg>Åpen</span><span class="chip"><svg class="icon sm" aria-hidden="true" focusable="false"><use href="#i-snow"/></svg>Snømåking</span></div><ul class="facts mt16"><li class="fact-time"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-clock"/></svg>I morgen kl. 07:00</li><li class="fact-place"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-pin"/></svg>0571 Oslo</li></ul><p class="price">200 kr</p><p class="mt16">Trenger noen som kan måke snø i innkjørselen min i morgen.</p><div class="actions mt24"><a class="btn btn-secondary" href="#">Rediger</a><button class="btn btn-secondary" type="button">Avbryt oppdrag</button></div><section class="mt32" aria-labelledby="int-a"><span class="tag"><svg class="icon xs" aria-hidden="true" focusable="false"><use href="#t-arrow"/></svg>Velg hjelper</span><h2 class="h2 mt12" id="int-a">3 har meldt interesse</h2><ul class="rows mt16"><li class="row person"><div class="row-main"><h3 class="row-title" id="p-Amir-a">Amir</h3><p class="stats">12 fullførte oppdrag · 4,9 av 5, 11 vurderinger</p><p class="quote">«Jeg kan komme kl. 06:45»</p></div><div class="row-actions"><a class="btn btn-text" href="#" aria-describedby="p-Amir-a">Se profil</a><button class="btn btn-secondary" type="button">Velg Amir</button></div></li><li class="row person"><div class="row-main"><h3 class="row-title" id="p-Sara-a">Sara</h3><p class="stats">2 fullførte oppdrag · 5,0 av 5, 2 vurderinger</p><p class="quote">«Bor rett over gata.»</p></div><div class="row-actions"><a class="btn btn-text" href="#" aria-describedby="p-Sara-a">Se profil</a><button class="btn btn-secondary" type="button">Velg Sara</button></div></li><li class="row person"><div class="row-main"><h3 class="row-title" id="p-Jonas-a">Jonas</h3><p class="stats">Ingen fullførte oppdrag ennå · Ingen vurderinger ennå</p></div><div class="row-actions"><a class="btn btn-text" href="#" aria-describedby="p-Jonas-a">Se profil</a><button class="btn btn-secondary" type="button">Velg Jonas</button></div></li></ul></section></main><nav class="bottomnav" aria-label="Hovedmeny"><ul><li><a href="#"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-list"/></svg></span>Oppdrag</a></li><li><a href="#" aria-current="true"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-clip"/></svg><span class="nav-badge" aria-hidden="true">3</span></span>Mine oppdrag<span class="sr">, 3 trenger handling</span></a></li><li><a href="#"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-user"/></svg></span>Profil</a></li></ul></nav></div></div><figcaption>Mobil 360 px. Info, «Rediger»/«Avbryt oppdrag», merket «Velg hjelper» over «3 har meldt interesse» og lista over interesserte som rader uten pil (raden er ikke lenke; «Se profil» og «Velg» står under skillelinjen). Ingen «Lagt ut av Kari» – Kari ser sitt eget oppdrag. Menyvalget «Mine oppdrag» er markert. Hele siden er vist.</figcaption></figure><figure class="shot"><div class="phone"><div class="screen fixed"><div aria-hidden="true" style="display:contents"><header class="topbar"><a class="brand" href="#"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-logo"/></svg>Nabolagshelten<span class="sr">, til oversikten</span></a></header><main class="main"><a class="btn btn-text back" href="#"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-back"/></svg>Tilbake</a><h1 class="h2">Måke snø i innkjørselen</h1><div class="actions mt12"><span class="status s-open"><svg class="icon xs" aria-hidden="true" focusable="false"><use href="#s-open"/></svg>Åpen</span><span class="chip"><svg class="icon sm" aria-hidden="true" focusable="false"><use href="#i-snow"/></svg>Snømåking</span></div><ul class="facts mt16"><li class="fact-time"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-clock"/></svg>I morgen kl. 07:00</li><li class="fact-place"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-pin"/></svg>0571 Oslo</li></ul><p class="price">200 kr</p><p class="mt16">Trenger noen som kan måke snø i innkjørselen min i morgen.</p><div class="actions mt24"><a class="btn btn-secondary" href="#">Rediger</a><button class="btn btn-secondary" type="button">Avbryt oppdrag</button></div><section class="mt32" aria-labelledby="int-b"><span class="tag"><svg class="icon xs" aria-hidden="true" focusable="false"><use href="#t-arrow"/></svg>Velg hjelper</span><h2 class="h2 mt12" id="int-b">3 har meldt interesse</h2><ul class="rows mt16"><li class="row person"><div class="row-main"><h3 class="row-title" id="p-Amir-b">Amir</h3><p class="stats">12 fullførte oppdrag · 4,9 av 5, 11 vurderinger</p><p class="quote">«Jeg kan komme kl. 06:45»</p></div><div class="row-actions"><a class="btn btn-text" href="#" aria-describedby="p-Amir-b">Se profil</a><button class="btn btn-secondary" type="button">Velg Amir</button></div></li><li class="row person"><div class="row-main"><h3 class="row-title" id="p-Sara-b">Sara</h3><p class="stats">2 fullførte oppdrag · 5,0 av 5, 2 vurderinger</p><p class="quote">«Bor rett over gata.»</p></div><div class="row-actions"><a class="btn btn-text" href="#" aria-describedby="p-Sara-b">Se profil</a><button class="btn btn-secondary" type="button">Velg Sara</button></div></li><li class="row person"><div class="row-main"><h3 class="row-title" id="p-Jonas-b">Jonas</h3><p class="stats">Ingen fullførte oppdrag ennå · Ingen vurderinger ennå</p></div><div class="row-actions"><a class="btn btn-text" href="#" aria-describedby="p-Jonas-b">Se profil</a><button class="btn btn-secondary" type="button">Velg Jonas</button></div></li></ul></section></main><nav class="bottomnav" aria-label="Hovedmeny"><ul><li><a href="#"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-list"/></svg></span>Oppdrag</a></li><li><a href="#" aria-current="true"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-clip"/></svg><span class="nav-badge" aria-hidden="true">3</span></span>Mine oppdrag<span class="sr">, 3 trenger handling</span></a></li><li><a href="#"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-user"/></svg></span>Profil</a></li></ul></nav></div><div class="scrim"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dlg-q" aria-describedby="dlg-d"><h2 class="h2" id="dlg-q" tabindex="-1">Velge Amir?</h2><p id="dlg-d">Dere får se hverandres telefonnummer.</p><div class="btns"><button class="btn btn-primary is-focus" type="button">Ja, velg Amir</button><button class="btn btn-text" type="button">Avbryt</button></div></div></div></div></div><figcaption>Dialogen «Velge Amir?» over slør. Knappene står under hverandre, bekreftende øverst. Vist med fokus på «Ja, velg Amir» etter første Tab (fokus starter på spørsmålet).</figcaption></figure></div></section>
+<section class="doc-sec"><p class="doc-sec-title">Detaljer og bekreftelsesdialog</p><div class="cols"><figure class="shot"><div class="phone"><div class="screen"><a class="skip" href="#main">Hopp til innholdet</a><header class="topbar"><a class="brand" href="#"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-logo"/></svg>Nabolagshelten<span class="sr">, til oversikten</span></a></header><main class="main" id="main" tabindex="-1"><a class="btn btn-text back" href="#"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-back"/></svg>Tilbake</a><h1 class="h2">Måke snø i innkjørselen</h1><div class="actions mt12"><span class="status s-open"><svg class="icon xs" aria-hidden="true" focusable="false"><use href="#s-open"/></svg><span class="sr">Status: </span>Åpen<span class="sr">.</span></span><span class="chip"><svg class="icon sm" aria-hidden="true" focusable="false"><use href="#i-snow"/></svg>Snømåking</span></div><ul class="facts mt16"><li class="fact-time"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-clock"/></svg>I morgen kl. 07:00</li><li class="fact-place"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-pin"/></svg>0571 Oslo</li></ul><p class="price">200 kr</p><p class="mt16">Trenger noen som kan måke snø i innkjørselen min i morgen.</p><div class="actions mt24"><a class="btn btn-secondary" href="#">Rediger</a><button class="btn btn-secondary" type="button">Avbryt oppdrag</button></div><section class="mt32" aria-labelledby="int-a"><h2 class="h2" id="int-a">3 har meldt interesse</h2><p class="mt12"><span class="tag"><svg class="icon xs" aria-hidden="true" focusable="false"><use href="#t-arrow"/></svg><span class="sr">Må gjøres: </span>Velg hjelper<span class="sr">.</span></span></p><ul class="rows mt16"><li class="row person"><div class="row-main"><h3 class="row-title" id="p-Amir-a">Amir</h3><p class="stats">12 fullførte oppdrag · 4,9 av 5, 11 vurderinger</p><p class="quote">«Jeg kan komme kl. 06:45»</p></div><div class="row-actions"><a class="btn btn-text" href="#" aria-describedby="p-Amir-a">Se profil</a><button class="btn btn-secondary" type="button">Velg Amir</button></div></li><li class="row person"><div class="row-main"><h3 class="row-title" id="p-Sara-a">Sara</h3><p class="stats">2 fullførte oppdrag · 5,0 av 5, 2 vurderinger</p><p class="quote">«Bor rett over gata.»</p></div><div class="row-actions"><a class="btn btn-text" href="#" aria-describedby="p-Sara-a">Se profil</a><button class="btn btn-secondary" type="button">Velg Sara</button></div></li><li class="row person"><div class="row-main"><h3 class="row-title" id="p-Jonas-a">Jonas</h3><p class="stats">Ingen fullførte oppdrag ennå · Ingen vurderinger ennå</p></div><div class="row-actions"><a class="btn btn-text" href="#" aria-describedby="p-Jonas-a">Se profil</a><button class="btn btn-secondary" type="button">Velg Jonas</button></div></li></ul></section></main><nav class="bottomnav" aria-label="Hovedmeny"><ul><li><a href="#"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-list"/></svg></span>Oppdrag</a></li><li><a href="#" aria-current="true"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-clip"/></svg><span class="nav-badge" aria-hidden="true">3</span></span>Mine oppdrag<span class="sr">, 3 trenger handling</span></a></li><li><a href="#"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-user"/></svg></span>Profil</a></li></ul></nav></div></div><figcaption>Mobil 360 px. Info, «Rediger»/«Avbryt oppdrag», overskriften «3 har meldt interesse» med merket «Velg hjelper» rett under og lista over interesserte som rader uten pil (raden er ikke lenke; «Se profil» og «Velg» står under skillelinjen). Ingen «Lagt ut av Kari» – Kari ser sitt eget oppdrag. Menyvalget «Mine oppdrag» er markert. Hele siden er vist.</figcaption></figure><figure class="shot"><div class="phone"><div class="screen fixed"><div aria-hidden="true" style="display:contents"><a class="skip" href="#main-2">Hopp til innholdet</a><header class="topbar"><a class="brand" href="#"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-logo"/></svg>Nabolagshelten<span class="sr">, til oversikten</span></a></header><main class="main" id="main-2" tabindex="-1"><a class="btn btn-text back" href="#"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-back"/></svg>Tilbake</a><h1 class="h2">Måke snø i innkjørselen</h1><div class="actions mt12"><span class="status s-open"><svg class="icon xs" aria-hidden="true" focusable="false"><use href="#s-open"/></svg><span class="sr">Status: </span>Åpen<span class="sr">.</span></span><span class="chip"><svg class="icon sm" aria-hidden="true" focusable="false"><use href="#i-snow"/></svg>Snømåking</span></div><ul class="facts mt16"><li class="fact-time"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-clock"/></svg>I morgen kl. 07:00</li><li class="fact-place"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-pin"/></svg>0571 Oslo</li></ul><p class="price">200 kr</p><p class="mt16">Trenger noen som kan måke snø i innkjørselen min i morgen.</p><div class="actions mt24"><a class="btn btn-secondary" href="#">Rediger</a><button class="btn btn-secondary" type="button">Avbryt oppdrag</button></div><section class="mt32" aria-labelledby="int-b"><h2 class="h2" id="int-b">3 har meldt interesse</h2><p class="mt12"><span class="tag"><svg class="icon xs" aria-hidden="true" focusable="false"><use href="#t-arrow"/></svg><span class="sr">Må gjøres: </span>Velg hjelper<span class="sr">.</span></span></p><ul class="rows mt16"><li class="row person"><div class="row-main"><h3 class="row-title" id="p-Amir-b">Amir</h3><p class="stats">12 fullførte oppdrag · 4,9 av 5, 11 vurderinger</p><p class="quote">«Jeg kan komme kl. 06:45»</p></div><div class="row-actions"><a class="btn btn-text" href="#" aria-describedby="p-Amir-b">Se profil</a><button class="btn btn-secondary" type="button">Velg Amir</button></div></li><li class="row person"><div class="row-main"><h3 class="row-title" id="p-Sara-b">Sara</h3><p class="stats">2 fullførte oppdrag · 5,0 av 5, 2 vurderinger</p><p class="quote">«Bor rett over gata.»</p></div><div class="row-actions"><a class="btn btn-text" href="#" aria-describedby="p-Sara-b">Se profil</a><button class="btn btn-secondary" type="button">Velg Sara</button></div></li><li class="row person"><div class="row-main"><h3 class="row-title" id="p-Jonas-b">Jonas</h3><p class="stats">Ingen fullførte oppdrag ennå · Ingen vurderinger ennå</p></div><div class="row-actions"><a class="btn btn-text" href="#" aria-describedby="p-Jonas-b">Se profil</a><button class="btn btn-secondary" type="button">Velg Jonas</button></div></li></ul></section></main><nav class="bottomnav" aria-label="Hovedmeny"><ul><li><a href="#"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-list"/></svg></span>Oppdrag</a></li><li><a href="#" aria-current="true"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-clip"/></svg><span class="nav-badge" aria-hidden="true">3</span></span>Mine oppdrag<span class="sr">, 3 trenger handling</span></a></li><li><a href="#"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-user"/></svg></span>Profil</a></li></ul></nav></div><div class="scrim"><dialog class="dialog" open aria-modal="true" aria-labelledby="dlg-q" aria-describedby="dlg-d dlg-g"><h2 class="h2" id="dlg-q" tabindex="-1">Velge Amir?</h2><p id="dlg-d">Dere får se hverandres telefonnummer.</p><p id="dlg-g">Gjelder «Måke snø i innkjørselen».</p><div class="btns"><button class="btn btn-primary is-focus" type="button">Ja, velg Amir</button><button class="btn btn-text" type="button">Ikke ennå</button></div></dialog></div></div></div><figcaption>Dialogen «Velge Amir?» (native &lt;dialog&gt;) over slør, med linja «Gjelder «Måke snø i innkjørselen».». Angre-valget heter «Ikke ennå». Knappene står under hverandre, bekreftende øverst. Vist med fokus på «Ja, velg Amir» etter første Tab (fokus starter på spørsmålet).</figcaption></figure></div></section>
 </div>
 </body>
 </html>

@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Måke snø i innkjørselen – Nabolagshelten</title>
+<style>
+/*
+Styrende spine-seksjoner for denne skjermen:
+DESIGN.md  Colors; Typography (heading-2 for oppdragstittel, heading-3, body, body-strong, label, price, meta);
+           Layout & Spacing (Mobil 360 px, «Bunnmenyen og plass nederst»); Shapes; Elevation & Depth (rad);
+           Components: status-badge (done), category-chip, phone-box, star-rating (input), input (tekstområde
+           med teller), button-primary («Send»), button-text («Tilbake»), message-success, list-row
+           (ikke-lenkerad), topbar, bottom-nav (aktivt valg på underside), Fokus, Hopp til innholdet.
+EXPERIENCE.md  Information Architecture (aktivt menyvalg: eget oppdrag → «Mine oppdrag»; rad «Tilbakemelding»;
+           tabell «Oppdragsdetaljer etter rolle og status», rad Oppdragsgiver / Utført); Voice and Tone (Ordrette
+           tekster: «4 av 5 stjerner», «Takk! Tilbakemeldingen er lagt til i Amirs profil.»; Tekster fra
+           skissene: «Hvordan gikk det med Amir?», «Dårlig» / «Veldig bra», «Kommentar (valgfritt)»,
+           «Kommentaren vises i Amirs profil.», «Avtal detaljene direkte.»; Skisse og PRD: «Send»);
+           Component Patterns (star-rating input, input med teller, phone-box, message-success, list-row,
+           nav-badge, Lenken «Hopp til innholdet»); Interaction Primitives (Bekreftelser: Tilbakemelding uten
+           dialog; Fokus; Tilbakemelding); Accessibility Floor (Sidetitler: Oppdragsdetaljer);
+           Key Flows UJ-1 steg 10–11.
+PRD        FR-16 (telefonnummer ved Utført), FR-20 (stjerner, kommentar maks 500, kvittering), FR-18 (menytall).
+
+Mockup i P1 «Salvie og sand». Spinene (DESIGN.md, EXPERIENCE.md) er kontrakten; mocken illustrerer.
+Ved konflikt gjelder spinene. Bildetekster under rammene er mock-annotasjoner, ikke produkttekst.
+Klassen .is-focus etterligner fokus i en statisk mock (ramme 1: stjerne 4 etter piltast; ramme 2: kvitteringen).
+*/
+
+:root{color-scheme:light;
+  /* DESIGN.md frontmatter colors – eksakte hex */
+  --surface-page:#E3D3B3;--surface-card:#EEE5D3;--surface-input:#F4E8CF;
+  --ink:#2F302D;--ink-muted:#6E4E3A;--border:#7B6C5D;--focus:#2F302D;
+  --primary:#47553F;--on-primary:#F4E8CF;--link:#47553F;
+  --topbar:#47553F;--topbar-text:#F4E8CF;--topbar-focus:#EBC7BC;--brand-icon:#EBC7BC;--nav-indicator:#EBC7BC;
+  --badge-bg:#EBC7BC;--badge-fg:#4B3324;--chip-bg:#EEE5D3;--chip-fg:#4B3324;--chip-border:#7B6C5D;
+  --status-chosen-bg:#EBC7BC;--status-chosen-border:#81432C;
+  --status-done-bg:#F4E8CF;--status-done-fg:#4D5829;
+  --error:#81432C;--success:#47553F;
+  --font-head:ui-rounded,"SF Pro Rounded","Nunito","Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;
+  --font-body:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --r-sm:10px;--r-md:12px;--r-lg:14px;--r-full:9999px;
+  --shadow-card:0 1px 2px rgba(47,48,45,.06),0 4px 14px rgba(47,48,45,.07);
+  --shadow-dialog:0 8px 32px rgba(47,48,45,.25);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{font-size:100%;scroll-padding-bottom:72px} /* felt med fokus havner ikke bak bunnmenyen */
+body{margin:0;background:var(--surface-card);color:var(--ink);font-family:var(--font-body);font-size:1.125rem;line-height:1.55}
+
+/* ---------- Mock-ramme (ikke produkt-UI) ---------- */
+.doc{max-width:1360px;margin:0 auto;padding:32px 16px 64px}
+.doc-head{max-width:72ch}
+.doc-title{font-family:var(--font-head);font-size:1.75rem;font-weight:700;line-height:1.25;margin:0 0 8px}
+.doc-head p{margin:0 0 8px;color:var(--ink-muted)}
+.doc-sec{margin-top:48px}
+.doc-sec-title{font-family:var(--font-head);font-size:1.5rem;font-weight:700;line-height:1.3;margin:0 0 16px}
+.doc-note{max-width:72ch;margin-top:32px}
+.doc-note p{margin:0 0 8px}
+.cols{display:flex;flex-wrap:wrap;gap:48px;align-items:flex-start}
+.shot{margin:0;max-width:100%}
+.shot figcaption{margin-top:12px;max-width:384px;color:var(--ink-muted)}
+.phone{position:relative;width:384px;max-width:100%;padding:30px 12px 24px;background:var(--ink);border-radius:40px;box-shadow:var(--shadow-dialog)}
+.phone::before{content:"";position:absolute;top:12px;left:50%;width:72px;height:6px;margin-left:-36px;border-radius:var(--r-full);background:var(--ink-muted)}
+.screen{position:relative;width:360px;max-width:100%;min-height:740px;background:var(--surface-page);border-radius:24px;overflow:hidden;display:flex;flex-direction:column}
+
+/* ---------- Produkt: grunnlag ---------- */
+.h1,.h2,.h3{font-family:var(--font-head);font-weight:700;margin:0;color:var(--ink)}
+.h1{font-size:1.75rem;line-height:1.25}
+.h2{font-size:1.5rem;line-height:1.3}
+.h3{font-size:1.25rem;line-height:1.3}
+p{margin:0}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.icon{width:24px;height:24px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.icon.md{width:20px;height:20px}
+.icon.sm{width:18px;height:18px}
+.icon.xs{width:14px;height:14px}
+.mt4{margin-top:4px}.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}.mt24{margin-top:24px}.mt32{margin-top:32px}
+.main{flex:1;padding:24px 16px 32px}
+.main:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
+
+/* Hopp til innholdet: første fokuserbare element, usynlig til fokus, da som button-primary øverst til venstre
+   over topplinjen, med blush fokusring fordi den ligger over den grønne topplinjen. */
+.skip{position:absolute;top:8px;left:8px;z-index:10;transform:translateY(-300%)}
+.skip:focus{transform:none}
+
+/* topbar (bare logo under 768 px) */
+.topbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;padding:8px 16px;background:var(--topbar);color:var(--topbar-text)}
+.brand{display:inline-flex;align-items:center;gap:8px;min-height:48px;font-family:var(--font-head);font-size:1.25rem;font-weight:800;line-height:1.2;letter-spacing:-.01em;color:var(--brand-icon);text-decoration:none;border-radius:var(--r-sm)}
+.brand .icon{width:28px;height:28px}
+.brand:focus-visible{outline:3px solid var(--topbar-focus);outline-offset:2px}
+.nav-badge{display:inline-flex;align-items:center;justify-content:center;padding:1px 9px;border-radius:var(--r-full);background:var(--badge-bg);color:var(--badge-fg);font-size:1rem;font-weight:700;line-height:1.3}
+
+/* bottom-nav (< 768 px): fast nederst (her: sticky innenfor telefonrammen), statisk når skjermen er lav.
+   56 px er minstehøyde; teksten får bryte linje. */
+.bottomnav{position:sticky;bottom:0;margin-top:auto;background:var(--topbar);color:var(--topbar-text)}
+.bottomnav ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.bottomnav a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:56px;padding:4px 2px;color:var(--topbar-text);text-decoration:none;font-weight:400;font-size:1.125rem;line-height:1.2;text-align:center;white-space:normal;overflow-wrap:break-word;border-top:3px solid transparent}
+.bottomnav a[aria-current]{font-weight:700;border-top-color:var(--nav-indicator)}
+.bottomnav a:focus-visible{outline:3px solid var(--topbar-focus);outline-offset:-3px}
+.bottomnav .ic{position:relative;display:inline-flex}
+.bottomnav .nav-badge{position:absolute;top:-7px;left:15px}
+@media (max-height:30em){.bottomnav{position:static}}
+
+/* knapper */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 22px;font-family:var(--font-body);font-size:1.125rem;font-weight:700;line-height:1.4;border-radius:var(--r-md);text-decoration:none;cursor:pointer;text-align:center}
+.btn-primary{background:var(--primary);color:var(--on-primary);border:2px solid var(--primary)}
+.btn-text{background:transparent;color:var(--link);border:0;text-decoration:underline;text-underline-offset:3px;padding:0 14px}
+.btn:focus-visible,.is-focus{outline:3px solid var(--focus);outline-offset:3px}
+.skip:focus,.skip:focus-visible{outline:3px solid var(--topbar-focus);outline-offset:3px}
+.back{margin:-12px 0 8px -14px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+
+/* merker */
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 12px;border-radius:var(--r-full);background:var(--chip-bg);color:var(--chip-fg);border:1px solid var(--chip-border);font-size:1rem;font-weight:700;line-height:1.3}
+.status{display:inline-flex;align-items:center;gap:6px;padding:3px 12px;border-radius:var(--r-full);border:1.5px solid currentColor;font-size:1rem;font-weight:700;line-height:1.3}
+.s-done{background:var(--status-done-bg);color:var(--status-done-fg)}
+
+/* fakta */
+.facts{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.facts li{display:flex;align-items:center;gap:8px}
+.fact-time{font-weight:700}
+.fact-place{color:var(--ink-muted)}
+.price{font-size:1.375rem;font-weight:700;line-height:1.3;margin-top:12px}
+
+/* phone-box: blush flate og 2 px terrakottakant, nummeret stort som tel:-lenke */
+.phonebox{background:var(--status-chosen-bg);color:var(--ink);border:2px solid var(--status-chosen-border);border-radius:var(--r-lg);padding:16px}
+.tel{display:inline-flex;align-items:center;min-height:48px;font-size:1.375rem;font-weight:700;line-height:1.3;color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+.tel:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+
+/* skjema */
+.label{display:block;font-weight:700;line-height:1.4}
+.help{margin-top:4px;color:var(--ink-muted)}
+.input{display:block;width:100%;min-height:48px;padding:0 14px;margin-top:8px;background:var(--surface-input);color:var(--ink);border:1.5px solid var(--border);border-radius:var(--r-sm);font:inherit}
+textarea.input{padding:12px 14px;min-height:120px;resize:vertical}
+.input:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+.counter{margin-top:4px;color:var(--ink-muted)}
+.fs{border:0;margin:0;padding:0;min-width:0}
+.fs legend{padding:0}
+
+/* star-rating (input): fem radioknapper som stjerner, 48 × 48 px trykkflate.
+   Radioknappen dekker hele trykkflaten, men er usynlig; valgt og fokus tegnes på etiketten.
+   Stjerne 1 til og med valgt verdi fylles: etiketten med :checked + etikettene foran den. */
+.stars-in{display:flex;gap:8px;margin-top:12px}
+.star-opt{position:relative;display:flex;align-items:center;justify-content:center;width:48px;height:48px;flex:none;border-radius:var(--r-sm);color:var(--border);cursor:pointer}
+.star-opt input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.star-ic{width:40px;height:40px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linejoin:round}
+.star-opt:has(:checked),.star-opt:has(~ .star-opt :checked){color:var(--primary)}
+.star-opt:has(:checked) .star-ic,.star-opt:has(~ .star-opt :checked) .star-ic{fill:var(--primary)}
+.star-opt:has(:focus-visible),.star-opt.is-focus{outline:3px solid var(--focus);outline-offset:3px}
+@media (forced-colors:active){
+  .star-opt{color:CanvasText}
+  .star-opt:has(:checked) .star-ic,.star-opt:has(~ .star-opt :checked) .star-ic{fill:CanvasText}
+}
+/* «Dårlig» under første og «Veldig bra» under siste stjerne: raden er like bred som stjernene (5 × 48 + 4 × 8) */
+.ends{display:flex;justify-content:space-between;width:272px;max-width:100%;margin-top:4px}
+.chosen{margin-top:12px;font-weight:700}
+
+/* meldinger: kvittering får fokus fra appen etter sidelasting, derfor :focus og ikke bare :focus-visible */
+.msg{display:flex;gap:8px;align-items:flex-start;background:var(--surface-card);border:1px solid var(--border);border-left-width:6px;border-radius:var(--r-sm);padding:12px 16px}
+.msg-success{color:var(--success);border-left-color:var(--success)}
+.msg .icon{margin-top:3px}
+.msg:focus{outline:3px solid var(--focus);outline-offset:3px}
+
+/* list-row, ikke-lenkerad: ingen pil, ingen hover */
+.rows{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:12px}
+.row{position:relative;background:var(--surface-card);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-card)}
+.row-main{padding:24px}
+.row-title{margin:0;font-family:var(--font-body);font-size:1.125rem;font-weight:700;line-height:1.4;color:var(--ink)}
+.fb-text{margin-top:4px}
+.fb-meta{margin-top:8px;color:var(--ink-muted)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+<symbol id="i-logo" viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M12 17.2s-3-1.9-3-3.9a1.6 1.6 0 0 1 3-.8 1.6 1.6 0 0 1 3 .8c0 2-3 3.9-3 3.9z" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-snow" viewBox="0 0 24 24"><path d="M12 2v20M3.3 7l17.4 10M3.3 17 20.7 7M9 3.5l3 2 3-2M9 20.5l3-2 3 2"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+<symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6.5-6.1-6.5-11a6.5 6.5 0 0 1 13 0c0 4.9-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol>
+<symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01" stroke-width="3"/></symbol>
+<symbol id="i-clip" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2.8h6V4M9 10h6M9 14h6"/></symbol>
+<symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 21c.8-4 3.8-6 7.5-6s6.7 2 7.5 6"/></symbol>
+<symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.2l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 17l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+<symbol id="s-done" viewBox="0 0 16 16"><path d="M2.5 8.5l3.5 3.5 7.5-8" stroke-width="2.4"/></symbol>
+</svg>
+<div class="doc">
+<div class="doc-head"><p class="doc-title">Nøkkelskjerm – Tilbakemelding på et utført oppdrag</p><p>Kari (72) åpner sitt eget oppdrag «Måke snø i innkjørselen» fra «Mine oppdrag», der det sto under «Trenger handling» med merket «Gi tilbakemelding» (UJ-1 steg 10–11). Amir var hjelper og har markert oppdraget som utført. I dag er mandag 9. november 2026.</p><p>Menytallet 1 er dette oppdraget. Etter «Send» har det ikke lenger merket, så tallet er borte i ramme 2. Mocken er vist på mobil 360 px; Kari bruker nettbrett i UJ-1, men innholdet er det samme.</p></div>
+
+<section class="doc-sec" aria-label="Rammer"><p class="doc-sec-title">Skjemaet – og etter «Send»</p><div class="cols">
+
+<!-- ================= Ramme 1: Skjemaet ================= -->
+<figure class="shot"><div class="phone"><div class="screen">
+<a class="btn btn-primary skip" href="#main">Hopp til innholdet</a>
+<header class="topbar"><a class="brand" href="#"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-logo"/></svg>Nabolagshelten<span class="sr">, til oversikten</span></a></header>
+<main class="main" id="main" tabindex="-1">
+<a class="btn btn-text back" href="#"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-back"/></svg>Tilbake</a>
+<h1 class="h2">Måke snø i innkjørselen</h1>
+<div class="actions mt12"><span class="status s-done"><svg class="icon xs" aria-hidden="true" focusable="false"><use href="#s-done"/></svg><span class="sr">Status: </span>Utført</span><span class="chip"><svg class="icon sm" aria-hidden="true" focusable="false"><use href="#i-snow"/></svg>Snømåking</span></div>
+<ul class="facts mt16"><li class="fact-time"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-clock"/></svg>Søndag 8. nov. kl. 07:00</li><li class="fact-place"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-pin"/></svg>0571 Oslo</li></ul>
+<p class="price">200 kr</p>
+<p class="mt16">Trenger noen som kan måke snø i innkjørselen min i morgen.</p>
+
+<section class="phonebox mt24" aria-labelledby="pb-a"><h2 class="h3" id="pb-a">Hjelper: Amir</h2><a class="tel" href="tel:+4748123456">481 23 456</a><p>Avtal detaljene direkte.</p></section>
+
+<form class="mt32" novalidate>
+<fieldset class="fs"><legend><h2 class="h2">Hvordan gikk det med Amir?</h2></legend>
+<div class="stars-in">
+<label class="star-opt"><input type="radio" name="vurdering-a" value="1" required><svg class="star-ic" aria-hidden="true" focusable="false"><use href="#i-star"/></svg><span class="sr">1 av 5 stjerner, dårlig</span></label>
+<label class="star-opt"><input type="radio" name="vurdering-a" value="2"><svg class="star-ic" aria-hidden="true" focusable="false"><use href="#i-star"/></svg><span class="sr">2 av 5 stjerner</span></label>
+<label class="star-opt"><input type="radio" name="vurdering-a" value="3"><svg class="star-ic" aria-hidden="true" focusable="false"><use href="#i-star"/></svg><span class="sr">3 av 5 stjerner</span></label>
+<label class="star-opt is-focus"><input type="radio" name="vurdering-a" value="4" checked><svg class="star-ic" aria-hidden="true" focusable="false"><use href="#i-star"/></svg><span class="sr">4 av 5 stjerner</span></label>
+<label class="star-opt"><input type="radio" name="vurdering-a" value="5"><svg class="star-ic" aria-hidden="true" focusable="false"><use href="#i-star"/></svg><span class="sr">5 av 5 stjerner, veldig bra</span></label>
+</div>
+<div class="ends" aria-hidden="true"><span>Dårlig</span><span>Veldig bra</span></div>
+<p class="chosen">4 av 5 stjerner</p>
+</fieldset>
+
+<div class="mt24"><label class="label" for="kom-a">Kommentar (valgfritt)</label><p class="help" id="kom-h-a">Kommentaren vises i Amirs profil.</p><textarea class="input" id="kom-a" name="kommentar" rows="3" autocomplete="off" aria-describedby="kom-h-a kom-c-a">Kom presis og måkte hele innkjørselen.</textarea><p class="counter" id="kom-c-a">38 av 500 tegn</p></div>
+
+<div class="actions mt24"><button class="btn btn-primary" type="button">Send</button></div>
+</form>
+</main>
+<nav class="bottomnav" aria-label="Hovedmeny"><ul><li><a href="#"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-list"/></svg></span>Oppdrag</a></li><li><a href="#" aria-current="true"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-clip"/></svg><span class="nav-badge" aria-hidden="true">1</span></span>Mine oppdrag<span class="sr">, 1 trenger handling</span></a></li><li><a href="#"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-user"/></svg></span>Profil</a></li></ul></nav>
+</div></div><figcaption>Detaljer for Kari, status Utført, mobil 360 px. &lt;title&gt;: «Måke snø i innkjørselen – Nabolagshelten». Telefonboksen med Amir står fortsatt (FR-16). Spørsmålet er legend for fem stjerne-radioknapper på 48 × 48 px; fire er valgt, stjerne 1–4 er fylt, og «4 av 5 stjerner» står under. Fokusringen er vist på stjerne 4 (valgt med piltast). Menyvalget «Mine oppdrag» er markert. Hele siden er vist.</figcaption></figure>
+
+<!-- ================= Ramme 2: Etter Send ================= -->
+<figure class="shot"><div class="phone"><div class="screen">
+<a class="btn btn-primary skip" href="#main-b">Hopp til innholdet</a>
+<header class="topbar"><a class="brand" href="#"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-logo"/></svg>Nabolagshelten<span class="sr">, til oversikten</span></a></header>
+<main class="main" id="main-b" tabindex="-1">
+<a class="btn btn-text back" href="#"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-back"/></svg>Tilbake</a>
+<h1 class="h2">Måke snø i innkjørselen</h1>
+<p class="msg msg-success mt16 is-focus" id="kv-b" tabindex="-1"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-check"/></svg><span>Takk! Tilbakemeldingen er lagt til i Amirs profil.</span></p>
+<div class="actions mt16"><span class="status s-done"><svg class="icon xs" aria-hidden="true" focusable="false"><use href="#s-done"/></svg><span class="sr">Status: </span>Utført</span><span class="chip"><svg class="icon sm" aria-hidden="true" focusable="false"><use href="#i-snow"/></svg>Snømåking</span></div>
+<ul class="facts mt16"><li class="fact-time"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-clock"/></svg>Søndag 8. nov. kl. 07:00</li><li class="fact-place"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-pin"/></svg>0571 Oslo</li></ul>
+<p class="price">200 kr</p>
+<p class="mt16">Trenger noen som kan måke snø i innkjørselen min i morgen.</p>
+
+<section class="phonebox mt24" aria-labelledby="pb-b"><h2 class="h3" id="pb-b">Hjelper: Amir</h2><a class="tel" href="tel:+4748123456">481 23 456</a><p>Avtal detaljene direkte.</p></section>
+
+<section class="mt32" aria-labelledby="gitt-b"><h2 class="h2" id="gitt-b">Din tilbakemelding til Amir</h2>
+<ul class="rows"><li class="row"><div class="row-main"><p class="row-title">4 av 5 stjerner</p><p class="fb-text">«Kom presis og måkte hele innkjørselen.»</p><p class="fb-meta">Fra Kari · 9. nov. · Amir var hjelper</p></div></li></ul>
+</section>
+</main>
+<nav class="bottomnav" aria-label="Hovedmeny"><ul><li><a href="#"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-list"/></svg></span>Oppdrag</a></li><li><a href="#" aria-current="true"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-clip"/></svg></span>Mine oppdrag</a></li><li><a href="#"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-user"/></svg></span>Profil</a></li></ul></nav>
+</div></div><figcaption>Etter «Send», ny sidelasting. Kvitteringen står rett etter h1 og har fått fokus (tabindex="-1", ringen vist), så den leses først. Skjemaet er erstattet av den gitte tilbakemeldingen som rad uten pil og uten lenke: vurderingen som tekst, kommentaren og metalinja i samme form som på profilen. Menytallet er borte, fordi oppdraget ikke lenger trenger handling.</figcaption></figure>
+
+</div>
+<div class="doc-note"><p>Ramme 1 viser oppdragsdetaljene for oppdragsgiveren ved status Utført: telefonboksen (FR-16) og tilbakemeldingsskjemaet med fem stjerne-radioknapper i en fieldset, navnene «1 av 5 stjerner, dårlig» … «5 av 5 stjerner, veldig bra», synlige ytterpunkter, valgt verdi med ord og kommentarfelt med teller (EXPERIENCE.md § Oppdragsdetaljer etter rolle og status, Component Patterns «star-rating (input)», «input»; DESIGN.md § Components: star-rating, phone-box).</p><p>Ramme 2 viser UJ-1 steg 11: «Send» er bekreftelsen (ingen dialog), kvitteringen fra PRD får fokus etter sidelasting, og skjemaet byttes med den gitte tilbakemeldingen som list-row (EXPERIENCE.md § Interaction Primitives «Bekreftelser», «Fokus», «Tilbakemelding»; Component Patterns «message-success», «list-row»).</p><p>Overskriften «Hjelper: Amir» i telefonboksen, overskriften «Din tilbakemelding til Amir» og metalinja på den gitte tilbakemeldingen står ikke i spinene for denne flaten og er antakelser.</p></div>
+</section>
+</div>
+</body>
+</html>

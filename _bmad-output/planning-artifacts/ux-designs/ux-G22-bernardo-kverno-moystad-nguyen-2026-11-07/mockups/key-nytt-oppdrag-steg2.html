@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nytt oppdrag, steg 2 av 2 – Nabolagshelten</title>
+<style>
+/*
+Styrende spine-seksjoner for denne skjermen:
+DESIGN.md  Colors; Typography (heading-1, heading-2 på korttittel, heading-3 i feiloppsummering, body, body-strong,
+           label, price, meta); Layout & Spacing (Mobil 360 px, gutter 16 px, «Bunnmenyen og plass nederst»);
+           Elevation & Depth (kort); Shapes (sm felt, md knapper, lg kort, full merker); Components: input
+           (med «Når?» og «Hva tilbyr du?»), field-error, Feiloppsummering (message-error), Forhåndsvisning
+           (card med stiplet kant), card, category-chip, button-primary («Publiser»), button-text («Tilbake til
+           steg 1»), topbar (bare logo), bottom-nav (aktivt valg på underside), nav-badge, Fokus, Hopp til innholdet.
+EXPERIENCE.md  Information Architecture (rad «Nytt oppdrag»: steg 2; aktivt menyvalg «Mine oppdrag»);
+           Voice and Tone (Formater: «I morgen kl. 07:00», «200 kr», «0571 Oslo»; Feiltekster ved felt: Dato,
+           Beløp i kr; Feiloppsummering «Skjemaet har 2 feil»); Component Patterns («Når?», «Hva tilbyr du?»,
+           Forhåndsvisning, field-error, input, Feiloppsummering, Lenken «Hopp til innholdet», bottom-nav,
+           tabellen «Felttyper og formål»); Interaction Primitives (Fokus; «To steg i nytt oppdrag»);
+           Accessibility Floor (Sidetitler; feil knyttet til felt); Responsive & Platform (To steg under 768 px;
+           forhåndsvisning rett over «Publiser»); Key Flows UJ-1 steg 4 + «Felt mangler eller datoen er skrevet feil».
+
+Mockup i P1 «Salvie og sand». Spinene (DESIGN.md, EXPERIENCE.md) er kontrakten; mocken illustrerer.
+Ved konflikt gjelder spinene. Bildetekster under rammene er mock-annotasjoner, ikke produkttekst.
+Klassen .is-focus etterligner :focus-visible i en statisk mock (feiloppsummeringen har fått fokus).
+*/
+
+:root{color-scheme:light;
+  /* DESIGN.md frontmatter colors – eksakte hex */
+  --surface-page:#E3D3B3;--surface-card:#EEE5D3;--surface-input:#F4E8CF;
+  --ink:#2F302D;--ink-muted:#6E4E3A;--border:#7B6C5D;--focus:#2F302D;--scrim:#2F302D;
+  --primary:#47553F;--on-primary:#F4E8CF;--link:#47553F;--disabled-bg:#D2CABD;--disabled-fg:#5E5347;
+  --topbar:#47553F;--topbar-text:#F4E8CF;--topbar-focus:#EBC7BC;--brand-icon:#EBC7BC;--nav-indicator:#EBC7BC;
+  --badge-bg:#EBC7BC;--badge-fg:#4B3324;--chip-bg:#EEE5D3;--chip-fg:#4B3324;--chip-border:#7B6C5D;
+  --error:#81432C;--success:#47553F;
+  /* typography */
+  --font-head:ui-rounded,"SF Pro Rounded","Nunito","Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;
+  --font-body:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  /* rounded */
+  --r-sm:10px;--r-md:12px;--r-lg:14px;--r-xl:20px;--r-full:9999px;
+  /* elevation */
+  --shadow-card:0 1px 2px rgba(47,48,45,.06),0 4px 14px rgba(47,48,45,.07);
+  --shadow-dialog:0 8px 32px rgba(47,48,45,.25);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{font-size:100%;scroll-padding-bottom:72px} /* felt med fokus havner ikke bak bunnmenyen */
+body{margin:0;background:var(--surface-card);color:var(--ink);font-family:var(--font-body);font-size:1.125rem;line-height:1.55}
+
+/* ---------- Mock-ramme (ikke produkt-UI) ---------- */
+.doc{max-width:1360px;margin:0 auto;padding:32px 16px 64px}
+.doc-head{max-width:72ch}
+.doc-title{font-family:var(--font-head);font-size:1.75rem;font-weight:700;line-height:1.25;margin:0 0 8px}
+.doc-head p{margin:0 0 8px;color:var(--ink-muted)}
+.doc-sec{margin-top:48px}
+.doc-sec-title{font-family:var(--font-head);font-size:1.5rem;font-weight:700;line-height:1.3;margin:0 0 16px}
+.doc-note{max-width:72ch;margin-top:32px}
+.doc-note p{margin:0 0 8px}
+.cols{display:flex;flex-wrap:wrap;gap:48px;align-items:flex-start}
+.shot{margin:0;max-width:100%}
+.shot figcaption{margin-top:12px;max-width:384px;color:var(--ink-muted)}
+.phone{position:relative;width:384px;max-width:100%;padding:30px 12px 24px;background:var(--ink);border-radius:40px;box-shadow:var(--shadow-dialog)}
+.phone::before{content:"";position:absolute;top:12px;left:50%;width:72px;height:6px;margin-left:-36px;border-radius:var(--r-full);background:var(--ink-muted)}
+.screen{position:relative;width:360px;max-width:100%;min-height:740px;background:var(--surface-page);border-radius:24px;overflow:hidden;display:flex;flex-direction:column}
+
+/* ---------- Produkt: grunnlag ---------- */
+.h1,.h2,.h3{font-family:var(--font-head);font-weight:700;margin:0;color:var(--ink)}
+.h1{font-size:1.75rem;line-height:1.25}
+.h2{font-size:1.5rem;line-height:1.3}
+.h3{font-size:1.25rem;line-height:1.3}
+p{margin:0}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.icon{width:24px;height:24px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.icon.md{width:20px;height:20px}
+.icon.sm{width:18px;height:18px}
+.mt8{margin-top:8px}.mt24{margin-top:24px}.mt32{margin-top:32px}
+.main{flex:1;padding:24px 16px 32px;container-type:inline-size}
+.main:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
+
+/* Hopp til innholdet: første fokuserbare element, usynlig til fokus, da som button-primary øverst til venstre
+   over topplinjen. Ringen er topbar-focus fordi lenken ligger over den grønne topplinjen. */
+.skip{position:absolute;top:8px;left:8px;z-index:10;transform:translateY(-300%)}
+.skip:focus{transform:none}
+
+/* topbar (bare logo under 768 px) */
+.topbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;padding:8px 16px;background:var(--topbar);color:var(--topbar-text)}
+.brand{display:inline-flex;align-items:center;gap:8px;min-height:48px;font-family:var(--font-head);font-size:1.25rem;font-weight:800;line-height:1.2;letter-spacing:-.01em;color:var(--brand-icon);text-decoration:none;border-radius:var(--r-sm)}
+.brand .icon{width:28px;height:28px}
+.brand:focus-visible{outline:3px solid var(--topbar-focus);outline-offset:2px}
+.nav-badge{display:inline-flex;align-items:center;justify-content:center;padding:1px 9px;border-radius:var(--r-full);background:var(--badge-bg);color:var(--badge-fg);font-size:1rem;font-weight:700;line-height:1.3}
+
+/* bottom-nav (< 768 px): fast nederst (her: sticky innenfor telefonrammen), statisk når skjermen er lav.
+   56 px er minstehøyde; teksten får bryte linje. */
+.bottomnav{position:sticky;bottom:0;margin-top:auto;background:var(--topbar);color:var(--topbar-text)}
+.bottomnav ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.bottomnav a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:56px;padding:4px 2px;color:var(--topbar-text);text-decoration:none;font-weight:400;font-size:1.125rem;line-height:1.2;text-align:center;white-space:normal;overflow-wrap:break-word;border-top:3px solid transparent}
+.bottomnav a[aria-current]{font-weight:700;border-top-color:var(--nav-indicator)}
+.bottomnav a:focus-visible{outline:3px solid var(--topbar-focus);outline-offset:-3px}
+.bottomnav .ic{position:relative;display:inline-flex}
+.bottomnav .nav-badge{position:absolute;top:-7px;left:15px}
+@media (max-height:30em){.bottomnav{position:static}}
+
+/* knapper */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 22px;font-family:var(--font-body);font-size:1.125rem;font-weight:700;line-height:1.4;border-radius:var(--r-md);text-decoration:none;cursor:pointer;text-align:center}
+.btn-primary{background:var(--primary);color:var(--on-primary);border:2px solid var(--primary)}
+.btn-text{background:transparent;color:var(--link);border:0;text-decoration:underline;text-underline-offset:3px;padding:0 14px}
+.btn:focus-visible,.is-focus{outline:3px solid var(--focus);outline-offset:3px}
+.skip:focus,.skip:focus-visible{outline:3px solid var(--topbar-focus);outline-offset:3px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+
+/* merker */
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 12px;border-radius:var(--r-full);background:var(--chip-bg);color:var(--chip-fg);border:1px solid var(--chip-border);font-size:1rem;font-weight:700;line-height:1.3}
+
+/* kort og forhåndsvisning */
+.card{position:relative;background:var(--surface-card);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px;box-shadow:var(--shadow-card)}
+.card.preview{border:1.5px dashed var(--border)} /* uten lenke, uten hover, uten pil */
+.card-title{margin:12px 0 8px}
+.facts{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.facts li{display:flex;align-items:center;gap:8px}
+.fact-time{font-weight:700}
+.fact-place{color:var(--ink-muted)}
+.price{font-size:1.375rem;font-weight:700;line-height:1.3;margin-top:12px}
+
+/* skjema */
+.label{display:block;font-weight:700;line-height:1.4}
+.help{margin-top:4px;color:var(--ink-muted)}
+.input{display:block;width:100%;min-height:48px;padding:0 14px;margin-top:8px;background:var(--surface-input);color:var(--ink);border:1.5px solid var(--border);border-radius:var(--r-sm);font:inherit}
+.input:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+.input[aria-invalid="true"]{border:2px solid var(--error);padding:0 13.5px}
+.field-error{display:flex;gap:8px;align-items:flex-start;margin-top:8px;color:var(--error);font-weight:700}
+.field-error .icon{margin-top:4px}
+.pnr{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:8px}
+.pnr .input{width:120px;margin-top:0}
+.fs{border:0;margin:24px 0 0;padding:0;min-width:0}
+.fs legend{padding:0}
+
+/* «Når?»: Dato ca. 11em og Klokkeslett ca. 7em side om side når de får plass, ellers under hverandre.
+   Subgrid holder etikett, hjelpetekst, felt og feil på samme rad i begge kolonnene. */
+/* Beslutning 2026-11-07: Dato og Klokkeslett under hverandre under 768 px (side om side fra 768 px) */
+.when{display:grid;grid-template-columns:minmax(0,1fr);margin-top:8px}
+.when .f+.f{margin-top:16px}
+.when .f{min-width:0}
+
+
+/* «Hva tilbyr du?»: radioknapper med 24 px merke i 48 px trykkflate; «Beløp i kr» innrykket 36 px */
+.radio{display:flex;align-items:center;gap:12px;min-height:48px;line-height:1.4;cursor:pointer}
+.radio input{appearance:none;-webkit-appearance:none;flex:none;width:24px;height:24px;margin:0;border:2px solid var(--border);border-radius:50%;background:var(--surface-input);cursor:pointer}
+.radio input:checked{border-color:var(--primary);background:radial-gradient(circle,var(--primary) 0 5px,var(--surface-input) 5.5px)}
+.radio input:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+.belop{margin:4px 0 8px 36px}
+.unit{display:flex;align-items:center;gap:8px;margin-top:8px}
+.unit .input{width:8em;margin-top:0}
+
+/* feiloppsummering (message-error) */
+.summary{display:block;margin-top:24px;background:var(--surface-card);color:var(--error);border:1px solid var(--border);border-left:6px solid var(--error);border-radius:var(--r-sm);padding:12px 16px}
+.summary:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+.summary .h3{display:flex;align-items:flex-start;gap:8px;color:var(--error)}
+.summary .h3 .icon{margin-top:2px}
+.summary ul{margin:8px 0 0;padding-left:24px;color:var(--ink)}
+.summary a{display:block;min-height:48px;padding:11px 0;color:var(--link);font-weight:700;text-decoration:underline;text-underline-offset:3px}
+.summary a:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+
+/* Beslutning 2026-11-07: knapper nederst i skjema under hverandre under 768 px, primærknappen øverst i full bredde */
+.form-actions{flex-direction:column;align-items:stretch}
+.form-actions .btn{width:100%}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+<symbol id="i-logo" viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M12 17.2s-3-1.9-3-3.9a1.6 1.6 0 0 1 3-.8 1.6 1.6 0 0 1 3 .8c0 2-3 3.9-3 3.9z" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-snow" viewBox="0 0 24 24"><path d="M12 2v20M3.3 7l17.4 10M3.3 17 20.7 7M9 3.5l3 2 3-2M9 20.5l3-2 3 2"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+<symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6.5-6.1-6.5-11a6.5 6.5 0 0 1 13 0c0 4.9-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01" stroke-width="3"/></symbol>
+<symbol id="i-clip" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2.8h6V4M9 10h6M9 14h6"/></symbol>
+<symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 21c.8-4 3.8-6 7.5-6s6.7 2 7.5 6"/></symbol>
+<symbol id="m-warn" viewBox="0 0 20 20"><path d="M10 2.5 18.5 17h-17z"/><path d="M10 8v4"/><circle cx="10" cy="14.6" r="1.1" fill="currentColor" stroke="none"/></symbol>
+</svg>
+<div class="doc">
+<div class="doc-head"><p class="doc-title">Nøkkelskjerm – Nytt oppdrag, steg 2 av 2</p><p>Kari (72) på mobil har fylt ut steg 1 (beskrivelse, tittelen «Måke snø i innkjørselen», kategori Snømåking) og trykket «Neste». I dag er lørdag 7. november 2026, så «i morgen» er 08.11.2026. Eksemplet følger EXPERIENCE.md, Key Flows UJ-1 steg 4.</p><p>Menytallet 2: før dette oppdraget er lagt ut, har Kari to oppdrag under «Trenger handling» (som i steg 1).</p></div>
+
+<section class="doc-sec" aria-label="Rammer"><p class="doc-sec-title">Steg 2 utfylt – og feil etter «Publiser»</p><div class="cols">
+
+<!-- ================= Ramme 1: Steg 2 utfylt ================= -->
+<figure class="shot"><div class="phone"><div class="screen">
+<a class="btn btn-primary skip" href="#main">Hopp til innholdet</a>
+<header class="topbar"><a class="brand" href="#"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-logo"/></svg>Nabolagshelten<span class="sr">, til oversikten</span></a></header>
+<main class="main" id="main" tabindex="-1">
+<h1 class="h1">Nytt oppdrag 2 av 2</h1>
+<form novalidate>
+<div class="mt24"><label class="label" for="pnr-a">Postnummer</label><div class="pnr"><input class="input" id="pnr-a" name="postnummer" type="text" inputmode="numeric" autocomplete="postal-code" required value="0571" aria-describedby="sted-a"><span id="sted-a">Oslo</span></div></div>
+
+<fieldset class="fs"><legend class="label">Når?</legend>
+<div class="when">
+<div class="f"><label class="label" for="dato-a">Dato</label><p class="help" id="dato-h-a">dd.mm.åååå, for eksempel 14.11.2026</p><input class="input" id="dato-a" name="dato" type="text" autocomplete="off" required value="08.11.2026" aria-describedby="dato-h-a"></div>
+<div class="f"><label class="label" for="tid-a">Klokkeslett</label><p class="help" id="tid-h-a">tt:mm, for eksempel 07:00</p><input class="input" id="tid-a" name="klokkeslett" type="text" autocomplete="off" required value="07:00" aria-describedby="tid-h-a"></div>
+</div>
+</fieldset>
+
+<fieldset class="fs"><legend class="label">Hva tilbyr du?</legend>
+<div class="mt8">
+<label class="radio"><input type="radio" id="tilbud-belop-a" name="tilbud-a" value="belop" required checked>Beløp</label>
+<div class="belop"><label class="label" for="belop-a">Beløp i kr</label><div class="unit"><input class="input" id="belop-a" name="belop" type="text" inputmode="numeric" autocomplete="off" value="200"><span aria-hidden="true">kr</span></div></div>
+<label class="radio"><input type="radio" id="tilbud-uten-a" name="tilbud-a" value="uten">Uten betaling</label>
+</div>
+</fieldset>
+
+<section class="mt32" aria-label="Slik vises oppdraget for andre"><p class="label">Slik vises oppdraget for andre.</p>
+<div class="card preview mt8"><span class="chip"><svg class="icon sm" aria-hidden="true" focusable="false"><use href="#i-snow"/></svg>Snømåking</span><p class="h2 card-title">Måke snø i innkjørselen</p><ul class="facts"><li class="fact-time"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-clock"/></svg>I morgen kl. 07:00</li><li class="fact-place"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-pin"/></svg>0571 Oslo</li></ul><p class="price">200 kr</p></div>
+</section>
+
+<div class="actions form-actions mt24"><button class="btn btn-primary" type="button">Publiser</button><button class="btn btn-text" type="button">Tilbake til steg 1</button></div>
+</form>
+</main>
+<nav class="bottomnav" aria-label="Hovedmeny"><ul><li><a href="#"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-list"/></svg></span>Oppdrag</a></li><li><a href="#" aria-current="true"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-clip"/></svg><span class="nav-badge" aria-hidden="true">2</span></span>Mine oppdrag<span class="sr">, 2 trenger handling</span></a></li><li><a href="#"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-user"/></svg></span>Profil</a></li></ul></nav>
+</div></div><figcaption>Steg 2 utfylt, mobil 360 px. &lt;title&gt;: «Nytt oppdrag, steg 2 av 2 – Nabolagshelten». Postnummer forhåndsutfylt med poststed ved siden av; «Dato» og «Klokkeslett» side om side med formatet som hjelpetekst over feltet; «Beløp» valgt med «Beløp i kr» innrykket under. Forhåndsvisningen (stiplet kant, ingen lenke) står rett over «Publiser».</figcaption></figure>
+
+<!-- ================= Ramme 2: Feil etter Publiser ================= -->
+<figure class="shot"><div class="phone"><div class="screen">
+<a class="btn btn-primary skip" href="#main-b">Hopp til innholdet</a>
+<header class="topbar"><a class="brand" href="#"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-logo"/></svg>Nabolagshelten<span class="sr">, til oversikten</span></a></header>
+<main class="main" id="main-b" tabindex="-1">
+<h1 class="h1">Nytt oppdrag 2 av 2</h1>
+<div class="summary is-focus" id="sum-b" tabindex="-1"><h2 class="h3"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#m-warn"/></svg>Skjemaet har 2 feil</h2><ul><li><a href="#dato-b">Skriv datoen som dd.mm.åååå, for eksempel 14.11.2026.</a></li><li><a href="#belop-b">Skriv et beløp fra 1 til 10 000 kr, i hele kroner.</a></li></ul></div>
+<form novalidate>
+<div class="mt24"><label class="label" for="pnr-b">Postnummer</label><div class="pnr"><input class="input" id="pnr-b" name="postnummer" type="text" inputmode="numeric" autocomplete="postal-code" required value="0571" aria-describedby="sted-b"><span id="sted-b">Oslo</span></div></div>
+
+<fieldset class="fs"><legend class="label">Når?</legend>
+<div class="when">
+<div class="f"><label class="label" for="dato-b">Dato</label><p class="help" id="dato-h-b">dd.mm.åååå, for eksempel 14.11.2026</p><input class="input" id="dato-b" name="dato" type="text" autocomplete="off" required value="8. nov" aria-invalid="true" aria-describedby="dato-h-b dato-e-b"><p class="field-error" id="dato-e-b"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#m-warn"/></svg><span>Skriv datoen som dd.mm.åååå, for eksempel 14.11.2026.</span></p></div>
+<div class="f"><label class="label" for="tid-b">Klokkeslett</label><p class="help" id="tid-h-b">tt:mm, for eksempel 07:00</p><input class="input" id="tid-b" name="klokkeslett" type="text" autocomplete="off" required value="07:00" aria-describedby="tid-h-b"></div>
+</div>
+</fieldset>
+
+<fieldset class="fs"><legend class="label">Hva tilbyr du?</legend>
+<div class="mt8">
+<label class="radio"><input type="radio" id="tilbud-belop-b" name="tilbud-b" value="belop" required checked>Beløp</label>
+<div class="belop"><label class="label" for="belop-b">Beløp i kr</label><div class="unit"><input class="input" id="belop-b" name="belop" type="text" inputmode="numeric" autocomplete="off" value="" aria-invalid="true" aria-describedby="belop-e-b"><span aria-hidden="true">kr</span></div><p class="field-error" id="belop-e-b"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#m-warn"/></svg><span>Skriv et beløp fra 1 til 10 000 kr, i hele kroner.</span></p></div>
+<label class="radio"><input type="radio" id="tilbud-uten-b" name="tilbud-b" value="uten">Uten betaling</label>
+</div>
+</fieldset>
+
+<section class="mt32" aria-label="Slik vises oppdraget for andre"><p class="label">Slik vises oppdraget for andre.</p>
+<div class="card preview mt8"><span class="chip"><svg class="icon sm" aria-hidden="true" focusable="false"><use href="#i-snow"/></svg>Snømåking</span><p class="h2 card-title">Måke snø i innkjørselen</p><ul class="facts"><li class="fact-time"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-clock"/></svg>–</li><li class="fact-place"><svg class="icon md" aria-hidden="true" focusable="false"><use href="#i-pin"/></svg>0571 Oslo</li></ul><p class="price">–</p></div>
+</section>
+
+<div class="actions form-actions mt24"><button class="btn btn-primary" type="button">Publiser</button><button class="btn btn-text" type="button">Tilbake til steg 1</button></div>
+</form>
+</main>
+<nav class="bottomnav" aria-label="Hovedmeny"><ul><li><a href="#"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-list"/></svg></span>Oppdrag</a></li><li><a href="#" aria-current="true"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-clip"/></svg><span class="nav-badge" aria-hidden="true">2</span></span>Mine oppdrag<span class="sr">, 2 trenger handling</span></a></li><li><a href="#"><span class="ic"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-user"/></svg></span>Profil</a></li></ul></nav>
+</div></div><figcaption>Feil etter «Publiser». &lt;title&gt;: «Feil: Nytt oppdrag, steg 2 av 2 – Nabolagshelten». Feiloppsummeringen rett etter h1 har fått fokus (ringen vist), uten role="alert"; lenkene fører til feltene. «8. nov» gir formatfeilen ved «Dato», og «Beløp» er valgt uten beløp. Alt annet er beholdt; forhåndsvisningen viser «–» for tidspunkt og beløp.</figcaption></figure>
+
+</div>
+<div class="doc-note"><p>Ramme 1 viser steg 2 slik Kari fyller det ut i UJ-1 steg 4: postnummer med poststed, «Når?» som to tekstfelt med formatet som hjelpetekst, «Hva tilbyr du?» med «Beløp i kr» innrykket under «Beløp», og forhåndsvisningen rett over «Publiser» (EXPERIENCE.md § Component Patterns, § Responsive &amp; Platform; DESIGN.md § Components: input, Forhåndsvisning).</p><p>Ramme 2 viser samme steg etter «Publiser» med to feil: feiloppsummeringen står rett etter h1 og har fått fokus, hvert ugyldig felt har 2 px feilkant, aria-invalid og feiltekst med varselikon under, og sidetittelen har «Feil: » foran (EXPERIENCE.md § Feiltekster ved felt, Feiloppsummering, field-error, § Accessibility Floor «Sidetitler»; DESIGN.md § Components: Feiloppsummering, input).</p></div>
+</section>
+</div>
+</body>
+</html>
