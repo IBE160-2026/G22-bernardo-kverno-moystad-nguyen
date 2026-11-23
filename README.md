@@ -19,13 +19,13 @@ Prosjektet er i planleggingsfasen. Frist for innlevering er begynnelsen av desem
 | Product brief | Ferdig (v2.2), revidert etter tilbakemelding fra faglærer |
 | PRD (kravdokument) | Ferdig (v1.1) |
 | UX-design | Ferdig: designsystem, atferd, mockups og tilgjengelighetsgjennomgang |
-| Arkitektur | Pågår |
+| Arkitektur | Ferdig: FastAPI + Jinja, SQLite lokalt og Supabase Postgres på Vercel (AD-1–AD-17) |
 | Epics og stories | Etter arkitekturen |
 | Implementasjon og testing | Etter epics og stories |
 
 ## Kom i gang
 
-Appen er ikke laget ennå. Kjøreinstruksjonene kommer når teknologien er valgt i arkitekturen: forutsetninger med versjoner, kommandoer for oppstart og eksempeldata, testbrukere og kommandoen som kjører testene. De skal virke på en ren maskin uten betalte tjenester eller gruppens egne nøkler (krav NFR-1 og NFR-2 i PRD-en).
+Appen er ikke laget ennå. Teknologien er valgt i arkitekturen: Python 3.12 med uv, FastAPI og SQLite lokalt, uten nøkler. Kjøreinstruksjonene kommer i første story: forutsetninger med versjoner, kommandoer for oppstart og eksempeldata, testbrukere og kommandoen som kjører testene. De skal virke på en ren maskin uten betalte tjenester eller gruppens egne nøkler (krav NFR-1 og NFR-2 i PRD-en).
 
 ## Dokumentasjon
 
@@ -40,6 +40,7 @@ Appen er ikke laget ennå. Kjøreinstruksjonene kommer når teknologien er valgt
 | [EXPERIENCE.md](_bmad-output/planning-artifacts/ux-designs/ux-G22-bernardo-kverno-moystad-nguyen-2026-11-07/EXPERIENCE.md) | Hvordan appen oppfører seg: navigasjon, tekster, feilmeldinger, tomtilstander, fokus og universell utforming (NFR-7) med testplan |
 | [Mockups](_bmad-output/planning-artifacts/ux-designs/ux-G22-bernardo-kverno-moystad-nguyen-2026-11-07/mockups/) | Klikkbare HTML-mockups av nøkkelskjermbildene og fargetemaer |
 | [Tilgjengelighetsgjennomgang](_bmad-output/planning-artifacts/ux-designs/ux-G22-bernardo-kverno-moystad-nguyen-2026-11-07/review-accessibility.md) | Gjennomgang av UX-designet mot WCAG 2.1 AA, med funn og testdekning |
+| [Arkitekturspine](_bmad-output/planning-artifacts/architecture/architecture-G22-bernardo-kverno-moystad-nguyen-2026-11-08/ARCHITECTURE-SPINE.md) | Arkitekturbeslutningene (AD-1–AD-17) som alle stories skal følge, med stack, miljøer, datamodell og kobling til FR/NFR. Beslutningsloggen (`.memlog.md`) og reviewene ligger i samme mappe. |
 | [Sensorveiledning del 1](docs/sensorveiledning-del1.md) | Kriteriene prosjektet vurderes etter |
 
 ## Slik jobber vi med KI
