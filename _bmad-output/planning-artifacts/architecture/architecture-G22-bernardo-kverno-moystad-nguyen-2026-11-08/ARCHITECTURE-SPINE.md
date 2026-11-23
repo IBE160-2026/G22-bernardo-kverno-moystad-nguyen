@@ -65,7 +65,7 @@ Pilene betyr «kan importere fra». Bare direkte piler gjelder.
     | ki | ki_bruk |
     | core | postnummer (skrives bare av migreringen) |
 
-  - Postnumre er referansedata. En Alembic-datamigrering laster dem fra `data/postnumre.tsv`, slik at de finnes i alle miljøer. All tilgang går gjennom `core/postnummer.py` (`normaliser_postnummer`, `finnes`, `poststed`). Postnummer lagres som tekst med fire sifre.
+  - Postnumre er referansedata. En Alembic-datamigrering laster dem fra `data/postnumre.tsv`, slik at de finnes i alle miljøer. Fila kommer fra Brings postnummerregister (`https://www.bring.no/postnummerregister-ansi.txt`), som Felles datakatalog oppgir under NLOD 2.0. README oppgir kilden: «Postnummerdata fra Posten Bring, lisensiert under NLOD 2.0.» All tilgang går gjennom `core/postnummer.py` (`normaliser_postnummer`, `finnes`, `poststed`). Postnummer lagres som tekst med fire sifre.
   - Unntak: `app/seed.py` og testfabrikkene skriver eksempeldata direkte med modellene, bare når `APP_ENV` er `local` eller `test`. Seed tømmer aldri `postnummer`.
 
 ### AD-2 — Status og statusavhengige skrivinger er atomiske [ADOPTED]
@@ -458,4 +458,3 @@ pyproject.toml  uv.lock  .python-version  vercel.json  .env.example
 | Backup og overvåking | Ikke i v1. Eksempeldata kan lastes på nytt, og Vercel-loggene holder for et studentprosjekt. |
 | Caching og ytelse | Ingen kjente behov. Ingen Redis. |
 | Hvilken OpenRouter-modell | Konfig (`OPENROUTER_MODEL`), velges ved testing av FR-24. |
-| Vilkårene for Brings postnummerfil | Bekreftes på bring.no før fila legges i repoet, med kreditering i README. Sekundærkilde sier NLOD 2.0. |
