@@ -227,7 +227,7 @@ Fra DESIGN.md og EXPERIENCE.md. Tekstene markert [ASSUMPTION] i EXPERIENCE.md og
 | NFR-11 | Epic 1 (meny), Epic 3 (antallet ved «Mine oppdrag») |
 | SM-4 (T6) | Epic 6 |
 
-**Definition of Done for hver story:** akseptansekriteriene er oppfylt og testet automatisk der det er mulig; regler testes direkte mot serveren (NFR-5) inkludert dobbel innsending der det gjelder; ugyldig input gir forståelige meldinger (NFR-10); tekst vises som tekst (NFR-12); nye sider og tilstander er med i T1 (axe) og har ingen vannrett rulling ved 320 px; den nye flaten er sjekket med tastatur i cirka fem minutter (Tab gjennom alt, synlig fokus, dialoger og skjema virker; dette er ikke den fullstendige T2-protokollen); seed dekker det nye (NFR-2); README er oppdatert; én Alembic-migrering hvis skjemaet endres (AD-13); commits og tester oppgir krav-ID-ene.
+**Definition of Done for hver story:** akseptansekriteriene er oppfylt og testet automatisk der det er mulig; regler testes direkte mot serveren (NFR-5) inkludert dobbel innsending der det gjelder; ugyldig input gir forståelige meldinger (NFR-10); tekst vises som tekst (NFR-12); nye sider og tilstander er med i T1 (axe) og har ingen vannrett rulling ved 320 px; den nye flaten er sjekket med tastatur i cirka fem minutter (Tab gjennom alt, synlig fokus, dialoger og skjema virker; dette er ikke den fullstendige T2-protokollen); seed dekker det nye (NFR-2); ingen av mønstrene i UX-DR30 (skjulte funksjoner, hover som eneste måte, meldinger som forsvinner, interaktive elementer i lenker osv.) er brukt; README er oppdatert; én Alembic-migrering hvis skjemaet endres (AD-13); commits og tester oppgir krav-ID-ene.
 
 ## Epic List
 
@@ -243,12 +243,12 @@ En person kan registrere seg, logge inn og logge ut, og alt annet i appen krever
 ### Epic 2: Legge ut og finne oppdrag
 Kari kan legge ut, redigere og avbryte oppdrag. Amir finner åpne oppdrag i sitt postnummer, filtrerer på kategori og postnummer, og åpner detaljene.
 **FRs covered:** FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, og en grunnversjon av FR-18 («Oppdrag jeg har lagt ut» med status, tidspunkt og merket «Tidspunktet er passert»), slik at Kari finner egne oppdrag igjen når FR-10 skjuler dem i oversikten
-**Også:** AR-12, AR-13, AR-19, AR-20, AR-28 (`skjema.js`, `steg.js`, `fokus.js`); UX-DR8, UX-DR10, UX-DR11, UX-DR14–UX-DR16, UX-DR21, UX-DR24, UX-DR25.
+**Også:** AR-12, AR-13, AR-17 (fullstendig AD-7, story 2.6), AR-19, AR-20, AR-28 (`skjema.js`, `steg.js`, `fokus.js`, `dialog.js`, `sending.js`); UX-DR8–UX-DR11, UX-DR14–UX-DR16, UX-DR18 (dialogkomponenten, først brukt for «Avbryt oppdrag»), UX-DR21, UX-DR24–UX-DR26.
 
 ### Epic 3: Interesse, valg av hjelper og Mine oppdrag
 Amir melder interesse. Kari ser de interesserte, sammenligner erfaring og velger hjelper, og de ser hverandres telefonnummer. Hjelperen kan fjernes eller trekke seg. Begge følger oppdragene sine under «Mine oppdrag» med situasjoner, merker, grupper og antallet i menyen.
 **FRs covered:** FR-12, FR-13, FR-14, FR-15, FR-16, FR-17, FR-18 (bygger videre på grunnversjonen fra Epic 2: hjelper-fanen, merkene, gruppene og antallet i menyen)
-**Også:** NFR-11 (antallet); AR-12 (`tidligere_hjelper`), AR-13, AR-24, AR-28 (`dialog.js`, `sending.js`); UX-DR9, UX-DR18, UX-DR20, UX-DR23, UX-DR26.
+**Også:** NFR-11 (antallet); AR-12 (`tidligere_hjelper`), AR-13, AR-24; UX-DR9, UX-DR18 (dialogene for å velge, fjerne og trekke seg), UX-DR20, UX-DR23, UX-DR26.
 
 ### Epic 4: Fullføre, gi tilbakemelding og vise erfaring
 Oppdraget markeres som utført, og partene gir hverandre stjerner og kommentar. Amir har en profil med fullførte oppdrag og tilbakemeldinger han kan vise fram. Brukeren kan redigere profilen sin og slette kontoen.
@@ -1124,3 +1124,197 @@ slik at personopplysningene mine fjernes uten at andres dokumenterte erfaring fo
 **Gitt** T1
 **Når** testen kjøres
 **Så** er «Slett konto», «Slett konto» med feil passord og «Slettet bruker» uten brudd på nivåene «serious» eller «critical».
+
+---
+
+## Epic 5: KI-forslag (Bør)
+
+Kari kan få forslag til tittel, kategori og beskrivelse når hun legger ut et oppdrag. Mock er standard, og appen fungerer fullt ut uten KI. Hele epicen kan kuttes etter PRD §6.1. Da gjelder ikke R12 og SK10, og avviket føres i PRD §9.2.
+
+### Story 5.1: Få forslag i mock-modus
+
+Som oppdragsgiver
+vil jeg trykke «Få forslag» og få forslag til tittel, kategori og beskrivelse som jeg selv velger om jeg vil bruke,
+slik at det blir lettere å skrive et tydelig oppdrag.
+
+**Krav:** FR-23, FR-24, FR-25 (validering og testdobler), FR-26, NFR-1, NFR-7, NFR-12, AR-22 (grensesnitt, mock, testdobbel og kvote), AR-23, AR-28 (`ki.js`); UX-DR19, UX-DR27
+
+**Acceptance Criteria:**
+
+**Gitt** «Nytt oppdrag» uten API-nøkkel (tom, eller plassholderen fra `.env.example`)
+**Når** skjemaet vises
+**Så** står «Få forslag» som sekundærknapp under beskrivelsesfeltet og telleren, med teksten «Forslagene lages i appen. Teksten sendes ikke ut.» under knappen (FR-23, FR-26, UX-DR19)
+**Og** under 10 tegn er knappen `aria-disabled` med teksten «Skriv minst 10 tegn for å få forslag.»
+**Og** knappen finnes ikke ved redigering, og den er skjult uten JavaScript (FR-23, AD-15).
+
+**Gitt** en beskrivelse på minst 10 tegn
+**Når** brukeren trykker «Få forslag»
+**Så** sender `ki.js` skjemaets `FormData` til `POST /oppdrag/forslag` med `X-Fragment: 1` og CSRF-feltet, knappen viser «Lager forslag …» med `aria-live`, og fokus blir på knappen (FR-23, AD-15)
+**Og** serveren sender bare beskrivelsesteksten til KI-grensesnittet, aldri navn, e-post, telefon eller andre profilopplysninger (FR-23).
+
+**Gitt** et gyldig svar
+**Når** fragmentet kommer tilbake
+**Så** vises én forslagsboks under hvert av feltene Beskrivelse, Tittel og Kategori, skjermleseren leser «Forslagene er klare.», og ingen felt fylles inn før brukeren trykker «Bruk» (FR-24, UX-DR19)
+**Og** «Bruk» fyller feltet, fjerner boksen og gir fokus til feltet, som fortsatt kan redigeres. «Ikke bruk» fjerner boksen og gir fokus til feltet. Et nytt trykk på «Få forslag» erstatter alle boksene (FR-24)
+**Og** ingenting lagres før «Publiser» (FR-24).
+
+**Gitt** mock-modus
+**Når** den lager et svar
+**Så** følger kategorien nøkkelordtabellen i FR-26 (første kategori ovenfra med et ord som begynner med et nøkkelord, uten å skille store og små bokstaver), tittelen er første setning med stor forbokstav og høyst 80 tegn, og beskrivelsen er teksten med stor forbokstav og punktum når det mangler. Mock gir ikke tips (FR-26)
+**Og** testene dekker «måke snø i innkjørselen» → Snømåking og «Måke snø i innkjørselen», en tekst uten nøkkelord → Annet, «hundre» → Dyrepass, «strømbrudd» → Snømåking, «kl. 07:30» kutter ikke setningen, første setning under 3 tegn gir kategorinavnet som tittel, og samme tekst gir alltid samme svar (FR-26)
+**Og** automatiske tester kjører alltid i mock-modus, også når `.env` har en nøkkel (AD-12).
+
+**Gitt** svaret fra en hvilken som helst utgave
+**Når** det valideres
+**Så** godtas det bare som JSON med kategori fra `core/domene.py` (som kode), tittel på 3–80 tegn, beskrivelse på 10–1000 tegn og eventuelt tips på høyst 200 tegn, etter trim og NFC (FR-25, AD-10)
+**Og** testdobler som svarer med ugyldig JSON, ukjent kategori, for lang tekst, en feil og et svar etter fristen, gir alle feilfragmentet «Vi fikk ikke laget forslag akkurat nå. Du kan fylle inn selv.» med status 200 der forslagene ellers ville stått, `role="alert"`, ingen forslagsbokser, og skjemaet beholder alt (FR-25, AD-15).
+
+**Gitt** en bruker som har bedt om 20 forslag den siste timen
+**Når** hen ber om ett til
+**Så** vises «Du har bedt om mange forslag den siste timen. Prøv igjen senere, eller fyll inn selv.» (FR-23)
+**Og** kvoten sjekkes og registreres i `ki_bruk` i en egen transaksjon som committes før kallet, og rader eldre enn 60 minutter slettes ved telling (AD-12).
+
+**Gitt** forslag eller tips med `<script>alert(1)</script>`
+**Når** de vises
+**Så** vises de som ren tekst, og `ki.js` setter bare inn ferdige fragmenter fra serveren (FR-25, NFR-12, AD-11).
+
+**Gitt** en utløpt sesjon
+**Når** brukeren trykker «Få forslag»
+**Så** gir serveren 401 med fragmentet «Du må logge inn igjen.», som `ki.js` setter inn (AD-4, AD-15).
+
+**Gitt** T1
+**Når** testen kjøres
+**Så** er «KI-forslag vist» og «KI-feil» uten brudd på nivåene «serious» eller «critical».
+
+### Story 5.2: Ekte KI-tjeneste via OpenRouter
+
+Som oppdragsgiver i produksjon
+vil jeg få forslag fra en språkmodell som omformulerer det jeg skrev, på bokmål og uten nye opplysninger,
+slik at forslagene blir bedre enn det faste reglene i mock-modus gir.
+
+**Krav:** FR-23, FR-24, FR-25, NFR-3, NFR-9, AR-8, AR-22 (OpenRouter og kostnad)
+
+**Acceptance Criteria:**
+
+**Gitt** `OPENROUTER_API_KEY` og `OPENROUTER_MODEL` satt i Vercel env (aldri i repoet)
+**Når** appen starter i produksjon
+**Så** velges OpenRouter-utgaven ett sted, og `sender_eksternt()` gjør at teksten ved knappen blir «Teksten i beskrivelsen sendes til en ekstern KI-tjeneste for å lage forslag.» (FR-23, AD-12)
+**Og** nøkkelen har en kredittgrense satt i OpenRouter, eller modellen er gratis. Uten grense kjører produksjon i mock (AD-12).
+
+**Gitt** et kall til OpenRouter
+**Når** det samlede kallet tar mer enn 10 sekunder
+**Så** avbrytes det, et svar som kommer senere, vises ikke, og brukeren får KI-feilen (FR-25)
+**Og** ingen databasetransaksjon er åpen under kallet (AD-12, AD-17).
+
+**Gitt** prompten
+**Når** koden leses
+**Så** ligger den i `app/ki/prompt.txt`, og den ber om JSON med kategori (kode), tittel, beskrivelse og eventuelt tips, på norsk bokmål, med en beskrivelse som bare omformulerer det brukeren skrev og legger det som mangler i tipset (FR-23, FR-24).
+
+**Gitt** fem faste eksempeltekster (blant annet Karis tekst fra UJ-1)
+**Når** de sendes til den valgte modellen
+**Så** er resultatet dokumentert i `docs/tester/`: om kategorien er riktig, om beskrivelsen legger til opplysninger, om språket er bokmål, og om svaret består valideringen i FR-25 (FR-24)
+**Og** modellen som velges, står i README og i `.env.example` som eksempelverdi uten nøkkel.
+
+**Gitt** loggene
+**Når** et KI-kall gjøres
+**Så** logges verken beskrivelsesteksten, svaret eller nøkkelen (AR-30).
+
+---
+
+## Epic 6: Klar for sensur
+
+En person utenfor gruppen får appen i gang fra README på en ren maskin, og testene for universell utforming og brukertesten er gjennomført og dokumentert. Epicen avhenger ikke av Epic 5. Story 6.1 og 6.2 kan tas av hvem som helst i gruppen og blokkerer ikke noe annet.
+
+### Story 6.1: Manuelle tester av universell utforming (T2–T5)
+
+Som bruker med tastatur, skjermleser, stor tekst eller nedsatt syn
+vil jeg at appen er testet manuelt på det automatiske tester ikke finner,
+slik at jeg faktisk kan gjennomføre kjerneflyten.
+
+**Krav:** NFR-6, NFR-7, NFR-8, NFR-11; UX-DR32
+
+**Acceptance Criteria:**
+
+**Gitt** protokollmalene i `docs/tester/` (én fil per test, med dato, nettleser, operativsystem, kontrollpunkter, funn og retting)
+**Når** T2 (tastatur) gjennomføres
+**Så** er UJ-1, UJ-2 og støtteflytene (registrering, innlogging, rediger profil, slett konto) gått gjennom uten mus, med kontrollpunktene «Hopp til innholdet», synlig fokus, dato og klokkeslett, kategorifilter og kategoriknapper, stjerner, alle dialoger, fokus tilbake etter dialog, og felttyper og `autocomplete` mot tabellen i EXPERIENCE.md. Tekststørrelse og trykkflater er målt i DevTools.
+
+**Gitt** NVDA eller VoiceOver
+**Når** T3 (skjermleser) gjennomføres
+**Så** er UJ-1, UJ-2 steg 3–6 (antallet etter filtervalg), ett skjema med feil (feiloppsummeringen leses, og lenkene fører til feltene) og en kvittering etter sidelasting gått gjennom og dokumentert.
+
+**Gitt** T4 (bredder og zoom)
+**Når** den gjennomføres
+**Så** er UJ-1 og UJ-2 dokumentert med skjermbilder ved 360, 768 og 1280 px (NFR-6), og sjekket ved 320 px, ved 200 % zoom, med tekstavstand etter WCAG 1.4.12 (bokmerke), med 200 % tekststørrelse i operativsystemet og på liggende telefon med bunnmenyen og et felt med fokus.
+
+**Gitt** T5 (kontrast og farge)
+**Når** den gjennomføres
+**Så** er kontrasttabellen i DESIGN.md kontrollert med stikkprøver i appen, også kanter, fokusring og tilstander (WCAG 1.4.11), og appen er gått gjennom én gang i gråtoner eller med tvungne farger (`forced-colors: active`).
+
+**Gitt** en gjennomgang av kjerneflyten mot ordlisten i PRD §3
+**Når** den gjøres
+**Så** er avvik i knappetekster og overskrifter dokumentert og rettet (NFR-8).
+
+**Gitt** funn fra T2–T5
+**Når** de er alvorlige (en flyt kan ikke gjennomføres, eller WCAG 2.1 AA brytes)
+**Så** er de rettet, eller ført som kjent begrensning i README med begrunnelse.
+
+### Story 6.2: Brukertest med personer utenfor gruppen (T6)
+
+Som gruppe
+vil vi se at personer som Kari faktisk klarer å legge ut et oppdrag,
+slik at vi vet at appen er enkel nok for målgruppen.
+
+**Krav:** SM-4, NFR-6, NFR-7, FR-5; UX-DR32 (T6)
+
+**Acceptance Criteria:**
+
+**Gitt** minst to testpersoner utenfor gruppen, der minst én er over 60 år eller lite vant med apper
+**Når** hver av dem legger ut et oppdrag (UJ-1 steg 1–3) på mobil eller nettbrett
+**Så** er tiden målt fra personen trykker «Legg ut oppdrag» til oppdraget er publisert, og målet er under to minutter (SM-4)
+**Og** enhet, nettleser, tid og ord personen ikke forsto, er dokumentert i `docs/tester/T6-brukertest.md`.
+
+**Gitt** at en testperson brukte nettbrett
+**Når** resultatet vurderes
+**Så** er det notert om personen ville foretrukket to steg også på nettbrett (åpent punkt i EXPERIENCE.md).
+
+**Gitt** funn fra brukertesten
+**Når** de er enkle å rette (ord, tekster, rekkefølge)
+**Så** er de rettet, og ellers ført som forslag til neste versjon.
+
+### Story 6.3: README og repo klare for sensor
+
+Som sensor
+vil jeg få appen i gang på en ren maskin bare ved å følge README, og finne planleggingsdokumentene og testene,
+slik at jeg kan vurdere både produktet og prosessen innen 15–20 minutter.
+
+**Krav:** NFR-1, NFR-2, NFR-3, NFR-9, SM-1, SM-2, SM-3, AR-10
+
+**Acceptance Criteria:**
+
+**Gitt** en ren maskin eller en container
+**Når** en person utenfor gruppen følger README fra start, uten hjelp
+**Så** har hen appen i gang med eksempeldata innen 15 minutter, og operativsystem, tidsbruk og eventuelle problemer er dokumentert i `docs/tester/` (NFR-1, SM-3)
+**Og** problemene er rettet i README.
+
+**Gitt** README
+**Når** sensor leser den
+**Så** har den en kort beskrivelse og et skjermbilde, forutsetninger med versjoner, eksakte kommandoer for å starte appen, laste eksempeldata og kjøre testene, testbrukere med hva de brukes til, at mock er standard for KI, mappestrukturen, lenker til brief, PRD, UX, arkitektur, epics, testprotokoller og `.logs/`, kildelinja for postnummerdata, kontoer for drift og lenke til produksjonsversjonen (NFR-1, NFR-2, AR-10)
+**Og** statustabellen viser hva som er ferdig, og hva som er kuttet med begrunnelse.
+
+**Gitt** git-historikken
+**Når** gitleaks kjøres på hele historikken
+**Så** er resultatet uten funn og dokumentert (NFR-3).
+
+**Gitt** databaseskjemaet
+**Når** det gjennomgås mot lista i NFR-9
+**Så** lagres bare navn, e-post, passord-hash, telefon, postnummer, fødselsdato, innhold brukeren selv legger inn og data appen trenger for å virke, og gjennomgangen er dokumentert (NFR-9).
+
+**Gitt** planleggingsdokumentene
+**Når** de sammenlignes med appen som er levert
+**Så** er alle kutt og avvik ført i PRD §9.2 og endringsloggen, `epics.md` stemmer med det som er bygget, og hver regel R1–R13 har minst én automatisk test som passerer, unntatt R12 hvis KI er kuttet (SM-1, SM-2)
+**Og** `uv run pytest` passerer på `main`, og produksjonsversjonen og Supabase er sjekket rett før innlevering.
+
+**Gitt** rotmappen
+**Når** den sjekkes
+**Så** finnes ingen løse filer, sikkerhetskopier, `.env`, `.venv`, `node_modules` eller byggmapper i repoet (sensorveiledningen, kriterium 7).
