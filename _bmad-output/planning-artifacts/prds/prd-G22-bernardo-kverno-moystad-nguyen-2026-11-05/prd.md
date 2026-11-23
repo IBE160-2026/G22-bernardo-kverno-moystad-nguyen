@@ -2,7 +2,7 @@
 title: PRD – Nabolagshelten
 status: final
 created: 2026-11-05
-updated: 2026-11-07
+updated: 2026-11-23
 ---
 
 # PRD – Nabolagshelten
@@ -10,8 +10,9 @@ updated: 2026-11-07
 | | |
 |---|---|
 | **Gruppe** | G22 – Bernardo, Kverno, Møystad, Nguyen |
-| **Versjon** | 1.1 (ferdig) |
-| **Bygger på** | [Product brief v2.2](../../product-brief-nabolagshelten.md) (= «proposal» i sensorveiledningen), [skisser av skjermbilder](../../skisser-skjermbilder.md) |
+| **Versjon** | 1.2 (ferdig) |
+| **Bygger på** | [Product brief v2.2](../../product-brief-nabolagshelten.md) (= «proposal» i sensorveiledningen), [skisser av skjermbilder](../../skisser-skjermbilder.md) (erstattet av UX-spinene) |
+| **Avstemt mot (v1.2)** | UX-spinene [DESIGN.md](../../ux-designs/ux-G22-bernardo-kverno-moystad-nguyen-2026-11-07/DESIGN.md) og [EXPERIENCE.md](../../ux-designs/ux-G22-bernardo-kverno-moystad-nguyen-2026-11-07/EXPERIENCE.md), [arkitekturspinen](../../architecture/architecture-G22-bernardo-kverno-moystad-nguyen-2026-11-08/ARCHITECTURE-SPINE.md) |
 
 ## 0. Om dokumentet
 
@@ -74,13 +75,13 @@ Personer under 18 år (§6.2), og firmaer, håndverkere og større eller komplek
   1. Han registrerer seg med navn, e-post, telefonnummer, postnummer, fødselsdato og passord. Han er over 18 år, så kontoen opprettes, og han er innlogget.
   2. Oppdragsoversikten viser åpne oppdrag i hans postnummer, sortert etter tidspunkt. Han ser et oppdrag i kategorien Bærehjelp/flytting på lørdag, med godtgjørelse 400 kr. Han har fri den dagen.
   3. Han åpner oppdraget, leser beskrivelsen, skriver en melding – «Hei! Jeg kan gjerne hjelpe deg på lørdag. Jeg har erfaring med å bære møbler fra tidligere flyttinger.» – og trykker «Meld interesse».
-  4. Senere går han til «Mine oppdrag», fanen «Oppdrag jeg hjelper med», og ser at oppdraget er merket «Du er valgt». Han ser oppdragsgiverens telefonnummer, så de kan avtale detaljene direkte.
+  4. Senere går han til «Mine oppdrag», fanen «Oppdrag jeg hjelper med», og ser at oppdraget står som «Du er valgt». Han ser oppdragsgiverens telefonnummer, så de kan avtale detaljene direkte.
   5. På lørdag bærer han møblene. Etterpå markerer han oppdraget som **Utført**, og får 400 kr med Vipps utenfor appen.
 - **Vendepunktet:** Oppdragsgiveren gir ham fem stjerner og en kommentar om at han møtte presis og gjorde en god jobb. Amir ser at det fullførte oppdraget og vurderingen nå står i profilen hans.
 - **Avslutningen:** Amir gir også oppdragsgiveren en vurdering, siden begge parter kan gi tilbakemelding. Etter hvert som han tar flere oppdrag, viser profilen antall fullførte oppdrag per kategori, gjennomsnittlig vurdering og tilbakemeldinger. Når han søker sommerjobb, viser han profilen på mobilen som dokumentasjon på praktisk erfaring.
 - **Når noe går galt:**
-  - *Oppdragsgiveren velger en annen:* Under «Mine oppdrag» er oppdraget merket «Ikke valgt», og Amir ser bare tittel og status, ikke detaljene. Han fortsetter å se etter andre åpne oppdrag i nærheten.
-  - *Han kan ikke likevel:* Mens status er **Hjelper valgt**, trykker han «Trekk meg» og bekrefter. Oppdraget får status **Åpen** igjen, telefonnumrene skjules, og oppdragsgiveren kan velge blant de andre interesserte. Under «Mine oppdrag» er oppdraget merket «Du trakk deg».
+  - *Oppdragsgiveren velger en annen:* Under «Mine oppdrag» står oppdraget som «Ikke valgt», og Amir ser bare tittel og status, ikke detaljene. Han fortsetter å se etter andre åpne oppdrag i nærheten.
+  - *Han kan ikke likevel:* Mens status er **Hjelper valgt**, trykker han «Trekk meg» og bekrefter. Oppdraget får status **Åpen** igjen, telefonnumrene skjules, og oppdragsgiveren kan velge blant de andre interesserte. Under «Mine oppdrag» står oppdraget som «Du trakk deg».
 - **Krav:** FR-1, FR-9, FR-10, FR-12, FR-16, FR-17, FR-18, FR-19, FR-20, FR-21
 
 ## 3. Ordliste
@@ -103,6 +104,8 @@ Personer under 18 år (§6.2), og firmaer, håndverkere og større eller komplek
 - **Postnummer** – Fire siffer som finnes i lista over norske postnumre som ligger i repoet. Vises sammen med poststedet.
 - **Oppdragsoversikt** («oversikten») – Startsiden med åpne oppdrag, med filter på kategori og postnummer. Menyvalget heter «Oppdrag» (NFR-11).
 - **Mine oppdrag** – Siden med fanene «Oppdrag jeg har lagt ut» og «Oppdrag jeg hjelper med».
+- **Situasjon** – Hvordan et oppdrag står for brukeren i fanen «Oppdrag jeg hjelper med», for eksempel «Venter på svar» eller «Du er valgt». Hvert oppdrag har nøyaktig én situasjon (FR-18).
+- **Merke** – En kort tekst i «Mine oppdrag» som viser at brukeren bør gjøre noe med oppdraget, for eksempel «Velg hjelper» eller «Gi tilbakemelding». Bare tekstene i merkelista i FR-18 er merker. Et oppdrag med minst ett merke står under «Trenger handling» og telles ved «Mine oppdrag» i menyen.
 - **Tilbakemelding** – En vurdering (1–5 stjerner) og en valgfri kommentar fra én part i et utført oppdrag til den andre.
 - **Profil** – Det andre brukere ser om en bruker (innhold: FR-21).
 - **Fullført oppdrag** – Et oppdrag med status Utført, telt for den som var valgt hjelper.
@@ -209,7 +212,10 @@ En innlogget bruker kan legge ut et oppdrag.
 **Konsekvenser (testbare):**
 - Gyldige verdier: tittel 3–80 tegn; beskrivelse 10–1000 tegn; kategori fra lista (§3); postnummer som finnes i lista (§3), forhåndsutfylt fra profilen og mulig å endre; tidspunkt som ikke er passert og høyst 12 måneder fram i tid; godtgjørelse et heltall fra 1 til 10 000 kr, eller «uten betaling». Alle felt er obligatoriske.
 - Ugyldige felt avvises med melding ved feltet, og ingenting lagres.
-- Tidspunkt angis, lagres og vises i norsk tid (Europe/Oslo).
+- Tidspunkt angis og vises i norsk tid (Europe/Oslo). Hvordan tid lagres, avgjøres i arkitekturen (AD-9). Ved overgang til og fra sommertid gjelder:
+  - Et klokkeslett som ikke finnes fordi klokka stilles fram (for eksempel 02:30 natt til siste søndag i mars), avvises med melding ved feltet.
+  - Et klokkeslett som finnes to ganger fordi klokka stilles tilbake (for eksempel 02:30 natt til siste søndag i oktober), tolkes som det første.
+  - Et lagret oppdrag vises med samme dato og klokkeslett før og etter skiftet.
 - Beskrivelsesfeltet har hjelpeteksten «Ikke skriv adresse eller telefonnummer – det avtaler dere når hjelperen er valgt.» (NFR-9).
 - Et lagret oppdrag får status Åpen, og innlogget bruker er oppdragsgiver.
 
@@ -222,7 +228,7 @@ Oppdragsgiveren kan redigere sitt eget oppdrag mens det har status Åpen.
 - Redigering fra andre enn oppdragsgiveren avvises.
 - Redigering av oppdrag med status Hjelper valgt, Utført eller Avbrutt avvises.
 - Interessene beholdes ved redigering, slik at oppdragsgiveren fortsatt kan velge blant dem.
-- Endres tidspunkt, godtgjørelse eller postnummer, merkes interesser som ble meldt før endringen, med «Meldt før endring» i lista over interesserte (FR-14). Den interesserte ser «Oppdraget er endret etter at du meldte interesse» under «Mine oppdrag» (FR-18), og kan trekke interessen (FR-13).
+- Endres tidspunkt, godtgjørelse eller postnummer, merkes interesser som ble meldt før endringen, med «Meldt før endring» i lista over interesserte (FR-14). Den interesserte ser merket «Oppdraget er endret etter at du meldte interesse» under «Mine oppdrag» så lenge situasjonen er «Venter på svar» (FR-18), og kan trekke interessen (FR-13).
 - KI-forslag finnes ikke ved redigering (FR-23).
 
 #### FR-7: Avbryte oppdrag
@@ -357,7 +363,7 @@ En innlogget bruker ser sine oppdrag i to faner.
 
 **Konsekvenser (testbare):**
 - «Oppdrag jeg har lagt ut» viser alle egne oppdrag med status, antall interesserte og navnet på valgt hjelper hvis en er valgt.
-- «Oppdrag jeg hjelper med» viser oppdrag der brukeren har interesse, er valgt hjelper eller er tidligere valgt hjelper, med brukerens egen situasjon. Hvert oppdrag passer i nøyaktig én rad:
+- «Oppdrag jeg hjelper med» viser oppdrag der brukeren har interesse, er valgt hjelper eller er tidligere valgt hjelper, med brukerens egen situasjon. Hvert oppdrag passer i nøyaktig én rad. Har brukeren både trukket seg og blitt fjernet fra samme oppdrag, gjelder det som skjedde sist:
 
 | Brukerens situasjon | Vises som | Detaljer |
 |---|---|---|
@@ -372,12 +378,25 @@ En innlogget bruker ser sine oppdrag i to faner.
 | Trakk seg som valgt hjelper (FR-17), uten ny interesse | «Du trakk deg» | Som for andre innloggede (FR-9); kan melde interesse på nytt (FR-12) |
 
 - Merker som vises i tillegg:
+  - «Velg hjelper» hos oppdragsgiveren på eget oppdrag med status Åpen, der tidspunktet ikke er passert og det er minst én interessert (FR-14, FR-15). Merket forsvinner når en hjelper er valgt, eller oppdraget avbrytes. Er tidspunktet passert, vises «Tidspunktet er passert» i stedet.
   - «Tidspunktet er passert» på egne utgåtte oppdrag (FR-8).
   - «Er jobben gjort?» for begge parter på oppdrag med status Hjelper valgt der tidspunktet er passert (FR-19).
   - «Gi tilbakemelding» for oppdragsgiveren og valgt hjelper på oppdrag med status Utført, så lenge brukeren ikke har gitt tilbakemelding, men ikke når motparten er «Slettet bruker» (FR-20).
-  - «Hjelperen trakk seg» hos oppdragsgiveren når valgt hjelper har trukket seg eller slettet kontoen (FR-17, FR-4). Merket forsvinner når en ny hjelper er valgt, eller oppdraget avbrytes.
-  - «Oppdraget er endret etter at du meldte interesse» hos den interesserte (FR-6).
-- Sortering i begge faner: først oppdrag med merke, deretter oppdrag med status Åpen eller Hjelper valgt etter tidspunkt, tidligste først, og til slutt oppdrag med status Utført eller Avbrutt, nyeste tidspunkt først.
+  - «Hjelperen trakk seg» hos oppdragsgiveren når valgt hjelper har trukket seg eller slettet kontoen (FR-17, FR-4). Merket forsvinner når en ny hjelper er valgt, eller oppdraget avbrytes. Oppdraget står derfor under «Trenger handling» også når ingen andre er interessert. Det er bevisst: oppdragsgiveren må enten vente på nye interesserte, endre oppdraget eller avbryte det, og appen lagrer ikke hva brukeren har sett.
+  - «Oppdraget er endret etter at du meldte interesse» hos den interesserte når situasjonen er «Venter på svar» og interessen ble meldt før en endring (FR-6). I alle andre situasjoner vises ikke merket.
+  - Gjelder flere merker for samme oppdrag, vises alle (for eksempel «Hjelperen trakk seg» og «Velg hjelper» når det fortsatt er andre interesserte).
+- Begge faner er delt i tre grupper. Et oppdrag står i nøyaktig én gruppe, og en gruppe uten oppdrag vises ikke:
+
+| Gruppe | «Oppdrag jeg har lagt ut» | «Oppdrag jeg hjelper med» | Rekkefølge |
+|---|---|---|---|
+| «Trenger handling» | Oppdrag med minst ett merke | Oppdrag med minst ett merke | Tidspunkt, tidligste først |
+| «Pågår» | Status Åpen eller Hjelper valgt, uten merke | «Venter på svar» og «Du er valgt», uten merke | Tidspunkt, tidligste først |
+| «Ferdige» | Status Utført eller Avbrutt, uten merke | «Tidspunktet er passert», «Ikke valgt», «Avbrutt», «Utført», «Du er ikke lenger valgt» og «Du trakk deg», uten merke | Tidspunkt, nyeste først |
+
+- Like tidspunkt sorteres som i FR-10.
+- Situasjonene i situasjonstabellen er ikke merker. Situasjonen «Tidspunktet er passert» i «Oppdrag jeg hjelper med» står derfor under «Ferdige»: interessen kan ikke trekkes, og ingen kan velges etter tidspunktet (FR-15). Endrer oppdragsgiveren tidspunktet (FR-6), blir situasjonen «Venter på svar» igjen. Merket med samme tekst hos oppdragsgiveren er et merke, fordi hen kan endre tidspunktet eller avbryte (FR-8).
+- I «Oppdrag jeg hjelper med» avgjør brukerens egen situasjon gruppen, ikke oppdragets status. «Ikke valgt», «Du er ikke lenger valgt» og «Du trakk deg» står under «Ferdige» selv om oppdraget ikke er Utført eller Avbrutt, fordi brukeren ikke venter på svar fra oppdragsgiveren.
+- Menyvalget «Mine oppdrag» (NFR-11) viser antall oppdrag under «Trenger handling» i de to fanene til sammen. Et oppdrag med flere merker telles én gang. Tallet regnes ut på nytt ved hver sidelasting; appen lagrer ikke hva brukeren har sett. Tallet vises ikke når det er 0, og skjermleser leser det sammen med menyvalget (for eksempel «Mine oppdrag, 2 trenger handling»).
 - Tom fane gir en tomtilstand med forklaring og lenke videre: «Oppdrag jeg har lagt ut» lenker til «Legg ut oppdrag», og «Oppdrag jeg hjelper med» lenker til oversikten.
 
 ### 4.6 Fullføre og gi tilbakemelding
@@ -558,7 +577,7 @@ Alle regler i FR-ene for hvem som kan gjøre hva, og når, sjekkes på serveren,
 *Testes ved:* Hver regel R1–R13 i briefen har minst én automatisk test mot kravene den er koblet til i sporingstabellen (§9.1), unntatt regler for krav som er kuttet etter §6.1. Testene sender forespørslene direkte til serveren.
 
 ### NFR-6: Responsiv
-Hele kjerneflyten kan gjennomføres i vanlig nettleser fra 360 px bredde (mobil) til PC, uten vannrett rulling. Ingen egen mobilapp.
+Hele kjerneflyten kan gjennomføres i vanlig nettleser fra 360 px bredde (mobil) til PC, uten vannrett rulling. Ingen egen mobilapp. Omflyt ved 320 px sjekkes i NFR-7.
 **Sporing:** briefen: «Kvalitetskrav» · **Prioritet:** Må
 
 *Testes ved:* Manuell gjennomgang av UJ-1 og UJ-2 ved 360, 768 og 1280 px bredde, dokumentert med skjermbilder.
@@ -572,14 +591,14 @@ Appen følger WCAG 2.1 nivå AA.
 - Alle skjemafelt har synlige etiketter; feilmeldinger står ved feltet og er knyttet til det.
 - Knapper har tekst, ikke bare ikoner; bilder og ikoner med mening har alt-tekst.
 - Brødtekst er minst 18 px, og knapper og andre trykkflater er minst 48 px høye (som i skissene).
-- Siden kan forstørres til 200 % uten at innhold forsvinner.
+- Siden kan forstørres til 200 % uten at innhold forsvinner, og innholdet flyter om ved 320 CSS px bredde (400 % zoom på 1280 px) uten vannrett rulling (WCAG 1.4.10).
 - Status vises alltid med ord («Åpen», «Hjelper valgt»), ikke bare med farge.
 - Statusmeldinger («Lager forslag …», kvitteringer og feil etter innsending) leses opp av skjermleser.
 - Bekreftelsesdialoger flytter fokus inn i dialogen og tilbake etterpå.
 - Sidens språk er angitt som norsk bokmål (`nb`).
 - Lister og faner uten innhold har en tomtilstand med forklaring.
 
-*Testes ved:* Automatisk verktøy (SM-5), manuell tastaturgjennomgang av kjerneflyten og manuell gjennomgang av UJ-1 med skjermleser (NVDA eller VoiceOver). Begge de manuelle gjennomgangene dokumenteres.
+*Testes ved:* Testene T1–T5 i [EXPERIENCE.md § Accessibility Floor](../../ux-designs/ux-G22-bernardo-kverno-moystad-nguyen-2026-11-07/EXPERIENCE.md#accessibility-floor): automatisk test med axe (T1, se SM-5), tastatur (T2), skjermleser med NVDA eller VoiceOver (T3), bredder og zoom ned til 320 px (T4), og kontrast og farge (T5). T2 dekker minst kjerneflyten (UJ-1 og UJ-2), og T3 minst UJ-1. De manuelle gjennomgangene dokumenteres. T6 er brukertesten i SM-4.
 
 ### NFR-8: Tydelig og enkelt språk
 All tekst i appen er på norsk bokmål, med enkelt språk.
@@ -607,10 +626,10 @@ All input valideres på serveren, også når nettleseren allerede har sjekket de
 *Testes ved:* Automatiske tester som sender ugyldige verdier til hvert skjema og hver handling.
 
 ### NFR-11: Navigasjon
-Etter innlogging har appen en fast meny med tre valg: Oppdrag, Mine oppdrag og Profil.
+Etter innlogging har appen en fast meny med tre valg: Oppdrag, Mine oppdrag og Profil. Ved «Mine oppdrag» står antall oppdrag som trenger handling (FR-18).
 **Sporing:** briefen: «Viktigste skjermbilder»; sensorveiledningen, kriterium 4 · **Prioritet:** Må
 
-*Testes ved:* Manuell gjennomgang av kjerneflyten, og den automatiske tilgjengelighetstesten (SM-5).
+*Testes ved:* Manuell gjennomgang av kjerneflyten, den automatiske tilgjengelighetstesten (SM-5) og de automatiske testene for tallet i FR-18.
 
 ### NFR-12: Sikkerhet mot vanlige angrep
 Tekst fra brukere og fra KI-tjenesten vises alltid som tekst, aldri som HTML, og handlinger som endrer data, kan ikke utløses fra andre nettsteder.
@@ -660,15 +679,15 @@ Nabolagshelten har ingen betaling i appen. Den skal heller ikke være en jobbpor
 
 **Sekundære**
 - **SM-4:** I en brukertest med minst to testpersoner utenfor gruppen, der minst én er over 60 år eller lite vant med apper, klarer hver av dem å legge ut et oppdrag (UJ-1, steg 1–3) på under to minutter på mobil eller nettbrett. Tiden måles fra testpersonen trykker «Legg ut oppdrag» til oppdraget er publisert. Enhet, nettleser og tid dokumenteres som manuell test. Validerer FR-5, NFR-6, NFR-7.
-- **SM-5:** Automatisk tilgjengelighetstest (for eksempel axe) finner ingen feil på nivåene «serious» eller «critical» på disse sidene: de fem viktigste skjermbildene i briefen (oppdragsoversikt, nytt oppdrag, oppdragsdetaljer, Mine oppdrag og profil), registrering, innlogging, redigering av profil, et skjema med valideringsfeil og hver bekreftelsesdialog. Validerer NFR-7, NFR-11.
+- **SM-5:** Automatisk tilgjengelighetstest (axe) finner ingen feil på nivåene «serious» eller «critical» på sidene og tilstandene i test T1 i [EXPERIENCE.md § Accessibility Floor](../../ux-designs/ux-G22-bernardo-kverno-moystad-nguyen-2026-11-07/EXPERIENCE.md#accessibility-floor). Lista dekker minst de fem viktigste skjermbildene i briefen (oppdragsoversikt, nytt oppdrag, oppdragsdetaljer, Mine oppdrag og profil), registrering, innlogging, redigering av profil, et skjema med valideringsfeil og hver bekreftelsesdialog, og i tillegg tomme tilstander (oversikt uten treff, tom fane i «Mine oppdrag» og detaljer uten interesserte), KI-forslag og KI-feil, tilbakemelding, feilside og slettet bruker. Den samme testen sjekker at det ikke er vannrett rulling ved 320 px. Validerer NFR-7, NFR-11.
 
 **Motmål (skal ikke optimeres)**
 - **SM-C1:** Andel oppdrag laget med KI-forslag. Skal ikke presses opp; KI-en er et valgfritt hjelpemiddel, og manuell utfylling skal være like enkel. Måles ikke, men brukes som retningslinje i UX-steget. Motvekt til SM-4.
 - **SM-C2:** Antall funksjoner. Flere funksjoner enn i §6.1 skal ikke prioriteres før SM-1–SM-3 er nådd. Motvekt til SM-1.
 
-## 8. Åpne punkter til neste fase
+## 8. Punkter til neste fase (løst i v1.2)
 
-Ingen åpne spørsmål blokkerer UX, arkitektur eller stories. Disse punktene følges opp i neste fase:
+Ingen åpne spørsmål blokkerer stories. Alle punktene under er løst (v1.2): UX-punktene i EXPERIENCE.md § Endringer fra skissene, og arkitekturpunktene i arkitekturspinen (postnummerliste: AD-1; forespørsler fra andre nettsteder: AD-5; sommertid: AD-9; tegnsett: AD-10). Lista står igjen for sporingen.
 
 - **UX-steget (`bmad-ux`) oppdaterer skissene:**
   - Tilbakemelding: 1–5 stjerner som store knapper og en egen «Send»-knapp, ikke tallknapper (FR-20, NFR-7).
@@ -747,11 +766,12 @@ Briefen v2.2 avgjør ikke alt. Tabellen viser hvor PRD-en presiserer, avviker el
 | Redigere profil | «Om meg» nevnes, ikke hvordan | «Om meg», postnummer og telefonnummer kan endres etter registrering; andre felt ikke (FR-22) | Brukere må kunne skrive om seg selv, endre postnummer ved flytting og rette feil telefonnummer |
 | Postnummer | Fire siffer | Må finnes i lista over norske postnumre; poststedet vises (§3) | Ellers kan et oppdrag havne i et postnummer ingen ser |
 | Egne oppdrag i oversikten | Ikke sagt | Vises ikke; finnes under «Mine oppdrag» (FR-10) | Oversikten er for å finne oppdrag man kan hjelpe med (jf. R2) |
+| Tall i menyen og grupper | Ikke sagt (skisse-spørsmål 3) | «Mine oppdrag» i menyen viser antall oppdrag som trenger handling; nytt merke «Velg hjelper»; gruppene «Trenger handling», «Pågår» og «Ferdige» (FR-18, NFR-11) | Uten varsler (§6.2) må brukeren se at noe venter uten å åpne siden, og se det som venter på hen først |
 | Fullførte oppdrag | Ikke presisert | Teller bare oppdrag som valgt hjelper (FR-21) | Profilen skal vise erfaring som hjelper |
 | Tilbakemeldinger i profilen | Vurdering og kommentar | Viser rolle; snittet vises med én desimal og antall (FR-21) | Gjør erfaringsbeviset tydelig og testbart |
 | Interesser ved redigering | Ikke sagt | Beholdes (FR-6) | Samme prinsipp som R6; interesserte kan trekke interessen (FR-13) |
 | Sletting av konto | Brukeren bekrefter | Krever passord; opplysningene som slettes, er listet (FR-4) | Beskytter mot feiltrykk og andre på et delt nettbrett |
-| Tidssone | Ikke sagt | Norsk tid, Europe/Oslo (FR-5) | Appen er for norske nabolag |
+| Tidssone | Ikke sagt | Tidspunkt angis og vises i norsk tid, Europe/Oslo, også ved sommertid; lagringen avgjøres i arkitekturen (FR-5) | Appen er for norske nabolag |
 | Tidspunkt fram i tid | Ikke sagt | Høyst 12 måneder (FR-5) | Hindrer oppdrag som ligger åpne i årevis |
 | Tidsavbrudd for KI | «tidsavbrudd» | 10 sekunder (FR-25) | Gjør kravet testbart |
 | Personvern ved registrering | Ikke nevnt | Kort tekst om hva som lagres og hvem som ser det (FR-1) | Brukeren skal vite hva hen gir fra seg |
@@ -773,3 +793,4 @@ Briefen v2.2 avgjør ikke alt. Tabellen viser hvor PRD-en presiserer, avviker el
 | 2026-11-07 | 0.3 | Avklaringer: vurdering med 1–5 stjerner som i briefen (store knapper, jf. NFR-7); «om meg» skrives og postnummer kan endres i profilen etter registrering (FR-22); egne oppdrag vises bare under «Mine oppdrag» (FR-10); bare oppdrag som hjelper teller som fullført (FR-21); maks 500 tegn for melding, kommentar og «om meg». |
 | 2026-11-07 | 1.0 | Ferdigstilt. Avstemt mot brief, skisser, faglærers tilbakemelding og sensorveiledning (rettet FR-9, FR-10, FR-18, FR-24, NFR-1, NFR-3, NFR-7, NFR-8; ny NFR-10). Review-funn rettet: sporingstabell R1–R13 og SK1–SK10 → FR i §4, KI-tidsavbrudd 10 s, testbar ventetilstand, NFR-4, NFR-5, NFR-8, SM-1, SM-4. Tidssone og interesser ved redigering avgjort. Ny §10 (nå §9.2) med alle presiseringer i forhold til briefen. Utsatte funn fra reviewen av briefen tatt inn: glemt passord og rapportering/blokkering utsatt (§7.2, nå §6.2), uverifisert erfaring som kjent begrensning (§4.7, FR-21), eksempeldata som dekker hele kjerneflyten (NFR-2). Språkvask. |
 | 2026-11-07 | 1.1 | Rettet etter review med fire linser (`review-prd-v1.0-2026-11-07.md`) og rubrikk-review av utkastet (`review-rubric-v1.1.md`). **Produktvalg:** oppdragsgiveren kan markere Utført når tidspunktet er passert (FR-19, avvik fra R7); interesser meldt før en endring merkes (FR-6); prioritet Må/Bør med følger av kutt (§6.1); telefonnummer kan endres (FR-22); postnummerliste med poststed; rolle på tilbakemeldinger (FR-21); passord ved sletting (FR-4). **Hull tettet:** statusmodellen og «Mine oppdrag» (FR-15, FR-7, FR-12, FR-17, FR-18); sletting (FR-4); felles regler (§4.0); sikkerhet (FR-2, FR-3, FR-23, ny NFR-12); KI-svar og mock-regler (FR-25, FR-26); egen profil (FR-21); eksempeldata med relative datoer (NFR-2); kjente begrensninger for profil og glemt passord. **Struktur:** sporing og prioritet per krav, «Testes ved» i alle NFR-er, ny NFR-11 Navigasjon, sporingen samlet i §9.1, §6 og §7 slått sammen (§8–§10 er nå §7–§9). |
+| 2026-11-23 | 1.2 | Avstemt mot UX-spinene og arkitekturspinen. **FR-18:** nytt merke «Velg hjelper»; flere merker på samme oppdrag vises alle; gruppene «Trenger handling», «Pågår» og «Ferdige» i begge faner; hjelper-fanen grupperes etter brukerens egen situasjon, ikke oppdragets status (endrer v1.1); tall ved «Mine oppdrag» i menyen (også NFR-11). **NFR-7:** flyter om ved 320 px (WCAG 1.4.10), og «Testes ved» viser til T1–T5 i EXPERIENCE.md. **SM-5:** viser til test T1 i EXPERIENCE.md, med flere tilstander (tomme tilstander, KI-feil, feilside, slettet bruker) og sjekk ved 320 px. **FR-5:** tid angis og vises i norsk tid, med testbare regler ved sommertid; lagringen avgjøres i arkitekturen (AD-9). **Etter rubrikk-review (`review-rubric-v1.2.md`):** «Merke» og «Situasjon» i ordlisten (§3), og UJ-2 bruker «står som» om situasjoner; merket «Oppdraget er endret …» vises bare ved «Venter på svar» (FR-6, FR-18); situasjonen «Tidspunktet er passert» står under «Ferdige»; avveiningen for «Hjelperen trakk seg» er skrevet inn. §8 markert som løst, ny rad i §9.2. |
