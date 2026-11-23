@@ -70,6 +70,16 @@ BMAD-skillene kjører skriptene i `_bmad/scripts/` med `uv run`. Det krever:
 
 Sjekk med `python --version` og `uv --version`. Personlige BMAD-innstillinger ligger i `_bmad/config.user.toml`, som ikke er i repoet.
 
+## Kontoer for drift
+
+Appen publiseres på Vercel med database hos Supabase (se arkitekturspinen). Hemmeligheter ligger i Vercel og GitHub Secrets, aldri i repoet.
+
+| Tjeneste | Eier | Reserve |
+|---|---|---|
+| Vercel | Heidi Kverno | ikke bestemt |
+| Supabase | ikke bestemt | ikke bestemt |
+| OpenRouter (valgfri, KI) | ikke bestemt | ikke bestemt |
+
 ## Medlemmer
 
 - Reika Bernardo
