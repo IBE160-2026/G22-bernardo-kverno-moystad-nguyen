@@ -494,3 +494,238 @@ slik at feil oppdages med en gang og ikke rett før innlevering.
 **Gitt** en senere story som lager en ny side eller tilstand
 **Når** storyen er ferdig
 **Så** er siden lagt til i T1. Det følger av Definition of Done, og lista i T1 i EXPERIENCE.md er målet når Epic 4 er ferdig.
+
+---
+
+## Epic 2: Legge ut og finne oppdrag
+
+Kari kan legge ut, redigere og avbryte oppdrag og finne dem igjen under «Mine oppdrag». Amir finner åpne oppdrag i sitt postnummer, filtrerer på kategori og postnummer, og åpner detaljene.
+
+### Story 2.1: Legge ut oppdrag
+
+Som oppdragsgiver
+vil jeg legge ut et oppdrag med tittel, beskrivelse, kategori, postnummer, tidspunkt og godtgjørelse,
+slik at naboer i postnummeret mitt kan se at jeg trenger hjelp.
+
+**Krav:** FR-5, FR-9 (detaljer for oppdragsgiveren), NFR-9, NFR-10, AR-12 (statusfunksjonen og `skjema_id`), AR-19, AR-20; UX-DR10 (statusmerke og kategorimerke), UX-DR11 (skjema), UX-DR12, UX-DR13 (teller), UX-DR14, UX-DR29
+
+**Acceptance Criteria:**
+
+**Gitt** en innlogget bruker på oversikten
+**Når** hen trykker «+ Legg ut oppdrag»
+**Så** vises «Nytt oppdrag» på én skjerm med Beskrivelse (med hjelpeteksten «Ikke skriv adresse eller telefonnummer – det avtaler dere når hjelperen er valgt.»), Tittel, Kategori (seks store radioknapper), Postnummer (forhåndsutfylt fra profilen og mulig å endre), «Når?» (Dato og Klokkeslett) og «Hva tilbyr du?» («Beløp» med «Beløp i kr», eller «Uten betaling»), og knappen «Publiser» (FR-5, UX-DR11, UX-DR14)
+**Og** menyvalget «Mine oppdrag» er markert med `aria-current="true"`.
+
+**Gitt** gyldige verdier
+**Når** brukeren trykker «Publiser»
+**Så** lagres oppdraget med status `apen`, brukeren som oppdragsgiver, kategorien som kode og tidspunktet i UTC (AD-2, AD-9, AD-10)
+**Og** brukeren havner på detaljene for oppdraget med kvitteringen «Oppdraget er lagt ut.» i fokus. Detaljene viser alle feltene, statusmerket «Åpen» og tidspunktet som «I morgen kl. 07:00» eller «Lørdag 14. nov. kl. 12:00», og beløpet som «1 000 kr» eller «Uten betaling» (FR-9, UX-DR29).
+
+**Gitt** grenseverdiene i FR-5
+**Når** skjemaet sendes
+**Så** godtas tittel med 3 og 80 tegn og avvises med 2 og 81, og beskrivelse med 10 og 1000 tegn godtas mens 9 og 1001 avvises (etter trim og NFC, og felt med bare mellomrom regnes som tomme). Beløp 1 og 10 000 godtas, mens 0, 10 001, desimaltall og tekst avvises. «Uten betaling» lagres som NULL. Manglende kategori eller valg under «Hva tilbyr du?» avvises (FR-5, AD-10)
+**Og** hver feil vises ved feltet med teksten fra EXPERIENCE.md, alle feilene vises samtidig i feiloppsummeringen, alt utfylt beholdes, og ingenting lagres (NFR-10).
+
+**Gitt** feltene «Dato» og «Klokkeslett»
+**Når** brukeren skriver tidspunktet
+**Så** godtas «14.11.2026», «14/11/26», «14-11-2026» og «14 11 2026» som dato, og «07:00», «7», «0700» og «7.00» som klokkeslett. Tosifret år betyr 20xx (AD-9)
+**Og** et tidspunkt som er passert, gir «Velg et nytt tidspunkt fram i tid», og et tidspunkt mer enn 12 måneder fram gir «Velg et tidspunkt høyst 12 måneder fram i tid.», under gruppen «Når?» (FR-5)
+**Og** 02:30 natt til siste søndag i mars avvises med melding ved feltet, 02:30 natt til siste søndag i oktober tolkes som det første klokkeslettet, og et lagret oppdrag vises med samme dato og klokkeslett før og etter skiftet. En tabelltest i `core/tid.py` dekker alle skrivemåtene og rundturen over skiftene (FR-5, AD-9).
+
+**Gitt** at brukeren trykker «Publiser» to ganger, eller sender det samme skjemaet på nytt
+**Når** serveren mottar den andre innsendingen med samme `skjema_id`
+**Så** lagres bare ett oppdrag, og brukeren sendes til oppdraget som finnes (`Duplikat`, AD-2)
+**Og** knappen er `aria-disabled` mens forespørselen pågår (UX-DR28).
+
+**Gitt** tekstområdene Beskrivelse
+**Når** brukeren skriver
+**Så** vises telleren «37 av 1000 tegn», som teller kodepunkter etter NFC og trim, og leses opp bare når grensen nås. Feltet har ikke `maxlength` (AD-10, UX-DR13).
+
+**Gitt** et oppdrag
+**Når** tittelen eller beskrivelsen inneholder `<script>alert(1)</script>`
+**Så** vises teksten som tekst på detaljene (NFR-12).
+
+**Gitt** eksempeldataene
+**Når** `uv run python -m app.seed` kjøres
+**Så** finnes 10–15 oppdrag med tidspunkter regnet fra når dataene lastes, med åpne oppdrag i alle seks kategorier, minst ett utgått oppdrag og minst ett avbrutt (NFR-2). Situasjonene som krever interesser og tilbakemeldinger, legges til i Epic 3 og Epic 4.
+
+### Story 2.2: Nytt oppdrag i to steg på mobil, med forhåndsvisning
+
+Som oppdragsgiver på mobil
+vil jeg fylle ut «Nytt oppdrag» i to korte steg og se hvordan oppdraget vil se ut,
+slik at skjemaet ikke blir uoversiktlig på en liten skjerm.
+
+**Krav:** FR-5, NFR-6, NFR-7, AR-28 (`steg.js`, `skjema.js`); UX-DR13 (poststed og «Beløp i kr»), UX-DR15, UX-DR16, UX-DR27
+
+**Acceptance Criteria:**
+
+**Gitt** en skjerm under 768 px med JavaScript
+**Når** «Nytt oppdrag» åpnes
+**Så** er skjemaet delt i «Nytt oppdrag 1 av 2» (Beskrivelse, Tittel, Kategori, «Neste») og «Nytt oppdrag 2 av 2» (Postnummer, «Når?», «Hva tilbyr du?», forhåndsvisning, «Publiser» og «Tilbake til steg 1»), med `<title>` per steg (UX-DR16)
+**Og** «Neste» sjekker feltene i steg 1 og viser feiloppsummeringen der hvis noe mangler. Ellers vises steg 2 med fokus på `h1`. «Tilbake til steg 1» beholder alt utfylt og gir fokus på `h1`.
+
+**Gitt** at serveren finner feil etter «Publiser»
+**Når** skjemaet vises på nytt
+**Så** lister feiloppsummeringen feil fra begge steg, appen viser steget med første feil, og en lenke til et felt i det andre steget bytter steg (UX-DR16, UX-DR22).
+
+**Gitt** 768 px eller bredere, eller en nettleser uten JavaScript
+**Når** «Nytt oppdrag» åpnes
+**Så** vises hele skjemaet på én skjerm med `h1` «Nytt oppdrag» og to `h2` (UX-DR16, AR-28).
+
+**Gitt** steg 2 (eller den nederste delen på én skjerm)
+**Når** brukeren fyller ut feltene
+**Så** viser forhåndsvisningen «Slik vises oppdraget for andre» kortet slik det blir i oversikten, med stiplet kant, uten lenke og uten overskrift, med «–» for tomme felt. Den oppdateres uten opplesning (UX-DR15)
+**Og** poststedet vises ved postnummeret, og «Beløp i kr» vises bare når «Beløp» er valgt (med CSS `:has(:checked)`), uten å flytte fokus, og beløpet beholdes ved bytte (UX-DR13).
+
+**Gitt** T1
+**Når** testen kjøres
+**Så** er steg 1, steg 2 og skjemaet på én skjerm (nettbrett) uten brudd på nivåene «serious» eller «critical» og uten vannrett rulling ved 320 px.
+
+### Story 2.3: Finne oppdrag i oversikten og se detaljene
+
+Som hjelper
+vil jeg se åpne oppdrag i postnummeret mitt, filtrere på kategori og postnummer, og åpne detaljene,
+slik at jeg raskt finner noe jeg kan hjelpe med.
+
+**Krav:** FR-9, FR-10, FR-11, AR-13 (utgått og `erfaring`), AR-24, AR-27 (filterhjelperen), AR-28 (`fokus.js`); UX-DR5, UX-DR8, UX-DR10, UX-DR21, UX-DR24, UX-DR25 (annen innlogget)
+
+**Acceptance Criteria:**
+
+**Gitt** en innlogget bruker
+**Når** oversikten åpnes
+**Så** vises overskriften «Ledige oppdrag i 0571 Oslo», antallslinja «4 ledige oppdrag i 0571 Oslo» og oppdragskortene i brukerens postnummer (FR-10)
+**Og** bare oppdrag med status Åpen der tidspunktet ikke er passert, vises. Brukerens egne oppdrag vises ikke (FR-8, FR-10)
+**Og** sorteringen er etter tidspunkt, tidligste først, og ved likt tidspunkt etter når oppdraget ble lagt ut, eldste først (FR-10)
+**Og** hvert kort er én lenke og viser kategori, tittel, tidspunkt, postnummer med poststed og godtgjørelse, i 1, 2 eller 3 kolonner etter skjermbredden (UX-DR5, UX-DR8).
+
+**Gitt** kategoriknappene
+**Når** brukeren velger «Hage»
+**Så** viser lista bare oppdrag i Hage, adressen er `?kategori=hage`, den valgte lenken har `aria-current="true"`, hake og fet tekst, fokus står på den valgte kategorien, og antallslinja «2 ledige oppdrag i Hage i 0571 Oslo» er knyttet til den med `aria-describedby` (FR-11, UX-DR24)
+**Og** «Alle» fjerner kategorifilteret.
+
+**Gitt** postnummerfeltet med knappen «Vis»
+**Når** brukeren skriver et annet gyldig postnummer og trykker «Vis» eller Enter
+**Så** erstatter det eget postnummer i lista, og kategorifilteret beholdes (FR-11)
+**Og** et postnummer som ikke finnes, gir «Finner ikke postnummeret. Sjekk at det har fire siffer.» ved feltet, og lista står uendret (FR-11).
+
+**Gitt** at det ikke er noen treff
+**Når** oversikten vises
+**Så** vises tomtilstanden fra EXPERIENCE.md: med kategori valgt «Prøv en annen kategori eller et annet postnummer.» og «Vis alle kategorier», og med «Alle» valgt «Prøv et annet postnummer.» og «Velg et annet postnummer», som gir fokus i postnummerfeltet med innholdet markert (FR-10, UX-DR21).
+
+**Gitt** et åpent oppdrag lagt ut av en annen
+**Når** en innlogget bruker åpner detaljene
+**Så** ser hen alle feltene, status og oppdragsgiverblokken «Lagt ut av Kari» med fullførte oppdrag, snitt («Ingen vurderinger ennå» til Epic 4) og «Se profil» (FR-9, UX-DR25)
+**Og** menyvalget «Oppdrag» er markert
+**Og** lista over interesserte vises ikke for andre enn oppdragsgiveren (FR-9).
+
+**Gitt** et oppdrag med en annen status enn Åpen
+**Når** en annen bruker enn oppdragsgiveren (og valgt hjelper, fra Epic 3) åpner `/oppdrag/{id}`
+**Så** vises feilsiden med samme 404-svar som for et oppdrag som ikke finnes (FR-9, AR-26).
+
+**Gitt** HTML-en fra oversikten og detaljene
+**Når** testen søker etter testbrukernes telefonnummer, e-post og fødselsdato
+**Så** finnes ingen av dem (FR-16, AD-16).
+
+### Story 2.4: Se egne oppdrag under «Mine oppdrag»
+
+Som oppdragsgiver
+vil jeg se alle oppdragene jeg har lagt ut, med status og tidspunkt,
+slik at jeg finner dem igjen når de ikke vises i oversikten.
+
+**Krav:** FR-18 (grunnversjon av «Oppdrag jeg har lagt ut»), FR-8, AR-13; UX-DR9, UX-DR10, UX-DR21, UX-DR26
+
+**Acceptance Criteria:**
+
+**Gitt** en bruker som har lagt ut oppdrag
+**Når** hen åpner «Mine oppdrag»
+**Så** vises «Oppdrag jeg har lagt ut» med én lenkerad per oppdrag: tittel, statusmerke, tidspunkt og pil ›. Raden går til detaljene (FR-18, UX-DR9)
+**Og** radene står etter tidspunkt, tidligste først.
+
+**Gitt** et eget oppdrag med status Åpen der tidspunktet er passert
+**Når** «Mine oppdrag» vises
+**Så** har raden merket «Tidspunktet er passert» med skjult tekst «Må gjøres: …», og snarveiene «Endre tidspunkt» og «Avbryt oppdrag» står under raden, utenfor lenken (FR-8, UX-DR10, UX-DR26)
+**Og** oppdraget vises ikke i oversikten (FR-8)
+**Og** merket beregnes ved lesing fra status, tidspunkt og `klokke.na()`, uten at noe lagres (AD-3). Testet med `sett_na` på begge sider av tidspunktet.
+
+**Gitt** en bruker uten egne oppdrag
+**Når** «Mine oppdrag» åpnes
+**Så** vises tomtilstanden «Du har ikke lagt ut noen oppdrag.» med lenken «Legg ut oppdrag» (FR-18, UX-DR21).
+
+**Gitt** detaljene for et eget oppdrag
+**Når** oppdragsgiveren åpner dem
+**Så** er menyvalget «Mine oppdrag» markert, og oppdragsgiverblokken vises ikke (UX-DR25).
+
+### Story 2.5: Redigere og avbryte oppdrag
+
+Som oppdragsgiver
+vil jeg endre et åpent oppdrag eller avbryte det,
+slik at oppdraget alltid stemmer med det jeg trenger.
+
+**Krav:** FR-6, FR-7, FR-8, NFR-5, NFR-8, AR-12, AR-28 (`dialog.js`, `sending.js`); UX-DR7, UX-DR18 (avbryte), UX-DR27
+
+**Acceptance Criteria:**
+
+**Gitt** et eget oppdrag med status Åpen
+**Når** oppdragsgiveren trykker «Rediger»
+**Så** vises det samme skjemaet uten KI, med knappen «Lagre endringer» og `<title>` «Rediger «…» – Nabolagshelten». Feltene valideres som i FR-5
+**Og** etter lagring vises detaljene med kvitteringen «Endringene er lagret.» (FR-6).
+
+**Gitt** et utgått oppdrag
+**Når** oppdragsgiveren trykker «Endre tidspunkt»
+**Så** åpnes skjemaet med fokus i feltet «Dato», og oppdraget kan ikke lagres før tidspunktet er fram i tid («Velg et nytt tidspunkt fram i tid»)
+**Og** med nytt tidspunkt vises oppdraget igjen i oversikten (FR-6, FR-8, UX-DR27).
+
+**Gitt** en redigering som endrer tidspunkt, godtgjørelse eller postnummer
+**Når** den lagres
+**Så** settes `oppdrag.vesentlig_endret`. Endring av bare tittel, beskrivelse eller kategori setter den ikke (AD-3). «Meldt før endring» vises i Epic 3.
+
+**Gitt** en annen bruker enn oppdragsgiveren, eller et oppdrag som ikke har status Åpen
+**Når** en redigering sendes direkte til serveren
+**Så** avvises den, og ingen data endres (FR-6, NFR-5).
+
+**Gitt** et eget oppdrag med status Åpen
+**Når** oppdragsgiveren trykker «Avbryt oppdrag»
+**Så** åpnes dialogen «Avbryte «…»? Det kan ikke angres.» med «Ja, avbryt oppdraget» og «Behold oppdraget». Fokus går til spørsmålet, Tab holdes i dialogen, og Esc angrer og gir fokus tilbake til knappen (UX-DR18)
+**Og** uten JavaScript vises en egen bekreftelsesside med en POST-knapp (AR-28)
+**Og** etter bekreftelse er status Avbrutt, kvitteringen «Oppdraget er avbrutt.» vises, og oppdraget kan ikke lenger endres (FR-7).
+
+**Gitt** en annen bruker enn oppdragsgiveren, eller et oppdrag med status Utført eller Avbrutt
+**Når** en avbrytelse sendes direkte til serveren
+**Så** avvises den (FR-7, NFR-5).
+
+**Gitt** to faner med det samme oppdraget
+**Når** oppdragsgiveren avbryter i den ene og redigerer eller avbryter i den andre
+**Så** utføres bare den første handlingen, og den andre gir «Oppdraget er endret. Last siden på nytt.» med knappen «Last siden på nytt» (§4.0, AD-2)
+**Og** en test sender to samtidige forespørsler og sjekker at bare én lykkes, mot både SQLite og Postgres.
+
+**Gitt** T1
+**Når** testen kjøres
+**Så** er redigeringsskjemaet og dialogen for å avbryte uten brudd på nivåene «serious» eller «critical».
+
+### Story 2.6: Utfylt skjema går ikke tapt når innloggingen utløper
+
+Som oppdragsgiver som har brukt lang tid på et skjema
+vil jeg kunne logge inn igjen uten å miste det jeg har skrevet,
+slik at jeg ikke må begynne på nytt.
+
+**Krav:** AD-7 (fullstendig versjon), FR-2, FR-3, AR-17. **Kan kuttes** (AR-11, punkt 1). Da står den enkle 401-siden fra story 1.3 igjen, og kuttet føres i memlog og i PRD §9.2.
+
+**Acceptance Criteria:**
+
+**Gitt** en bruker som fyller ut «Nytt oppdrag» mens sesjonen utløper
+**Når** hen trykker «Publiser»
+**Så** endres ingen data, og svaret er 401-siden «Du må logge inn igjen.» med alle innsendte felt som skjulte felt (unntatt passord og CSRF), en ny CSRF-nøkkel, feltene E-post og Passord og en knapp som sender til samme adresse
+**Og** siden viser ikke noe innhold fra databasen (AD-7).
+
+**Gitt** 401-siden
+**Når** brukeren logger inn med riktig e-post og passord
+**Så** logger mellomvaren inn gjennom `Autentisering`, fjerner `_innlogging_*`-feltene, og ruta behandler den opprinnelige innsendingen som den nye innloggede brukeren
+**Og** tilgangsreglene i servicen gjelder som vanlig. Logger en annen bruker inn, gjelder reglene for den brukeren.
+
+**Gitt** feil passord på 401-siden
+**Når** skjemaet sendes
+**Så** vises 401-siden igjen med «Feil e-post eller passord.», og de skjulte feltene beholdes. Grensen for innloggingsforsøk gjelder (FR-2).
+
+**Gitt** kodebasen
+**Når** testen kjøres
+**Så** bruker ingen andre skjema feltnavn som begynner med `_` (AD-7).
