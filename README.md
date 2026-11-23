@@ -76,9 +76,9 @@ Appen publiseres på Vercel med database hos Supabase (se arkitekturspinen). Hem
 
 | Tjeneste | Eier | Reserve |
 |---|---|---|
-| Vercel | Heidi Kverno | ikke bestemt |
-| Supabase | ikke bestemt | ikke bestemt |
-| OpenRouter (valgfri, KI) | ikke bestemt | ikke bestemt |
+| Vercel | Heidi Kverno | ingen ennå |
+| Supabase | Heidi Kverno | ingen ennå |
+| OpenRouter (valgfri, KI) | Heidi Kverno | ingen ennå |
 
 ## Medlemmer
 
