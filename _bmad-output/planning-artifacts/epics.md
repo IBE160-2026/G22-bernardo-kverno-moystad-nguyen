@@ -422,7 +422,7 @@ slik at bare jeg får tilgang til innholdet mitt.
 
 **Gitt** en bruker som har glemt passordet
 **Når** gruppen hjelper manuelt
-**Så** setter `uv run python -m app.admin nytt-passord <e-post>` et nytt passord med de samme funksjonene (AR-9). `slett-konto` kommer i story 4.6.
+**Så** setter `uv run python -m app.admin nytt-passord <e-post>` et nytt passord med de samme funksjonene (AR-9). `slett-konto` kommer i story 4.5.
 
 ### Story 1.4: Registrere konto
 
@@ -916,3 +916,211 @@ slik at jeg ikke går glipp av noe jeg må gjøre.
 **Når** de kjøres
 **Så** finnes det en test for hver rad i situasjonstabellen og for hvert merke i FR-18 så langt, og for tallet i menyen med flere merker på samme oppdrag (FR-18, NFR-11)
 **Og** T1 dekker begge fanene og tom fane.
+
+---
+
+## Epic 4: Fullføre, gi tilbakemelding og vise erfaring
+
+Oppdraget markeres som utført, og partene gir hverandre stjerner og kommentar. Amir har en profil med fullførte oppdrag og tilbakemeldinger han kan vise fram. Brukeren kan redigere profilen sin og slette kontoen.
+
+### Story 4.1: Markere oppdraget som utført
+
+Som valgt hjelper eller oppdragsgiver
+vil jeg markere oppdraget som utført når jobben er gjort,
+slik at oppdraget blir avsluttet og kan telle som erfaring.
+
+**Krav:** FR-19, FR-18 (merket «Er jobben gjort?» og situasjonen «Utført»), NFR-5, NFR-8, AR-12, AR-13, NFR-2; UX-DR18 (utført), UX-DR25
+
+**Acceptance Criteria:**
+
+**Gitt** et oppdrag med status Hjelper valgt
+**Når** valgt hjelper åpner detaljene før datoen for tidspunktet
+**Så** finnes ikke knappen «Marker som utført». I stedet står det når hen kan gjøre det («Du kan markere oppdraget som utført fra fredag 6. nov.») (FR-19, UX-DR25)
+**Og** fra kl. 00:00 norsk tid på datoen vises «Marker som utført» som primærknapp. Testet med `sett_na` 23:59 dagen før og 00:00 samme dag, også over et skifte til eller fra sommertid (FR-19, AD-9).
+
+**Gitt** et oppdrag med status Hjelper valgt
+**Når** oppdragsgiveren åpner detaljene
+**Så** vises «Marker som utført» først når tidspunktet er passert, sammen med merket «Er jobben gjort?» (FR-19).
+
+**Gitt** knappen «Marker som utført»
+**Når** brukeren trykker den
+**Så** åpnes dialogen «Marker som utført? Det kan ikke angres.» med «Gjelder «…».», «Ja, marker som utført» og «Ikke ennå» (FR-19, UX-DR18)
+**Og** etter bekreftelse er status Utført, kvitteringen «Oppdraget er markert som utført.» vises, oppdraget kan ikke lenger endres, og telefonboksen vises fortsatt for de to partene (FR-16, FR-19).
+
+**Gitt** at markeringen sendes direkte til serveren
+**Når** valgt hjelper gjør det før datoen, oppdragsgiveren gjør det før tidspunktet er passert, en annen bruker gjør det, eller status ikke er Hjelper valgt
+**Så** avvises den, og ingen data endres (FR-19, NFR-5)
+**Og** to samtidige markeringer gir én overgang, og den andre får «Oppdraget er endret. Last siden på nytt.» (AD-2).
+
+**Gitt** et oppdrag med status Hjelper valgt der tidspunktet er passert
+**Når** «Mine oppdrag» vises for begge parter
+**Så** har oppdraget merket «Er jobben gjort?», står under «Trenger handling» og telles i menyen (FR-18)
+**Og** etter markeringen står oppdraget som «Utført» for hjelperen og med status Utført for oppdragsgiveren.
+
+**Gitt** eksempeldataene
+**Når** de lastes
+**Så** har minst ett oppdrag status Hjelper valgt der tidspunktet er passert (NFR-2).
+
+### Story 4.2: Gi tilbakemelding
+
+Som oppdragsgiver eller valgt hjelper på et utført oppdrag
+vil jeg gi den andre parten stjerner og en kort kommentar,
+slik at erfaringen blir dokumentert i profilen.
+
+**Krav:** FR-20, FR-18 (merket «Gi tilbakemelding»), NFR-5, NFR-8, NFR-12, AR-12, NFR-2; UX-DR17 (input), UX-DR22
+
+**Acceptance Criteria:**
+
+**Gitt** et utført oppdrag der brukeren er oppdragsgiver eller valgt hjelper og ikke har gitt tilbakemelding
+**Når** hen åpner detaljene
+**Så** vises «Hvordan gikk det med Amir?» som `legend` over fem stjerner (radioknapper på 48 × 48 px med navnene «1 av 5 stjerner, dårlig» til «5 av 5 stjerner, veldig bra», som kan velges med trykk eller piltaster), «Kommentar (valgfritt)» med teller og hjelpeteksten «Kommentaren vises i Amirs profil.», og knappen «Send» (FR-20, UX-DR17)
+**Og** et trykk på en stjerne lagrer ingenting. Valgt verdi står med ord under stjernene.
+
+**Gitt** stjerner valgt og eventuelt en kommentar på høyst 500 tegn
+**Når** brukeren trykker «Send»
+**Så** lagres tilbakemeldingen, og skjemaet erstattes av kvitteringen «Takk! Tilbakemeldingen er lagt til i Amirs profil.» og den gitte tilbakemeldingen (FR-20)
+**Og** «Send» uten stjerner gir «Velg antall stjerner.», og en kommentar på 501 tegn avvises med teksten fra EXPERIENCE.md.
+
+**Gitt** at tilbakemeldingen sendes direkte til serveren
+**Når** status ikke er Utført, avsenderen ikke er en av partene, mottakeren ikke er den andre parten, eller avsenderen allerede har gitt tilbakemelding
+**Så** avvises den (FR-20, NFR-5)
+**Og** to samtidige innsendinger gir én tilbakemelding (unik-constraint `tilbakemelding(oppdrag_id, giver_id)`, AD-2).
+
+**Gitt** et utført oppdrag der brukeren ikke har gitt tilbakemelding
+**Når** «Mine oppdrag» vises
+**Så** har oppdraget merket «Gi tilbakemelding» og står under «Trenger handling» til tilbakemeldingen er gitt (FR-18).
+
+**Gitt** en kommentar med `<script>alert(1)</script>`
+**Når** den vises
+**Så** vises den som tekst (NFR-12).
+
+**Gitt** eksempeldataene
+**Når** de lastes
+**Så** finnes minst ett utført oppdrag med tilbakemelding fra begge parter og ett utført oppdrag der tilbakemelding ennå ikke er gitt (NFR-2).
+
+### Story 4.3: Vise profil med dokumentert erfaring
+
+Som hjelper
+vil jeg ha en profil som viser fullførte oppdrag, snittvurdering og tilbakemeldinger,
+slik at jeg kan vise til erfaringen min, for eksempel når jeg søker sommerjobb.
+
+**Krav:** FR-21, FR-9 og FR-14 (snitt og erfaring), NFR-2 (fullstendig test), AR-13 (`erfaring`), AR-24; UX-DR9, UX-DR17 (visning), UX-DR21, UX-DR29
+
+**Acceptance Criteria:**
+
+**Gitt** en innlogget bruker
+**Når** hen åpner profilen til en annen bruker (fra «Se profil») eller sin egen (fra menyvalget «Profil»)
+**Så** vises navn, postnummer med poststed, «om meg» (bare når feltet har tekst), fullførte oppdrag per kategori, snittet med stjerner og teksten «4,9 av 5, 11 vurderinger», og alle mottatte tilbakemeldinger, nyeste først (FR-21, UX-DR17)
+**Og** `<title>` er «Min profil – Nabolagshelten» eller «Amir – profil – Nabolagshelten».
+
+**Gitt** tilbakemeldingene i profilen
+**Når** de vises
+**Så** viser hver rad vurderingen («5 av 5 stjerner»), kommentaren og metalinja «Fra Kari · 14. feb. · Amir var hjelper», med giverens navn som lenke til profilen (FR-21, UX-DR9).
+
+**Gitt** utregningen av erfaring
+**Når** `erfaring(db, bruker_ids)` kalles
+**Så** teller «fullførte oppdrag» bare oppdrag med status Utført der brukeren var valgt hjelper, og snittet regnes ut fra alle tilbakemeldinger brukeren har fått, både som hjelper og som oppdragsgiver (FR-21, AD-3)
+**Og** snittet vises med én desimal og desimalkomma («4,3 av 5, 7 vurderinger»), og de samme tallene vises i oppdragsgiverblokken (FR-9) og i lista over interesserte (FR-14)
+**Og** stjernene i visningen avrundes til nærmeste hele stjerne (4,4 → 4 og 4,9 → 5), har `aria-hidden`, og teksten bærer verdien (UX-DR17).
+
+**Gitt** en bruker uten vurderinger eller uten fullførte oppdrag
+**Når** profilen vises
+**Så** står «Ingen vurderinger ennå» og «Ingen fullførte oppdrag ennå» (FR-21, UX-DR21).
+
+**Gitt** en hvilken som helst profil
+**Når** den vises
+**Så** står teksten «Fullførte oppdrag og tilbakemeldinger er registrert av brukere i Nabolagshelten og er ikke verifisert.»
+**Og** profilen viser aldri telefonnummer, e-post eller fødselsdato, og malen får bare `Profil` (FR-21, AD-16).
+
+**Gitt** egen profil
+**Når** den vises
+**Så** står «Rediger profil» og «Logg ut» som sekundærknapper øverst, rett under navn og postnummer (FR-21). «Slett konto» kommer i story 4.5.
+
+**Gitt** eksempeldataene
+**Når** den automatiske testen for NFR-2 kjøres
+**Så** finnes hver situasjon i lista i NFR-2: minst 6 brukere i 2–3 postnumre, 10–15 oppdrag, åpne oppdrag i alle kategorier, ett oppdrag med flere interesserte, Hjelper valgt, Utført med og uten tilbakemelding, Avbrutt, utgått, Hjelper valgt etter tidspunktet, og én bruker med og én uten vurderinger (NFR-2).
+
+### Story 4.4: Redigere egen profil (Bør)
+
+Som bruker
+vil jeg skrive litt om meg selv og endre postnummer og telefonnummer,
+slik at profilen er riktig når jeg flytter eller bytter nummer.
+
+**Krav:** FR-22, NFR-5, NFR-12, AR-24 (`EgneOpplysninger`); UX-DR12, UX-DR13. **Kan kuttes** etter PRD §6.1. Da tas «om meg» og «Rediger profil» ut av FR-21, NFR-12 og SM-5.
+
+**Acceptance Criteria:**
+
+**Gitt** egen profil
+**Når** brukeren trykker «Rediger profil»
+**Så** vises «Rediger profil» med navn, e-post og fødselsdato som tekst (kan ikke endres), og feltene Om meg (valgfritt, høyst 500 tegn, med teller), Postnummer (med poststed) og Telefonnummer, og knappen «Lagre endringer» (FR-22)
+**Og** malen får `EgneOpplysninger`. Dette er den eneste siden som viser brukerens egen e-post og telefon (FR-16, AD-16).
+
+**Gitt** gyldige verdier
+**Når** brukeren trykker «Lagre endringer»
+**Så** havner hen på profilen med kvitteringen «Profilen er oppdatert.» (FR-22)
+**Og** nytt postnummer brukes straks i oversikten og forhåndsutfylles i nye oppdrag, mens oppdrag som allerede er lagt ut, beholder sitt postnummer
+**Og** nytt telefonnummer vises straks for motparten i oppdrag med status Hjelper valgt eller Utført.
+
+**Gitt** ugyldig postnummer, ugyldig telefonnummer eller «om meg» over 500 tegn
+**Når** skjemaet sendes
+**Så** vises feilen ved feltet, og ingenting lagres (FR-22, NFR-10).
+
+**Gitt** at en endring sendes direkte til serveren for en annen bruker, eller med navn, e-post eller fødselsdato
+**Når** serveren behandler den
+**Så** endres bare innlogget brukers «om meg», postnummer og telefon (FR-22, NFR-5).
+
+**Gitt** «om meg» med `<script>alert(1)</script>`
+**Når** profilen vises
+**Så** vises teksten som tekst (NFR-12).
+
+### Story 4.5: Slette egen konto
+
+Som bruker
+vil jeg kunne slette kontoen min selv,
+slik at personopplysningene mine fjernes uten at andres dokumenterte erfaring forsvinner.
+
+**Krav:** FR-4, FR-17, FR-18 («Hjelperen trakk seg»), FR-20, FR-21, NFR-9, AR-9 (`slett-konto`), AR-18, AR-25; UX-DR21, UX-DR29
+
+**Acceptance Criteria:**
+
+**Gitt** egen profil
+**Når** brukeren trykker lenken «Slett konto» nederst
+**Så** vises siden «Slett konto» med forklaringen fra FR-4: hva som slettes, at tilbakemeldinger brukeren har gitt, beholdes med navnet «Slettet bruker», og at kommentarene i noen tilfeller kan avsløre hvem som skrev dem. Siden har feltet Passord (`current-password`), «Slett kontoen min» og «Tilbake til profilen» (FR-4).
+
+**Gitt** feil passord
+**Når** brukeren trykker «Slett kontoen min»
+**Så** vises «Passordet er feil. Kontoen er ikke slettet.», og ingenting endres (FR-4).
+
+**Gitt** riktig passord
+**Når** kontoen slettes
+**Så** beholdes `bruker`-raden med samme id, navn, e-post, passord-hash, telefon, postnummer, fødselsdato og «om meg» settes til NULL, og `slettet_tidspunkt` settes (AD-8)
+**Og** alle sesjoner for kontoen slettes, også på andre enheter, og radene i `innloggingsforsok` for e-posten slettes
+**Og** brukeren havner på innloggingssiden med «Kontoen din er slettet.»
+**Og** en test sjekker at databasen ikke lenger inneholder den gamle e-postadressen eller telefonnummeret (FR-4).
+
+**Gitt** dataene til brukeren som slettes
+**Når** slettingen kjøres
+**Så** behandles de etter tabellen i FR-4: egne åpne og avbrutte oppdrag slettes sammen med interessene, egne oppdrag med Hjelper valgt blir Avbrutt med telefonnumrene skjult, utførte oppdrag beholdes og teller fortsatt i den andre partens profil, interesser brukeren har meldt slettes, oppdrag der brukeren er valgt hjelper med status Hjelper valgt går tilbake til Åpen gjennom overgangen i AD-2 (`arsak='slettet'`) slik at oppdragsgiveren ser «Hjelperen trakk seg», tilbakemeldinger brukeren har gitt beholdes, og tilbakemeldinger brukeren har fått slettes (FR-4, FR-17, FR-18)
+**Og** hele slettingen skjer i én transaksjon styrt av `profil/service.py`. En test feiler slettingen til slutt med vilje og sjekker at ingenting er endret, både mot SQLite og mot Postgres (AD-8, AD-17).
+
+**Gitt** en slettet bruker
+**Når** hen vises i oppdrag og tilbakemeldinger
+**Så** står «Slettet bruker» uten lenke og uten telefonnummer, fra én funksjon i `identity/service.py` (FR-4, AD-8)
+**Og** en direkte lenke til profilen viser «Denne brukeren har slettet kontoen sin.» med lenke til oversikten og `<title>` «Slettet bruker – Nabolagshelten»
+**Og** «Gi tilbakemelding» vises ikke når motparten er slettet, og en tilbakemelding til en slettet bruker avvises (FR-18, FR-20).
+
+**Gitt** e-postadressen til den slettede kontoen
+**Når** noen registrerer seg med den
+**Så** opprettes en ny konto uten kobling til de gamle dataene, og den slettede kontoen kan ikke logge inn (FR-4).
+
+**Gitt** at slettingen sendes direkte til serveren for en annen bruker
+**Når** serveren behandler den
+**Så** avvises den (FR-4, NFR-5).
+
+**Gitt** en bruker som har glemt passordet og vil slette kontoen
+**Når** gruppen hjelper manuelt
+**Så** sletter `uv run python -m app.admin slett-konto <e-post>` kontoen med den samme service-funksjonen (AR-9).
+
+**Gitt** T1
+**Når** testen kjøres
+**Så** er «Slett konto», «Slett konto» med feil passord og «Slettet bruker» uten brudd på nivåene «serious» eller «critical».
