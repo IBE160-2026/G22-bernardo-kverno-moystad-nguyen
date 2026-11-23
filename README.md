@@ -18,8 +18,8 @@ Prosjektet er i planleggingsfasen. Frist for innlevering er begynnelsen av desem
 |---|---|
 | Product brief | Ferdig (v2.2), revidert etter tilbakemelding fra faglærer |
 | PRD (kravdokument) | Ferdig (v1.1) |
-| UX-skisser | Utkast; oppdateres i UX-steget |
-| Arkitektur | Neste steg |
+| UX-design | Ferdig: designsystem, atferd, mockups og tilgjengelighetsgjennomgang |
+| Arkitektur | Pågår |
 | Epics og stories | Etter arkitekturen |
 | Implementasjon og testing | Etter epics og stories |
 
@@ -35,7 +35,11 @@ Appen er ikke laget ennå. Kjøreinstruksjonene kommer når teknologien er valgt
 | [Tilbakemelding fra faglærer](tilbakemelding-product-brief.md) | Faglærers vurdering av product brief |
 | [PRD](_bmad-output/planning-artifacts/prds/prd-G22-bernardo-kverno-moystad-nguyen-2026-11-05/prd.md) | Krav med faste ID-er (FR-1–FR-26, NFR-1–NFR-12), sporing fra briefen (§9.1) og avvik fra briefen (§9.2) |
 | [Reviewer av PRD-en](_bmad-output/planning-artifacts/prds/prd-G22-bernardo-kverno-moystad-nguyen-2026-11-05/) | Review-rapporter, hva som ble gjort med hvert funn, og beslutningsloggen (`.memlog.md`) |
-| [Skisser av skjermbilder](_bmad-output/planning-artifacts/skisser-skjermbilder.md) | Utkast til de viktigste skjermbildene |
+| [Skisser av skjermbilder](_bmad-output/planning-artifacts/skisser-skjermbilder.md) | Første utkast til de viktigste skjermbildene; videreført i UX-designet under |
+| [DESIGN.md](_bmad-output/planning-artifacts/ux-designs/ux-G22-bernardo-kverno-moystad-nguyen-2026-11-07/DESIGN.md) | Hvordan appen ser ut: farger med kontrastverdier, typografi, layout og komponenter |
+| [EXPERIENCE.md](_bmad-output/planning-artifacts/ux-designs/ux-G22-bernardo-kverno-moystad-nguyen-2026-11-07/EXPERIENCE.md) | Hvordan appen oppfører seg: navigasjon, tekster, feilmeldinger, tomtilstander, fokus og universell utforming (NFR-7) med testplan |
+| [Mockups](_bmad-output/planning-artifacts/ux-designs/ux-G22-bernardo-kverno-moystad-nguyen-2026-11-07/mockups/) | Klikkbare HTML-mockups av nøkkelskjermbildene og fargetemaer |
+| [Tilgjengelighetsgjennomgang](_bmad-output/planning-artifacts/ux-designs/ux-G22-bernardo-kverno-moystad-nguyen-2026-11-07/review-accessibility.md) | Gjennomgang av UX-designet mot WCAG 2.1 AA, med funn og testdekning |
 | [Sensorveiledning del 1](docs/sensorveiledning-del1.md) | Kriteriene prosjektet vurderes etter |
 
 ## Slik jobber vi med KI
@@ -50,7 +54,7 @@ Appen er ikke laget ennå. Kjøreinstruksjonene kommer når teknologien er valgt
 ```text
 .claude/skills/   BMAD-skills og sesjonslogg-skillen for Claude Code
 _bmad/            BMAD-rammeverket: konfigurasjon og skript
-_bmad-output/     Dokumenter laget med BMAD (brief, PRD, skisser)
+_bmad-output/     Dokumenter laget med BMAD (brief, PRD, UX, arkitektur)
 docs/             Sensorveiledning
 .logs/            KI-sesjonslogger per gruppemedlem
 CLAUDE.md         Instruksjoner til Claude Code
