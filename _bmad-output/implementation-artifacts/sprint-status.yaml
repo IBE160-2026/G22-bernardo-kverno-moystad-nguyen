@@ -29,14 +29,14 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 11-24-2026 00:00
-last_updated: 11-24-2026 00:00
+last_updated: 11-24-2026 00:04
 project: G22-bernardo-kverno-moystad-nguyen
 project_key: NOKEY
 tracking_system: file-system
 story_location: _bmad-output/implementation-artifacts
 development_status:
-  epic-1: backlog
-  1-1-skjelett-appen-kjører-lokalt-og-i-ci: backlog
+  epic-1: in-progress
+  1-1-skjelett-appen-kjører-lokalt-og-i-ci: in-progress
   1-2-logge-inn-og-ut: backlog
   1-3-skjelett-appen-publiseres-i-produksjon: backlog
   1-4-registrere-konto: backlog
