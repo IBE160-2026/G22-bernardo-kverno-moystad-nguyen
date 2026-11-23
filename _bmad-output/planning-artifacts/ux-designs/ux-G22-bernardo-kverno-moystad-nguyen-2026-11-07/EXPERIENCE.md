@@ -2,7 +2,7 @@
 title: EXPERIENCE – Nabolagshelten
 status: final
 created: 2026-11-07
-updated: 2026-11-08
+updated: 2026-11-23
 sources:
   - ../../prds/prd-G22-bernardo-kverno-moystad-nguyen-2026-11-05/prd.md
   - ../../product-brief-nabolagshelten.md
@@ -13,7 +13,7 @@ sources:
 
 # EXPERIENCE – Nabolagshelten
 
-Hvordan appen virker: struktur, tekster, tilstander, samhandling, tilgjengelighet og brukerreiser. Utseendet står i [DESIGN.md](DESIGN.md); tokens refereres som `{colors.primary}` og `{components.card}`. Kravene (UJ, FR, NFR, SM) står i PRD v1.1 og gjentas ikke her. Denne fila viser til ID-ene og sier bare hvordan kravene oppleves. Beslutningene er logget i `.memlog.md`.
+Hvordan appen virker: struktur, tekster, tilstander, samhandling, tilgjengelighet og brukerreiser. Utseendet står i [DESIGN.md](DESIGN.md); tokens refereres som `{colors.primary}` og `{components.card}`. Kravene (UJ, FR, NFR, SM) står i PRD v1.2 og gjentas ikke her. Denne fila viser til ID-ene og sier bare hvordan kravene oppleves. Beslutningene er logget i `.memlog.md`.
 
 **Kildeprioritet:** PRD > spinene (denne fila og DESIGN.md) > mockups og fargeprøver i `mockups/` > skisser. Ved konflikt mellom spinene og en mockup, skisse eller fargeprøve gjelder spinene.
 
@@ -52,7 +52,7 @@ Hvordan appen virker: struktur, tekster, tilstander, samhandling, tilgjengelighe
 | Rediger profil, slett konto [ASSUMPTION] | «Profil» |
 | Feilside, slettet bruker [ASSUMPTION] | Ingen |
 
-**Antall ved «Mine oppdrag»** (`{components.nav-badge}`): antall oppdrag som står under «Trenger handling» i de to fanene til sammen, altså oppdrag med et av merkene i FR-18. Ikke «nytt siden sist», og ingen lagring av hva brukeren har sett. Regnes ut på nytt ved hver sidelasting. Vises ikke når tallet er 0. Skjermleser: «Mine oppdrag, 2 trenger handling». [ASSUMPTION] Ordlyden for skjermleser. Svar på skisse-spørsmål 3; PRD trenger en presisering (se Åpne punkter).
+**Antall ved «Mine oppdrag»** (`{components.nav-badge}`): antall oppdrag som står under «Trenger handling» i de to fanene til sammen, altså oppdrag med et av merkene i FR-18. Ikke «nytt siden sist», og ingen lagring av hva brukeren har sett. Regnes ut på nytt ved hver sidelasting. Vises ikke når tallet er 0. Skjermleser: «Mine oppdrag, 2 trenger handling». [ASSUMPTION] Ordlyden for skjermleser. Svar på skisse-spørsmål 3; regelen står nå i FR-18 og NFR-11 (PRD v1.2). Et oppdrag med flere merker telles én gang.
 
 | Flate | Nås fra | Innhold og handlinger | Krav |
 |---|---|---|---|
@@ -311,19 +311,19 @@ Atferd. Utseendet står i DESIGN.md § Components; navnene er de samme. Komponen
 
 **«Oppdrag jeg har lagt ut»** – hver rad (`{components.list-row}`): tittel, `{components.status-badge}` og eventuelt merke, tidspunkt, og «3 har meldt interesse», «Ingen har meldt interesse ennå» eller «Hjelper: Amir» [ASSUMPTION] de to siste.
 
-**Merker** (`{components.action-tag}`, ordrett FR-18): «Tidspunktet er passert» (egne utgåtte) · «Er jobben gjort?» (begge parter, Hjelper valgt + passert) · «Gi tilbakemelding» (Utført, ikke gitt, motpart ikke slettet) · «Hjelperen trakk seg» (hos oppdragsgiver) · «Oppdraget er endret etter at du meldte interesse» (hos den interesserte).
+**Merker** (`{components.action-tag}`, ordrett FR-18): «Velg hjelper» (se under) · «Tidspunktet er passert» (egne utgåtte) · «Er jobben gjort?» (begge parter, Hjelper valgt + passert) · «Gi tilbakemelding» (Utført, ikke gitt, motpart ikke slettet) · «Hjelperen trakk seg» (hos oppdragsgiver) · «Oppdraget er endret etter at du meldte interesse» (hos den interesserte, bare når situasjonen er «Venter på svar»). Gjelder flere merker samme oppdrag, vises alle. Situasjonene i tabellen over er ikke merker; «Tidspunktet er passert» er en situasjon i «Oppdrag jeg hjelper med», men et merke i «Oppdrag jeg har lagt ut».
 
-**Nytt merke «Velg hjelper»** (UX-beslutning 2026-11-07, krever presisering av FR-18): vises hos oppdragsgiver på eget oppdrag med status Åpen, tidspunktet ikke passert, og minst én interessert. Forsvinner når en hjelper er valgt eller oppdraget avbrytes. Er tidspunktet passert, vises «Tidspunktet er passert» i stedet.
+**Merket «Velg hjelper»** (UX-beslutning 2026-11-07, i FR-18 fra PRD v1.2): vises hos oppdragsgiver på eget oppdrag med status Åpen, tidspunktet ikke passert, og minst én interessert. Forsvinner når en hjelper er valgt eller oppdraget avbrytes. Er tidspunktet passert, vises «Tidspunktet er passert» i stedet.
 
-**Grupper** – overskriftene følger sorteringen i FR-18, med to presiseringer (begge krever oppdatering av FR-18, se Åpne punkter):
+**Grupper** – som i FR-18 (PRD v1.2):
 
 | Gruppe | «Oppdrag jeg har lagt ut» | «Oppdrag jeg hjelper med» | Rekkefølge |
 |---|---|---|---|
-| «Trenger handling» | Oppdrag med et merke, inkludert «Velg hjelper» | Oppdrag med et merke | [ASSUMPTION] Etter tidspunkt, tidligste først |
+| «Trenger handling» | Oppdrag med et merke, inkludert «Velg hjelper» | Oppdrag med et merke | Tidspunkt, tidligste først |
 | «Pågår» | Status Åpen eller Hjelper valgt, uten merke | «Venter på svar», «Du er valgt» (uten merke) | Tidspunkt, tidligste først |
-| «Ferdige» | Status Utført eller Avbrutt, uten merke | «Utført», «Avbrutt», «Ikke valgt», «Du er ikke lenger valgt», «Du trakk deg» – gruppert etter brukerens egen situasjon, ikke oppdragets status | Nyeste tidspunkt først |
+| «Ferdige» | Status Utført eller Avbrutt, uten merke | «Tidspunktet er passert», «Utført», «Avbrutt», «Ikke valgt», «Du er ikke lenger valgt», «Du trakk deg» – gruppert etter brukerens egen situasjon, ikke oppdragets status | Nyeste tidspunkt først |
 
-En gruppe uten oppdrag vises ikke. Avbrutte oppdrag vises i «Ferdige», ikke skjult bak en lenke. Raden «Tidspunktet er passert» hos oppdragsgiver har snarveiene «Endre tidspunkt» og «Avbryt oppdrag» (UJ-1) som sekundærknapper under en skillelinje, plassert som i § Rader i lister. Raden er fortsatt en lenke til detaljene. [ASSUMPTION] Plasseringen.
+Like tidspunkt sorteres som i FR-10 (eldste utlagte først). En gruppe uten oppdrag vises ikke. Avbrutte oppdrag vises i «Ferdige», ikke skjult bak en lenke. Raden «Tidspunktet er passert» hos oppdragsgiver har snarveiene «Endre tidspunkt» og «Avbryt oppdrag» (UJ-1) som sekundærknapper under en skillelinje, plassert som i § Rader i lister. Raden er fortsatt en lenke til detaljene. [ASSUMPTION] Plasseringen.
 
 ### Tomme, laste-, feil- og konflikttilstander
 
@@ -463,7 +463,7 @@ Også: én `h1` per side, overskrifter i riktig rekkefølge; landemerker `header
 
 **Testes ved** (NFR-7, SM-5). T1 kjøres automatisk med axe, T2–T6 manuelt; alle seks dokumenteres som tester (sensorveiledningen, kriterium 3). Kolonnen «Testes ved» over viser hvilket NFR-7-punkt hver test dekker.
 
-1. **T1 Automatisk, axe:** ingen «serious» eller «critical» på oppdragsoversikt (med treff og tom), nytt oppdrag steg 1 og steg 2 (mobil) og som én skjerm (nettbrett), KI-forslag vist og KI-feil, oppdragsdetaljer for oppdragsgiver, for interessert og for valgt hjelper, tilbakemelding med stjerner, Mine oppdrag (begge faner og tom fane), profil, registrering, innlogging, rediger profil, et skjema med valideringsfeil, feilside, slettet bruker og hver bekreftelsesdialog (fem dialoger + slett konto-siden). axe finner ikke manglende `autocomplete`, så felttypene sjekkes mot tabellen i T2.
+1. **T1 Automatisk, axe:** ingen «serious» eller «critical» på oppdragsoversikt (med treff og tom), nytt oppdrag steg 1 og steg 2 (mobil) og som én skjerm (nettbrett), KI-forslag vist og KI-feil, oppdragsdetaljer for oppdragsgiver (med og uten interesserte), for interessert og for valgt hjelper, tilbakemelding med stjerner, Mine oppdrag (begge faner og tom fane), profil, registrering, innlogging, rediger profil, et skjema med valideringsfeil, feilside, slettet bruker og hver bekreftelsesdialog (fem dialoger + slett konto-siden). Den samme testen sjekker at det ikke er vannrett rulling ved 320 px (SM-5). axe finner ikke manglende `autocomplete`, så felttypene sjekkes mot tabellen i T2.
 2. **T2 Tastatur:** UJ-1 og UJ-2 uten mus, og støtteflytene (registrering, innlogging, rediger profil, slett konto). Kontrollpunkter: «Hopp til innholdet», synlig fokus på alt, dato og klokkeslett, kategorifilter og kategoriknapper, stjerner, alle dialoger, fokus tilbake etter dialog, felttyper og `autocomplete`. Tekststørrelse og trykkflater måles i DevTools.
 3. **T3 Skjermleser** (NVDA på Windows eller VoiceOver på iPad/Mac): UJ-1, UJ-2 steg 3–6 (antallet etter filtervalg), ett skjema med feil (feiloppsummeringen leses, lenkene fører til feltene) og en kvittering etter sidelasting.
 4. **T4 Bredder og zoom:** UJ-1 og UJ-2 ved 360, 768 og 1280 px med skjermbilder (NFR-6); 320 px (400 % zoom på 1280 px) uten vannrett rulling; 200 % zoom; tekstavstand etter WCAG 1.4.12 (bokmerke); 200 % tekststørrelse i operativsystemet; liggende telefon med bunnmenyen og et felt med fokus.
@@ -570,7 +570,7 @@ Ingen referanseprodukter er valgt. Avvist i Discovery (`.memlog.md`):
 
 ## Endringer fra skissene
 
-Lista dekker punktene i PRD §8 og avstemmingen mot PRD v1.1, også ordlyd der skisse og PRD sier ulikt (PRD gjelder). Skissene i `skisser-skjermbilder.md` er ikke oppdatert; kildeprioriteten øverst i fila gjelder.
+Lista dekker punktene i PRD §8 og avstemmingen mot PRD v1.1 og v1.2, også ordlyd der skisse og PRD sier ulikt (PRD gjelder). Skissene i `skisser-skjermbilder.md` er ikke oppdatert; kildeprioriteten øverst i fila gjelder.
 
 | # | Endring | Krav |
 |---|---|---|
@@ -603,11 +603,11 @@ Lista dekker punktene i PRD §8 og avstemmingen mot PRD v1.1, også ordlyd der s
 
 ## Åpne punkter
 
-**Til PRD (`bmad-prd`, oppdatering):**
-- Antallet ved «Mine oppdrag» i menyen er ikke beskrevet i PRD-en. Trenger presisering i FR-18 eller NFR-11 (eller et nytt krav-ID) og en linje i endringsloggen, så sporingen holder.
-- **Besluttet i UX 2026-11-07, må inn i FR-18:** nytt merke «Velg hjelper» på eget oppdrag med status Åpen, tidspunktet ikke passert og minst én interessert, så det står under «Trenger handling» og teller i menyen (UJ-1 steg 6).
-- **Besluttet i UX 2026-11-07, må inn i FR-18:** «Oppdrag jeg hjelper med» sorteres etter brukerens egen situasjon: «Ikke valgt», «Du er ikke lenger valgt» og «Du trakk deg» står under «Ferdige» selv om oppdraget fortsatt er Åpent eller har Hjelper valgt.
-- NFR-6 eller NFR-7 bør få «Innhold flyter om ved 320 CSS px (WCAG 1.4.10)», så kravet kan spores. SM-5 bør vise til den utvidede testlista T1–T6 i § Accessibility Floor.
+**Til PRD (`bmad-prd`, oppdatering):** Alle løst i PRD v1.2 (2026-11-23).
+- **Løst (FR-18, NFR-11):** antallet ved «Mine oppdrag» i menyen.
+- **Løst (FR-18):** nytt merke «Velg hjelper» på eget oppdrag med status Åpen, tidspunktet ikke passert og minst én interessert, så det står under «Trenger handling» og teller i menyen (UJ-1 steg 6).
+- **Løst (FR-18):** «Oppdrag jeg hjelper med» sorteres etter brukerens egen situasjon: «Ikke valgt», «Du er ikke lenger valgt» og «Du trakk deg» står under «Ferdige» selv om oppdraget fortsatt er Åpent eller har Hjelper valgt.
+- **Løst (NFR-7, SM-5):** NFR-7 har «flyter om ved 320 CSS px (WCAG 1.4.10)», «Testes ved» viser til T1–T5, og SM-5 viser til T1.
 
 **Til arkitektur (`bmad-architecture`):**
 - Frontend-rammeverk og komponentbibliotek (Foundation). Native `<dialog>` med `showModal()`, `aria-live` og `aria-disabled` må virke.

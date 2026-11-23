@@ -450,7 +450,7 @@ pyproject.toml  uv.lock  .python-version  vercel.json  .env.example
 | Utsatt | Hvorfor det kan vente |
 |---|---|
 | Preview-miljø og Supabase-prosjekt 2 | Kuttet i v1 (Heidi 2026-11-23). Sensor kjører appen lokalt, og PR-er sjekkes av CI og lokal kjøring. Preview gir lite i forhold til hva drift av en delt database koster. |
-| Glemt passord, e-post, rapportering og blokkering | Utsatt i PRD §6.2 og §10. Manuell håndtering skjer med `app.admin` (AD-6). |
+| Glemt passord, e-post, rapportering og blokkering | Utsatt i PRD §6.2 og §9.2. Manuell håndtering skjer med `app.admin` (AD-6). |
 | Grense for antall registreringer | Ikke i v1. Kostnaden for KI begrenses av kredittgrensen (AD-12). |
 | Kolonner, indekser og lengder | Eies av koden og migreringene. AD-1 sier hvem som skriver, og AD-2 hvilke unik-constraints som må finnes. |
 | CSS-struktur og makroer utover dem som er nevnt | Følger DESIGN.md. Første story lager `core.render`, `base.html` og makroene. |
