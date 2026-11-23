@@ -1,6 +1,6 @@
 ---
-status: draft
-stepsCompleted: [1, 2]
+status: final
+stepsCompleted: [1, 2, 3, 4]
 inputDocuments:
   - _bmad-output/planning-artifacts/prds/prd-G22-bernardo-kverno-moystad-nguyen-2026-11-05/prd.md
   - _bmad-output/planning-artifacts/architecture/architecture-G22-bernardo-kverno-moystad-nguyen-2026-11-08/ARCHITECTURE-SPINE.md
@@ -247,7 +247,7 @@ Testpersonene til story 6.2 (to personer utenfor gruppen, minst én over 60 år)
 **Avhengigheter:** Epic 1 → 2 → 3 → 4. Epic 5 kan starte etter Epic 2. Epic 6 kommer til slutt og er uavhengig av Epic 5. Innad i en epic kan flere jobbe parallelt når første story er ferdig.
 
 ### Epic 1: Konto og innlogging
-En person kan registrere seg, logge inn og logge ut, og alt annet i appen krever innlogging. Appen kjører lokalt med eksempeldata og i produksjon på Vercel med Supabase. Første story er skjelettet som går helt gjennom kjeden (AR-1), med Vercel og Supabase. **Tidsramme:** Virker ikke produksjonspubliseringen etter cirka én dag med feilsøking, deles storyen. Skjelettet merges med lokal kjøring og CI, og publiseringen blir en egen story. Publiseringen går fra Actions med `VERCEL_TOKEN`, så Vercels GitHub-app trengs ikke (det bekreftes i et akseptansekriterium).
+En person kan registrere seg, logge inn og logge ut, og alt annet i appen krever innlogging. Appen kjører lokalt med eksempeldata og i produksjon på Vercel med Supabase. Skjelettet (AR-1) er story 1.1 (lokalt og CI) og 1.3 (Vercel og Supabase), med innloggingen (1.2) imellom, slik at produksjonssjekken kan bruke et ekte skjema. **Tidsramme:** Virker ikke produksjonspubliseringen etter cirka én dag med feilsøking, deles storyen. Skjelettet merges med lokal kjøring og CI, og publiseringen blir en egen story. Publiseringen går fra Actions med `VERCEL_TOKEN`, så Vercels GitHub-app trengs ikke (det bekreftes i et akseptansekriterium).
 **FRs covered:** FR-1, FR-2, FR-3
 **Også:** NFR-1, NFR-3, NFR-4, NFR-11 (meny); AR-1–AR-10, AR-14–AR-17, AR-21, AR-25–AR-30; UX-DR1–UX-DR7, UX-DR12, UX-DR13, UX-DR22, UX-DR27–UX-DR30; infrastruktur for T1.
 
@@ -280,7 +280,7 @@ En person utenfor gruppen får appen i gang fra README på en ren maskin, og tes
 
 ## Epic 1: Konto og innlogging
 
-En person kan registrere seg, logge inn og logge ut, og alt annet i appen krever innlogging. Appen kjører lokalt med eksempeldata og i produksjon på Vercel med Supabase. Story 1.1 og 1.2 er skjelettet (AR-1), og ingen andre stories starter før begge er ferdige.
+En person kan registrere seg, logge inn og logge ut, og alt annet i appen krever innlogging. Appen kjører lokalt med eksempeldata og i produksjon på Vercel med Supabase. Story 1.1 og 1.3 er skjelettet (AR-1). Story 1.2 (innlogging) kommer mellom dem, fordi sjekken av produksjonsversjonen trenger innloggingsskjemaet. Story 1.4 og senere starter når 1.1–1.3 er ferdige.
 
 ### Story 1.1: Skjelett – appen kjører lokalt og i CI
 
@@ -332,7 +332,7 @@ slik at alle senere stories bygger på samme kjerne, de samme reglene og den sam
 **Når** `uv run pytest` kjøres
 **Så** passerer `tests/core/test_arkitektur.py`, som sjekker importretningen i AD-1 og at `|safe`, `Markup(` og `innerHTML` ikke finnes i `app/` (AD-11)
 **Og** testene for headere, CSRF og rekkefølgen på mellomvaren passerer
-**Og** `tests/conftest.py` har test-databasen og `sett_na`, og hver test rulles tilbake. Fabrikkene kommer i storyen som lager tabellen: `lag_bruker` i 1.3, `lag_oppdrag` i 2.1, `lag_interesse` i 3.1 og `lag_tilbakemelding` i 4.2 (AR-29).
+**Og** `tests/conftest.py` har test-databasen og `sett_na`, og hver test rulles tilbake. Fabrikkene kommer i storyen som lager tabellen: `lag_bruker` i 1.2, `lag_oppdrag` i 2.1, `lag_interesse` i 3.1 og `lag_tilbakemelding` i 4.2 (AR-29).
 
 **Gitt** en PR mot `main`
 **Når** CI kjører (`ci.yml`)
@@ -344,51 +344,13 @@ slik at alle senere stories bygger på samme kjerne, de samme reglene og den sam
 **Så** har `.env.example` alle variablene i AR-8 uten ekte verdier, og `.gitignore` holder ute `.env`, `.venv`, `.vercel/` og byggmapper (NFR-3)
 **Og** README har forutsetninger med versjoner, eksakte kommandoer for å starte appen og kjøre testene, og kildelinja «Postnummerdata fra Posten Bring, lisensiert under NLOD 2.0.» (NFR-1, AR-10).
 
-### Story 1.2: Skjelett – appen publiseres i produksjon
-
-Som gruppe
-vil vi at hver merge til `main` publiseres automatisk til Vercel med database hos Supabase, med migrering først,
-slik at appen alltid finnes i en kjørende versjon, og problemer med produksjonsmiljøet oppdages i uke én.
-
-**Krav:** AR-1, AR-4, AR-7 (deploy.yml, keepalive.yml, vercel.json), AR-8, AR-10, AD-13, AD-14
-
-**Acceptance Criteria:**
-
-**Gitt** et Supabase-prosjekt (Free) og et Vercel-prosjekt som Heidi eier
-**Når** hemmelighetene er lagt inn (`DATABASE_URL`, `SECRET_KEY` og eventuelt `OPENROUTER_*` i Vercel env, og `MIGRATION_DATABASE_URL` og `VERCEL_*` i GitHub Secrets)
-**Så** ligger ingen av dem i repoet eller i chatten, og README § Kontoer for drift sier hvem som eier kontoene (NFR-3, AR-8).
-
-**Gitt** en merge til `main`
-**Når** `deploy.yml` kjører
-**Så** kjøres `alembic upgrade head` mot Supabase gjennom session pooler (port 5432) først, og `vercel deploy --prod` kjøres bare hvis migreringen lykkes (AD-13)
-**Og** publiseringen lykkes uten at Vercels GitHub-app er installert på organisasjonen.
-
-**Gitt** `vercel.json`
-**Når** det leses
-**Så** er automatisk publisering fra Git og preview slått av, og `functions."main.py".maxDuration` er 30.
-
-**Gitt** produksjonsversjonen
-**Når** `/logg-inn` åpnes
-**Så** vises innloggingssiden med sikkerhetsheaderne
-**Og** et skjema sendt med feil e-post viser «Feil e-post eller passord.» (eller en tilsvarende side som går gjennom CSRF-mellomvaren, lesing av kroppen og et databaseoppslag via transaction pooler, port 6543, `NullPool`). Det bekrefter at ASGI-kroppen og databasen virker på Vercel
-**Og** `/_test/tilstand` gir 404, og det finnes ingen demokontoer i produksjon (AD-14).
-
-**Gitt** at appen har vært uten trafikk
-**Når** `keepalive.yml` kjører hver tredje dag
-**Så** besøker den produksjonsversjonen, slik at Supabase ikke pauses
-**Og** README sier at eieren sjekker Supabase før demo og innlevering.
-
-**Gitt** at produksjonspubliseringen ikke virker etter cirka én dag med feilsøking
-**Når** gruppen vurderer det
-**Så** føres problemet som åpent punkt, story 1.3 kan starte, og publiseringen fullføres som egen oppgave før Epic 6. Det føres i memlog og i PRD §9.2.
-
-### Story 1.3: Logge inn og ut
+### Story 1.2: Logge inn og ut
 
 Som bruker med konto
 vil jeg logge inn med e-post og passord, se menyen og logge ut,
 slik at bare jeg får tilgang til innholdet mitt.
 
-**Krav:** FR-2, FR-3, NFR-4, NFR-5, NFR-11, AR-14, AR-16, AR-17 (enkel 401-side), AR-9, NFR-2 (testbrukere); UX-DR3, UX-DR7, UX-DR12, UX-DR13 (Vis passord), UX-DR22, UX-DR27, UX-DR28
+**Krav:** FR-2, FR-3, FR-21 (grunnversjon av profilsidene), NFR-4, NFR-5, NFR-11, AR-14, AR-16, AR-17 (enkel 401-side), AR-9, AR-24, NFR-2 (testbrukere); UX-DR3, UX-DR7, UX-DR12, UX-DR13 (Vis passord), UX-DR22, UX-DR27, UX-DR28
 
 **Acceptance Criteria:**
 
@@ -415,7 +377,13 @@ slik at bare jeg får tilgang til innholdet mitt.
 **Gitt** en innlogget bruker
 **Når** en side vises
 **Så** har siden menyen med Oppdrag, Mine oppdrag og Profil: i topplinjen fra 768 px og som bunnmeny under 768 px, med aktivt valg markert med fet skrift, strek og `aria-current` (NFR-11, UX-DR3)
-**Og** «Oppdrag» viser oversikten med overskriften «Ledige oppdrag i <postnummer> <poststed>» og tomtilstanden fra EXPERIENCE.md. «Mine oppdrag» viser tomtilstanden for fanen «Oppdrag jeg har lagt ut». «Profil» viser navn, postnummer med poststed og knappen «Logg ut». Epic 2 og Epic 4 bygger videre på disse sidene.
+**Og** «Oppdrag» viser oversikten med overskriften «Ledige oppdrag i <postnummer> <poststed>» og forklaringen fra tomtilstanden i EXPERIENCE.md. «Mine oppdrag» viser «Du har ikke lagt ut noen oppdrag.». «Profil» viser navn, postnummer med poststed og knappen «Logg ut». Epic 2 og Epic 4 bygger videre på disse sidene
+**Og** sidene har ingen knapper eller lenker til funksjoner som ikke finnes ennå: «+ Legg ut oppdrag» og lenken «Legg ut oppdrag» kommer i story 2.1, og postnummerfilteret med «Velg et annet postnummer» kommer i 2.3.
+
+**Gitt** en innlogget bruker
+**Når** hen åpner `/profil/{bruker_id}` for en annen bruker
+**Så** vises profilen med navn og postnummer med poststed, og `<title>` «<Navn> – profil – Nabolagshelten». Malen får bare `OffentligBruker` eller `Profil`, og siden viser aldri telefon, e-post eller fødselsdato (FR-21, AD-16)
+**Og** en id som ikke finnes, gir feilsiden. Lenkene «Se profil» fra story 2.3 og 3.2 går hit, og story 4.3 legger til erfaring og tilbakemeldinger.
 
 **Gitt** en innlogget bruker på profilen
 **Når** hen trykker «Logg ut»
@@ -435,6 +403,44 @@ slik at bare jeg får tilgang til innholdet mitt.
 **Gitt** en bruker som har glemt passordet
 **Når** gruppen hjelper manuelt
 **Så** setter `uv run python -m app.admin nytt-passord <e-post>` et nytt passord med de samme funksjonene (AR-9). `slett-konto` kommer i story 4.5.
+
+### Story 1.3: Skjelett – appen publiseres i produksjon
+
+Som gruppe
+vil vi at hver merge til `main` publiseres automatisk til Vercel med database hos Supabase, med migrering først,
+slik at appen alltid finnes i en kjørende versjon, og problemer med produksjonsmiljøet oppdages i uke én.
+
+**Krav:** AR-1, AR-4, AR-7 (deploy.yml, keepalive.yml, vercel.json), AR-8, AR-10, AD-13, AD-14
+
+**Acceptance Criteria:**
+
+**Gitt** et Supabase-prosjekt (Free) og et Vercel-prosjekt som Heidi eier
+**Når** hemmelighetene er lagt inn (`DATABASE_URL`, `SECRET_KEY` og eventuelt `OPENROUTER_*` i Vercel env, og `MIGRATION_DATABASE_URL` og `VERCEL_*` i GitHub Secrets)
+**Så** ligger ingen av dem i repoet eller i chatten, og README § Kontoer for drift sier hvem som eier kontoene (NFR-3, AR-8).
+
+**Gitt** en merge til `main`
+**Når** `deploy.yml` kjører
+**Så** kjøres `alembic upgrade head` mot Supabase gjennom session pooler (port 5432) først, og `vercel deploy --prod` kjøres bare hvis migreringen lykkes (AD-13)
+**Og** publiseringen lykkes uten at Vercels GitHub-app er installert på organisasjonen.
+
+**Gitt** `vercel.json`
+**Når** det leses
+**Så** er automatisk publisering fra Git og preview slått av, og `functions."main.py".maxDuration` er 30.
+
+**Gitt** produksjonsversjonen
+**Når** `/logg-inn` åpnes
+**Så** vises innloggingssiden med sikkerhetsheaderne
+**Og** innloggingsskjemaet sendt med en e-post som ikke finnes, gir «Feil e-post eller passord.». Det bekrefter at CSRF-mellomvaren leser kroppen og spiller den av for ruta på Vercel, og at appen når Supabase gjennom transaction pooler (port 6543, `NullPool`, `prepare_threshold=None`) (AD-5, AD-13)
+**Og** `/_test/tilstand` gir 404, og det finnes ingen demokontoer i produksjon (AD-14).
+
+**Gitt** at appen har vært uten trafikk
+**Når** `keepalive.yml` kjører hver tredje dag
+**Så** besøker den produksjonsversjonen, slik at Supabase ikke pauses
+**Og** README sier at eieren sjekker Supabase før demo og innlevering.
+
+**Gitt** at produksjonspubliseringen ikke virker etter cirka én dag med feilsøking
+**Når** gruppen vurderer det
+**Så** føres problemet som åpent punkt, story 1.4 kan starte, og publiseringen fullføres som egen oppgave før Epic 6. Det føres i memlog og i PRD §9.2.
 
 ### Story 1.4: Registrere konto
 
@@ -475,6 +481,10 @@ slik at jeg kan bruke Nabolagshelten.
 **Når** brukeren skriver et gyldig postnummer
 **Så** vises poststedet ved feltet (fra `postnumre.json`), og «Vis passord» virker som på innloggingssiden (UX-DR13)
 **Og** uten JavaScript vises poststedet etter innsending.
+
+**Gitt** produksjonsversjonen fra story 1.3
+**Når** en testkonto registreres der
+**Så** kan den logge inn og ut. Røyktesten er dokumentert. Kontoen har oppdiktede opplysninger og slettes med `app.admin slett-konto` når story 4.5 er ferdig.
 
 **Gitt** at registreringen er ferdig
 **Når** databasen sjekkes
@@ -526,7 +536,8 @@ slik at naboer i postnummeret mitt kan se at jeg trenger hjelp.
 **Gitt** en innlogget bruker på oversikten
 **Når** hen trykker «+ Legg ut oppdrag»
 **Så** vises «Nytt oppdrag» på én skjerm med Beskrivelse (med hjelpeteksten «Ikke skriv adresse eller telefonnummer – det avtaler dere når hjelperen er valgt.»), Tittel, Kategori (seks store radioknapper), Postnummer (forhåndsutfylt fra profilen og mulig å endre), «Når?» (Dato og Klokkeslett) og «Hva tilbyr du?» («Beløp» med «Beløp i kr», eller «Uten betaling»), og knappen «Publiser» (FR-5, UX-DR11, UX-DR14)
-**Og** menyvalget «Mine oppdrag» er markert med `aria-current="true"`.
+**Og** menyvalget «Mine oppdrag» er markert med `aria-current="true"`
+**Og** knappen «+ Legg ut oppdrag» (primær, øverst i oversikten) og lenken «Legg ut oppdrag» i tomtilstanden under «Mine oppdrag» legges til i denne storyen.
 
 **Gitt** gyldige verdier
 **Når** brukeren trykker «Publiser»
@@ -655,7 +666,7 @@ slik at jeg finner dem igjen når de ikke vises i oversikten.
 
 **Gitt** et eget oppdrag med status Åpen der tidspunktet er passert
 **Når** «Mine oppdrag» vises
-**Så** har raden merket «Tidspunktet er passert» med skjult tekst «Må gjøres: …», og snarveiene «Endre tidspunkt» og «Avbryt oppdrag» står under raden, utenfor lenken (FR-8, UX-DR10, UX-DR26)
+**Så** har raden merket «Tidspunktet er passert» med skjult tekst «Må gjøres: …» (FR-8, UX-DR10). Snarveiene «Endre tidspunkt» og «Avbryt oppdrag» kommer i story 2.5, sammen med handlingene
 **Og** oppdraget vises ikke i oversikten (FR-8)
 **Og** merket beregnes ved lesing fra status, tidspunkt og `klokke.na()`, uten at noe lagres (AD-3). Testet med `sett_na` på begge sider av tidspunktet.
 
@@ -677,7 +688,7 @@ Som oppdragsgiver
 vil jeg endre et åpent oppdrag eller avbryte det,
 slik at oppdraget alltid stemmer med det jeg trenger.
 
-**Krav:** FR-6, FR-7, FR-8, NFR-5, NFR-8, AR-12, AR-28 (`dialog.js`, `sending.js`); UX-DR7, UX-DR18 (avbryte), UX-DR27
+**Krav:** FR-6, FR-7, FR-8, NFR-5, NFR-8, AR-12, AR-28 (`dialog.js`, `sending.js`); UX-DR7, UX-DR18 (avbryte), UX-DR26 (snarveiene), UX-DR27
 
 **Acceptance Criteria:**
 
@@ -689,6 +700,7 @@ slik at oppdraget alltid stemmer med det jeg trenger.
 **Gitt** et utgått oppdrag
 **Når** oppdragsgiveren trykker «Endre tidspunkt»
 **Så** åpnes skjemaet med fokus i feltet «Dato», og oppdraget kan ikke lagres før tidspunktet er fram i tid («Velg et nytt tidspunkt fram i tid»)
+**Og** raden «Tidspunktet er passert» under «Mine oppdrag» har nå snarveiene «Endre tidspunkt» og «Avbryt oppdrag» som sekundærknapper under en skillelinje, utenfor lenken (UX-DR26)
 **Og** med nytt tidspunkt vises oppdraget igjen i oversikten (FR-6, FR-8, UX-DR27).
 
 **Gitt** en redigering som endrer tidspunkt, godtgjørelse eller postnummer
@@ -724,7 +736,7 @@ Som oppdragsgiver som har brukt lang tid på et skjema
 vil jeg kunne logge inn igjen uten å miste det jeg har skrevet,
 slik at jeg ikke må begynne på nytt.
 
-**Krav:** AD-7 (fullstendig versjon), FR-2, FR-3, AR-17. **Kan kuttes** (AR-11, punkt 1). Da står den enkle 401-siden fra story 1.3 igjen, og kuttet føres i memlog og i PRD §9.2.
+**Krav:** AD-7 (fullstendig versjon), FR-2, FR-3, AR-17. **Kan kuttes** (AR-11, punkt 1). Da står den enkle 401-siden fra story 1.2 igjen, og kuttet føres i memlog og i PRD §9.2.
 
 **Acceptance Criteria:**
 
@@ -793,7 +805,7 @@ Som oppdragsgiver
 vil jeg se hvem som har meldt interesse, med erfaring, vurderinger og melding,
 slik at jeg kan velge noen jeg føler meg trygg på.
 
-**Krav:** FR-14, FR-6 («Meldt før endring»), FR-18 (antall interesserte, merket «Oppdraget er endret …»), AR-13 (`erfaring`), NFR-2; UX-DR9 (ikke-lenkerad), UX-DR21
+**Krav:** FR-14, FR-6 («Meldt før endring»), FR-18 (antall interesserte, merket «Oppdraget er endret …»), AR-13 (`erfaring`), NFR-2, NFR-12; UX-DR9 (ikke-lenkerad), UX-DR21
 
 **Acceptance Criteria:**
 
@@ -818,6 +830,10 @@ slik at jeg kan velge noen jeg føler meg trygg på.
 **Gitt** «Oppdrag jeg har lagt ut»
 **Når** et åpent oppdrag vises
 **Så** viser raden «3 har meldt interesse» eller «Ingen har meldt interesse ennå» (FR-18).
+
+**Gitt** en melding ved interesse med `<script>alert(1)</script>`
+**Når** lista over interesserte vises
+**Så** vises meldingen som tekst (NFR-12).
 
 **Gitt** eksempeldataene
 **Når** de lastes
@@ -1173,6 +1189,10 @@ slik at det blir lettere å skrive et tydelig oppdrag.
 **Så** vises én forslagsboks under hvert av feltene Beskrivelse, Tittel og Kategori, skjermleseren leser «Forslagene er klare.», og ingen felt fylles inn før brukeren trykker «Bruk» (FR-24, UX-DR19)
 **Og** «Bruk» fyller feltet, fjerner boksen og gir fokus til feltet, som fortsatt kan redigeres. «Ikke bruk» fjerner boksen og gir fokus til feltet. Et nytt trykk på «Få forslag» erstatter alle boksene (FR-24)
 **Og** ingenting lagres før «Publiser» (FR-24).
+
+**Gitt** en testdobbel som svarer med et gyldig forslag og tipset «Skriv gjerne hvor stor innkjørselen er.»
+**Når** forslagene vises
+**Så** står tipset inne i forslagsboksen for beskrivelsen, under forslagsteksten og over «Bruk» og «Ikke bruk», med lyspære-ikon, og «Bruk» fyller bare inn beskrivelsen, ikke tipset (FR-24, UX-DR19).
 
 **Gitt** mock-modus
 **Når** den lager et svar
