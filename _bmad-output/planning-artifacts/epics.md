@@ -729,3 +729,190 @@ slik at jeg ikke må begynne på nytt.
 **Gitt** kodebasen
 **Når** testen kjøres
 **Så** bruker ingen andre skjema feltnavn som begynner med `_` (AD-7).
+
+---
+
+## Epic 3: Interesse, valg av hjelper og Mine oppdrag
+
+Amir melder interesse. Kari ser de interesserte, sammenligner erfaring og velger hjelper, og de ser hverandres telefonnummer. Hjelperen kan fjernes eller trekke seg. Begge følger oppdragene sine under «Mine oppdrag» med situasjoner, merker, grupper og antallet i menyen.
+
+### Story 3.1: Melde og trekke interesse
+
+Som hjelper
+vil jeg melde interesse for et oppdrag med en kort melding, og kunne trekke interessen,
+slik at oppdragsgiveren vet at jeg kan hjelpe.
+
+**Krav:** FR-12, FR-13, FR-18 (fanen «Oppdrag jeg hjelper med», første situasjoner), NFR-5, AR-12, AR-13; UX-DR10 (situasjon), UX-DR23, UX-DR25 (interessert)
+
+**Acceptance Criteria:**
+
+**Gitt** et åpent oppdrag som ikke er passert, lagt ut av en annen
+**Når** en innlogget bruker skriver en valgfri melding (høyst 500 tegn, med teller) og trykker «Meld interesse»
+**Så** lagres interessen, og detaljene viser «Du har meldt interesse. Under Mine oppdrag ser du om Kari har valgt deg.» og lenken «Trekk interessen» i stedet for knappen (FR-12, UX-DR25)
+**Og** en melding på 501 tegn avvises med «Teksten kan ha høyst 500 tegn. Nå har den 501.», og meldingen beholdes (FR-12).
+
+**Gitt** et eget oppdrag, en interesse som allerede finnes, et oppdrag som ikke har status Åpen, eller et utgått oppdrag
+**Når** en interesse sendes direkte til serveren
+**Så** avvises den, og ingen data endres (FR-12, FR-8, NFR-5)
+**Og** to samtidige forespørsler fra samme bruker gir bare én interesse (unik-constraint `interesse(oppdrag_id, bruker_id)`, AD-2).
+
+**Gitt** en interesse på et åpent oppdrag som ikke er passert
+**Når** hjelperen trykker «Trekk interessen»
+**Så** slettes interessen, kvitteringen «Interessen din er trukket.» vises, og hjelperen kan melde interesse på nytt (FR-13)
+**Og** når oppdraget er utgått eller ikke lenger Åpent, avvises tilbaketrekkingen (FR-13).
+
+**Gitt** en bruker med interesser
+**Når** hen åpner «Mine oppdrag»
+**Så** finnes fanene «Oppdrag jeg har lagt ut» og «Oppdrag jeg hjelper med» som lenker med egen adresse (`?fane=…`), med fullt navn og antall, og `aria-current="page"` på aktiv fane (UX-DR23)
+**Og** i «Oppdrag jeg hjelper med» har hvert oppdrag nøyaktig én situasjon: «Venter på svar» (lenkerad), «Tidspunktet er passert» (lenkerad) eller «Avbrutt» (avbrutt uten valgt hjelper, bare tittel og status, ikke lenke), med skjult tekst «Din situasjon: …» (FR-18, UX-DR10)
+**Og** en tom hjelper-fane viser «Du har ikke meldt interesse for noen oppdrag.» med lenken «Se ledige oppdrag».
+
+**Gitt** detaljene for et oppdrag hjelperen har meldt interesse for, som er utgått
+**Når** hen åpner dem
+**Så** står «Tidspunktet er passert.», og det finnes ingen handlinger (FR-13, UX-DR25).
+
+### Story 3.2: Se de interesserte
+
+Som oppdragsgiver
+vil jeg se hvem som har meldt interesse, med erfaring, vurderinger og melding,
+slik at jeg kan velge noen jeg føler meg trygg på.
+
+**Krav:** FR-14, FR-6 («Meldt før endring»), FR-18 (antall interesserte, merket «Oppdraget er endret …»), AR-13 (`erfaring`), NFR-2; UX-DR9 (ikke-lenkerad), UX-DR21
+
+**Acceptance Criteria:**
+
+**Gitt** et eget åpent oppdrag med interesserte
+**Når** oppdragsgiveren åpner detaljene
+**Så** står overskriften «2 har meldt interesse», og under den én rad per interessert med navn, «12 fullførte oppdrag · 4,9 av 5, 11 vurderinger» (eller «Ingen vurderinger ennå»), meldingen og «Se profil», sortert eldste interesse først (FR-14)
+**Og** like knappenavn som «Se profil» har `aria-describedby` til personens navn (UX-DR7).
+
+**Gitt** et eget åpent oppdrag uten interesserte
+**Når** detaljene vises
+**Så** står «Ingen har meldt interesse ennå. Oppdraget vises for alle som ser på 0571 Oslo.» (FR-14, UX-DR21).
+
+**Gitt** en annen bruker enn oppdragsgiveren
+**Når** hen åpner detaljene eller ber om lista direkte
+**Så** vises ikke lista over interesserte (FR-14, FR-9).
+
+**Gitt** en interesse meldt før oppdragsgiveren endret tidspunkt, godtgjørelse eller postnummer
+**Når** lista vises
+**Så** har raden merket «Meldt før endring» (`interesse.opprettet < oppdrag.vesentlig_endret`) (FR-6, AD-3)
+**Og** den interesserte ser merket «Oppdraget er endret etter at du meldte interesse» under «Mine oppdrag» og i detaljene, men bare når situasjonen er «Venter på svar». Teksten forkortes aldri (FR-6, FR-18, UX-DR10).
+
+**Gitt** «Oppdrag jeg har lagt ut»
+**Når** et åpent oppdrag vises
+**Så** viser raden «3 har meldt interesse» eller «Ingen har meldt interesse ennå» (FR-18).
+
+**Gitt** eksempeldataene
+**Når** de lastes
+**Så** har minst ett oppdrag flere interesserte, og minst én interesse er meldt før en endring (NFR-2).
+
+### Story 3.3: Velge hjelper og dele telefonnummer
+
+Som oppdragsgiver
+vil jeg velge én av de interesserte og få telefonnummeret hens,
+slik at vi kan avtale detaljene direkte.
+
+**Krav:** FR-15, FR-16, FR-9 (valgt hjelper), FR-7 (avbryte fra Hjelper valgt), FR-18 («Du er valgt», «Ikke valgt», «Avbrutt» for valgt hjelper, «Hjelper: Amir»), NFR-2, NFR-8, AR-12, AR-24; UX-DR18 (velge), UX-DR20, UX-DR25
+
+**Acceptance Criteria:**
+
+**Gitt** et eget åpent oppdrag som ikke er passert, med interesserte
+**Når** oppdragsgiveren trykker «Velg Amir»
+**Så** åpnes dialogen «Velge Amir? Dere får se hverandres telefonnummer.» med «Gjelder «…».», «Ja, velg Amir» og «Ikke ennå» (FR-15, UX-DR18)
+**Og** etter bekreftelse er status Hjelper valgt, kvitteringen «Du har valgt Amir. Avtal detaljene direkte.» vises, og oppdraget er borte fra oversikten (FR-15).
+
+**Gitt** at valget sendes direkte til serveren
+**Når** brukeren ikke er oppdragsgiver, status ikke er Åpen, tidspunktet er passert, eller den valgte ikke har meldt interesse
+**Så** avvises valget, og ingen data endres (FR-15, NFR-5)
+**Og** ved dobbeltklikk eller to faner får den andre forespørselen «Oppdraget er endret. Last siden på nytt.», og det finnes fortsatt bare én valgt hjelper. Testet med samtidige forespørsler (§4.0, AD-2).
+
+**Gitt** et oppdrag med status Hjelper valgt eller Utført
+**Når** oppdragsgiveren eller valgt hjelper åpner detaljene
+**Så** viser telefonboksen motpartens navn og nummer som `tel:`-lenke med minst 48 px trykkflate, og «Avtal detaljene direkte.» (FR-16, UX-DR20)
+**Og** telefonnummeret kommer bare fra `telefon_for_motpart`. Alle andre brukere får feilsiden for oppdraget, og testen for personopplysninger i HTML sjekker også disse sidene (FR-9, FR-16, AD-16).
+
+**Gitt** valgt hjelper
+**Når** hen åpner «Mine oppdrag»
+**Så** står oppdraget som «Du er valgt» (lenkerad), og andre interesserte ser «Ikke valgt» med bare tittel og status, uten lenke (FR-18)
+**Og** oppdragsgiverens rad viser «Hjelper: Amir».
+
+**Gitt** et oppdrag med status Hjelper valgt
+**Når** oppdragsgiveren avbryter det med dialogen fra story 2.5
+**Så** er status Avbrutt, telefonnumrene skjules, koblingen til valgt hjelper beholdes, og hjelperen ser oppdraget som «Avbrutt» under «Oppdrag jeg hjelper med» og kan åpne detaljene uten telefonnumre (FR-7, FR-16, FR-18).
+
+**Gitt** eksempeldataene
+**Når** de lastes
+**Så** har minst ett oppdrag status Hjelper valgt (NFR-2).
+
+### Story 3.4: Fjerne hjelper eller trekke seg
+
+Som oppdragsgiver vil jeg kunne fjerne en valgt hjelper, og som hjelper vil jeg kunne trekke meg,
+slik at oppdraget kan bli åpent igjen når planene endrer seg.
+
+**Krav:** FR-17, FR-12 (fjernet hjelper), FR-16, FR-18 («Du er ikke lenger valgt», «Du trakk deg»), NFR-5, NFR-8, AR-12 (`tidligere_hjelper`); UX-DR18 (fjerne, trekke seg), UX-DR25
+
+**Acceptance Criteria:**
+
+**Gitt** et oppdrag med status Hjelper valgt
+**Når** oppdragsgiveren trykker «Fjern hjelper» og bekrefter i dialogen («Fjerne Amir som hjelper på «…»? …», «Ja, fjern Amir», «Nei, behold Amir»)
+**Så** blir status Åpen, den valgte hjelperens interesse slettes, de andre interessene beholdes, en rad med `arsak='fjernet'` skrives i `tidligere_hjelper`, og telefonnumrene skjules (FR-17, AD-2)
+**Og** kvitteringen «Amir er fjernet. Oppdraget er åpent igjen.» vises, og oppdraget er tilbake i oversikten hvis tidspunktet ikke er passert.
+
+**Gitt** valgt hjelper på et oppdrag med status Hjelper valgt
+**Når** hen trykker «Trekk meg fra oppdraget» og bekrefter («Ja, trekk meg» / «Nei, jeg blir»)
+**Så** skjer det samme med `arsak='trakk_seg'`, og kvitteringen «Du har trukket deg fra oppdraget.» vises (FR-17).
+
+**Gitt** en fjernet hjelper
+**Når** hen åpner detaljene for oppdraget
+**Så** står «Du er ikke lenger valgt til dette oppdraget» i stedet for «Meld interesse», og en ny interesse sendt direkte til serveren avvises (FR-12)
+**Og** under «Mine oppdrag» står oppdraget som «Du er ikke lenger valgt» (FR-18).
+
+**Gitt** en hjelper som trakk seg selv
+**Når** hen åpner detaljene
+**Så** kan hen melde interesse på nytt, og under «Mine oppdrag» står «Du trakk deg» til en ny interesse er meldt (FR-12, FR-18)
+**Og** har brukeren både trukket seg og blitt fjernet fra samme oppdrag, gjelder det som skjedde sist (FR-18).
+
+**Gitt** en annen bruker, eller en annen status enn Hjelper valgt
+**Når** en fjerning eller tilbaketrekking sendes direkte til serveren
+**Så** avvises den (FR-17, NFR-5).
+
+### Story 3.5: «Trenger handling», grupper og tall i menyen
+
+Som bruker uten varsler
+vil jeg se med en gang hvilke oppdrag som venter på meg, og hvor mange de er,
+slik at jeg ikke går glipp av noe jeg må gjøre.
+
+**Krav:** FR-18 (merkene «Velg hjelper», «Tidspunktet er passert», «Hjelperen trakk seg» og «Oppdraget er endret …», grupper, sortering og antall), NFR-11, AR-13, AR-27 (menykroken); UX-DR3 (nav-badge), UX-DR9, UX-DR23, UX-DR26
+
+**Acceptance Criteria:**
+
+**Gitt** et eget åpent oppdrag som ikke er passert, med minst én interessert
+**Når** «Mine oppdrag» eller detaljene vises
+**Så** har oppdraget merket «Velg hjelper». I detaljene står merket rett under «N har meldt interesse». Merket forsvinner når en hjelper er valgt eller oppdraget avbrytes, og er tidspunktet passert, vises «Tidspunktet er passert» i stedet (FR-18).
+
+**Gitt** at valgt hjelper har trukket seg eller (fra Epic 4) slettet kontoen
+**Når** oppdragsgiveren åpner «Mine oppdrag»
+**Så** har oppdraget merket «Hjelperen trakk seg» til en ny hjelper er valgt eller oppdraget avbrytes, også når ingen andre er interessert. Når det er andre interesserte, vises også «Velg hjelper» (FR-18, AD-3).
+
+**Gitt** begge fanene
+**Når** de vises
+**Så** er oppdragene delt i «Trenger handling» (minst ett merke), «Pågår» og «Ferdige» etter tabellen i FR-18, og grupper uten oppdrag vises ikke
+**Og** i «Oppdrag jeg hjelper med» avgjør brukerens egen situasjon gruppen: «Ikke valgt», «Du er ikke lenger valgt», «Du trakk deg» og «Tidspunktet er passert» står under «Ferdige» uten merke
+**Og** «Trenger handling» og «Pågår» sorteres etter tidspunkt, tidligste først, «Ferdige» nyeste først, og like tidspunkt som i FR-10 (FR-18)
+**Og** lenkeradene har `aria-describedby` til merkelinja, slik at skjermleseren leser «Tittel, Status: …. Må gjøres: …» (UX-DR9).
+
+**Gitt** en innlogget bruker
+**Når** en hvilken som helst side lastes
+**Så** viser «Mine oppdrag» i menyen antall oppdrag under «Trenger handling» i de to fanene til sammen. Et oppdrag med flere merker telles én gang, tallet vises ikke ved 0, og skjermleseren leser «Mine oppdrag, 2 trenger handling» (FR-18, NFR-11, UX-DR3)
+**Og** tallet regnes ut på nytt ved hver sidelasting gjennom menykroken, uten at noe lagres om hva brukeren har sett (AD-3)
+**Og** øverst i «Mine oppdrag» står «2 oppdrag trenger at du gjør noe.» når tallet er over 0.
+
+**Gitt** at «Mine oppdrag» åpnes uten valgt fane
+**Når** siden vises
+**Så** åpnes fanen med «Trenger handling»-oppdrag («Oppdrag jeg har lagt ut» hvis begge har det), ellers «Oppdrag jeg har lagt ut» (UX-DR23).
+
+**Gitt** de automatiske testene
+**Når** de kjøres
+**Så** finnes det en test for hver rad i situasjonstabellen og for hvert merke i FR-18 så langt, og for tallet i menyen med flere merker på samme oppdrag (FR-18, NFR-11)
+**Og** T1 dekker begge fanene og tom fane.
