@@ -233,6 +233,17 @@ Fra DESIGN.md og EXPERIENCE.md. Tekstene markert [ASSUMPTION] i EXPERIENCE.md og
 
 **Tidsramme:** Frist 15. desember 2026; målet er å være ferdig noen dager før. **Arbeidsfordeling:** Den kritiske veien er lagt opp slik at én person kan fullføre den. Oppgaver som ikke blokkerer noe (testprotokoller, brukertest, README-test, gjennomlesing av PR-er), kan tas av hvem som helst i gruppen. Blir tiden knapp, kuttes Epic 5 (Bør) først, deretter FR-22, og infrastruktur etter kuttlista i AR-11. Hvert kutt føres i PRD §9.2.
 
+**Sjekkpunkter med kuttregler** (bestemt på forhånd, så det ikke må vurderes under tidspress):
+
+| Dato | Skal være ferdig | Hvis ikke |
+|---|---|---|
+| fredag 28. nov. | Epic 1 | Kutt story 2.6 (fullstendig AD-7) og 2.2 (to steg på mobil) |
+| onsdag 3. des. | Epic 2 | Kutt Epic 5 (KI) |
+| mandag 8. des. | Epic 3 | Kutt story 4.4 (redigere profil, FR-22) |
+| fredag 12. des. | Epic 4 og story 6.3 | Lever det som er ferdig, med kuttene dokumentert i PRD §9.2 |
+
+Testpersonene til story 6.2 (to personer utenfor gruppen, minst én over 60 år) og 6.3 (én person som setter opp appen på en ren maskin) avtales tidlig, med tidspunkt rundt 8.–10. desember.
+
 **Avhengigheter:** Epic 1 → 2 → 3 → 4. Epic 5 kan starte etter Epic 2. Epic 6 kommer til slutt og er uavhengig av Epic 5. Innad i en epic kan flere jobbe parallelt når første story er ferdig.
 
 ### Epic 1: Konto og innlogging
@@ -295,7 +306,8 @@ slik at alle senere stories bygger på samme kjerne, de samme reglene og den sam
 **Så** finnes tabellen `postnummer` med alle postnumrene fra `data/postnumre.tsv` (UTF-8, konvertert fra Brings register)
 **Og** `core/postnummer.py` gir `finnes("0571") == True` og `poststed("0571") == "Oslo"`, og et ukjent nummer gir `finnes == False` (AD-1, AD-10)
 **Og** `core/static/postnumre.json` er generert av `uv run python -m app.core.postnummer`, og en test sjekker at fila stemmer med TSV-fila
-**Og** migreringen lager også tabellene `bruker` og `sesjon`, som mellomvaren trenger for å slå opp innlogging (AD-4).
+**Og** migreringen lager også tabellene `bruker` og `sesjon`, som mellomvaren trenger for å slå opp innlogging (AD-4)
+**Og** `core/sesjon.py` definerer `Autentisering`, `identity` kobles inn i `lag_app()`, og `lag_app()` nekter å starte uten denne koblingen. Menykroken blir påkrevd fra story 2.4, når det finnes merker å telle (presisering av AD-1, ført i arkitekturens memlog).
 
 **Gitt** at appen kjører
 **Når** en nettleser åpner `/logg-inn`
@@ -320,7 +332,7 @@ slik at alle senere stories bygger på samme kjerne, de samme reglene og den sam
 **Når** `uv run pytest` kjøres
 **Så** passerer `tests/core/test_arkitektur.py`, som sjekker importretningen i AD-1 og at `|safe`, `Markup(` og `innerHTML` ikke finnes i `app/` (AD-11)
 **Og** testene for headere, CSRF og rekkefølgen på mellomvaren passerer
-**Og** `tests/conftest.py` har fabrikkene og `sett_na`, og hver test rulles tilbake (AR-29).
+**Og** `tests/conftest.py` har test-databasen og `sett_na`, og hver test rulles tilbake. Fabrikkene kommer i storyen som lager tabellen: `lag_bruker` i 1.3, `lag_oppdrag` i 2.1, `lag_interesse` i 3.1 og `lag_tilbakemelding` i 4.2 (AR-29).
 
 **Gitt** en PR mot `main`
 **Når** CI kjører (`ci.yml`)
@@ -646,6 +658,10 @@ slik at jeg finner dem igjen når de ikke vises i oversikten.
 **Så** har raden merket «Tidspunktet er passert» med skjult tekst «Må gjøres: …», og snarveiene «Endre tidspunkt» og «Avbryt oppdrag» står under raden, utenfor lenken (FR-8, UX-DR10, UX-DR26)
 **Og** oppdraget vises ikke i oversikten (FR-8)
 **Og** merket beregnes ved lesing fra status, tidspunkt og `klokke.na()`, uten at noe lagres (AD-3). Testet med `sett_na` på begge sider av tidspunktet.
+
+**Gitt** en bruker med utgåtte egne oppdrag
+**Når** en hvilken som helst side lastes
+**Så** viser «Mine oppdrag» i menyen antall oppdrag med merket «Tidspunktet er passert», regnet ut gjennom menykroken, som `oppdrag` nå kobler inn i `lag_app()`. Tallet vises ikke ved 0. Story 3.5 utvider tellingen med de andre merkene (FR-18, NFR-11, AD-1, AD-3).
 
 **Gitt** en bruker uten egne oppdrag
 **Når** «Mine oppdrag» åpnes
