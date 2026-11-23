@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Kilde** | [sensorveiledning-ibe160-del1.pdf](sensorveiledning-ibe160-del1.pdf) (høst 2026, 7 sider). Ved tvil gjelder PDF-en. |
-| **Frist** | Begynnelsen av desember 2026. Sensor vurderer siste commit før fristen; senere endringer telles ikke. |
+| **Frist** | 15. desember 2026 (bekreftet av Heidi 2026-11-23). Sensor vurderer siste commit før fristen; senere endringer telles ikke. |
 | **Formål** | Sjekkliste for gruppen og for KI-agenter (BMAD, Claude Code) gjennom hele prosjektet. |
 
 Del 1 (applikasjon og prosess) teller **70 %** av karakteren. Refleksjonsrapporten (del 2) teller 30 %. Sensor vurderer «ikke bare sluttproduktet, men i like stor grad sporene av prosessen» (s. 1), og starter med å lese product brief (tidligere kalt proposal) for å se hva gruppen har lovet å lage (s. 2).

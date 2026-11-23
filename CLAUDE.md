@@ -1,6 +1,6 @@
 ## Sensur og frist
 
-Prosjektet sensureres etter [docs/sensorveiledning-del1.md](docs/sensorveiledning-del1.md) (kilde: `docs/sensorveiledning-ibe160-del1.pdf`). Frist er begynnelsen av desember 2026. Ta hensyn til kriteriene i alt arbeid: krav-ID-er som kan spores fra PRD til stories, commits og kode; testbare krav og meningsfulle tester; universell utforming; README som virker på en ren maskin; ingen hemmeligheter i repoet; små, beskrivende commits; og planleggingsdokumenter som holdes oppdatert. Product brief er det samme som «proposal» i sensorveiledningen.
+Prosjektet sensureres etter [docs/sensorveiledning-del1.md](docs/sensorveiledning-del1.md) (kilde: `docs/sensorveiledning-ibe160-del1.pdf`). Frist er 15. desember 2026. Ta hensyn til kriteriene i alt arbeid: krav-ID-er som kan spores fra PRD til stories, commits og kode; testbare krav og meningsfulle tester; universell utforming; README som virker på en ren maskin; ingen hemmeligheter i repoet; små, beskrivende commits; og planleggingsdokumenter som holdes oppdatert. Product brief er det samme som «proposal» i sensorveiledningen.
 
 ## Sesjonslogg
 
