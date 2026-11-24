@@ -72,6 +72,18 @@ def test_tilbake_lenken_bruker_referer_fra_samme_nettsted(klient: TestClient) ->
     assert 'href="/logg-inn">Tilbake</a>' in svar.text
 
 
+@pytest.mark.parametrize(
+    "referer",
+    ["http://testserver//angriper.example/x", "http://testserver/finnes-ikke"],
+    ids=["dobbel-skraastrek", "siden-selv"],
+)
+def test_tilbake_lenken_gaar_aldri_til_siden_selv_eller_annet_nettsted(
+    klient: TestClient, referer: str
+) -> None:
+    svar = klient.get("/finnes-ikke", headers={"Referer": referer})
+    assert 'href="/logg-inn">Tilbake</a>' in svar.text
+
+
 def test_uventet_feil_gir_vennlig_500_med_headere(
     app: FastAPI, feilruter, caplog: pytest.LogCaptureFixture
 ) -> None:
@@ -89,6 +101,25 @@ def test_uventet_feil_gir_vennlig_500_med_headere(
     assert "/_test/krasj" in caplog.text
     assert "kari@example.no" not in caplog.text
     assert "91234567" not in caplog.text
+
+
+def test_feil_i_feilsiden_gir_fast_500_med_headere(
+    app: FastAPI, feilruter, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Kaster feilsiden selv, sendes en fast side, fortsatt med sikkerhetsheaderne (NFR-10)."""
+    from app.core import feil
+
+    def kaster(*args, **kwargs):
+        raise RuntimeError("feilsiden virker ikke")
+
+    monkeypatch.setattr(feil, "feilside", kaster)
+    with TestClient(app, raise_server_exceptions=False) as klient:
+        svar = klient.get("/_test/krasj")
+    assert svar.status_code == 500
+    assert "Noe gikk galt. Prøv igjen om litt." in svar.text
+    assert '<html lang="nb">' in svar.text
+    for navn, verdi in SIKKERHETSHEADERE_TEKST.items():
+        assert svar.headers[navn] == verdi
 
 
 @pytest.mark.parametrize("sti", ["/_test/finnes-ikke", "/_test/ingen-tilgang"])

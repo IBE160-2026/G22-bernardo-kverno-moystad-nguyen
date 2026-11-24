@@ -56,17 +56,19 @@ def sidetittel(tittel: str, *, feil: bool = False) -> str:
 def tilbake_url(request: Request) -> str:
     """`Referer` fra samme nettsted, ellers startsiden for brukeren.
 
-    Uten innlogging er innloggingssiden startsiden, fordi oversikten krever
-    innlogging og ikke finnes før story 1.2.
+    Aldri siden selv, og aldri en sti som begynner med `//`. Uten innlogging er
+    innloggingssiden startsiden, fordi oversikten krever innlogging og ikke
+    finnes før story 1.2.
     """
     referer = request.headers.get("referer")
     if referer:
         deler = urlsplit(referer)
         vert = request.headers.get("host")
         if deler.netloc and deler.netloc == vert and deler.path.startswith("/"):
-            sti = deler.path
-            if not sti.startswith("//"):
-                return sti + (f"?{deler.query}" if deler.query else "")
+            sti = deler.path + (f"?{deler.query}" if deler.query else "")
+            denne = request.url.path + (f"?{request.url.query}" if request.url.query else "")
+            if not sti.startswith("//") and sti != denne:
+                return sti
     if getattr(request.state, "innlogget", None) is not None:
         return "/"
     return "/logg-inn"

@@ -30,6 +30,11 @@ logger = logging.getLogger(__name__)
 
 FANT_IKKE_SIDEN = "Fant ikke siden"
 NOE_GIKK_GALT = "Noe gikk galt. Prøv igjen om litt."
+NODSIDE = (
+    '<!doctype html><html lang="nb"><head><meta charset="utf-8">'
+    "<title>Noe gikk galt – Nabolagshelten</title></head>"
+    f'<body><main><h1>{NOE_GIKK_GALT}</h1><p><a href="/logg-inn">Tilbake</a></p></main></body></html>'
+)
 
 
 class FinnesIkke(Exception):
@@ -120,7 +125,12 @@ class FeilMellomvare:
             if svar_startet:
                 # Svaret er delvis sendt og kan ikke byttes ut.
                 raise
-            svar = feilside(Request(scope), 500)
+            try:
+                svar: Response = feilside(Request(scope), 500)
+            except Exception as feil_i_feilside:
+                # Siste utvei: fast HTML, så brukeren aldri ser en rå 500 uten headere.
+                logg_uventet_feil(scope, feil_i_feilside)
+                svar = HTMLResponse(NODSIDE, status_code=500)
             await _send_med_headere(svar, scope, receive, send)
 
 
