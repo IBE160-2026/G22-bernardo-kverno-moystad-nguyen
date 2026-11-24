@@ -14,3 +14,56 @@
 </p>
 {% endif %}
 {% endmacro %}
+
+{# Feiloppsummering og kvittering rett etter h1 (UX-DR22, UX-DR27).
+   Feiloppsummeringen har aldri role; fokus gir opplesningen. Bare ett av dem får autofocus. #}
+{% macro meldinger() %}
+{% if feil %}
+<div class="melding melding--feil" id="feiloppsummering" tabindex="-1"{% if fokusmal == "feiloppsummering" %} autofocus{% endif %}>
+  <h2 class="melding__overskrift">
+    <svg class="ikon" aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4"/><path d="M12 17h.01"/></svg>
+    <span>Skjemaet har {{ feil|length }} feil</span>
+  </h2>
+  <ul class="melding__liste">
+    {% for felt, melding in feil %}
+    <li><a href="#{{ felt }}">{{ melding }}</a></li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+{% if kvittering %}
+<div class="melding melding--kvittering" id="kvittering" tabindex="-1"{% if fokusmal == "kvittering" %} autofocus{% endif %}>
+  <p class="melding__tekst">
+    <svg class="ikon" aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+    <span>{{ kvittering }}</span>
+  </p>
+</div>
+{% endif %}
+{% endmacro %}
+
+{# Hovedmenyen (NFR-11, UX-DR3). «topp» vises fra 768 px, «bunn» under 768 px;
+   den andre er display:none, så skjermlesere bare finner én. Aktivt valg:
+   fet, strek og aria-current="page". Ingen antall før story 2.4. #}
+{% macro meny(variant) %}
+<nav class="meny meny--{{ variant }}" aria-label="Hovedmeny">
+  <ul class="meny__liste">
+    <li>{{ _menyvalg(variant, "oppdrag", url_for("oppdrag.oversikt"), "Oppdrag") }}</li>
+    <li>{{ _menyvalg(variant, "mine_oppdrag", url_for("oppdrag.mine"), "Mine oppdrag") }}</li>
+    <li>{{ _menyvalg(variant, "profil", url_for("profil.min"), "Profil") }}</li>
+  </ul>
+</nav>
+{% endmacro %}
+
+{% macro _menyvalg(variant, nokkel, href, tekst) %}
+<a class="meny__valg" href="{{ href }}"{% if aktiv_meny == nokkel %} aria-current="page"{% endif %}>
+  {% if variant == "bunn" %}
+  <svg class="meny__ikon" aria-hidden="true" focusable="false" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    {% if nokkel == "oppdrag" %}<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01" stroke-width="3"/>
+    {% elif nokkel == "mine_oppdrag" %}<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2.8h6V4M9 10h6M9 14h6"/>
+    {% else %}<circle cx="12" cy="8" r="4"/><path d="M4.5 21c.8-4 3.8-6 7.5-6s6.7 2 7.5 6"/>
+    {% endif %}
+  </svg>
+  {% endif %}
+  <span>{{ tekst }}</span>
+</a>
+{% endmacro %}
