@@ -108,7 +108,7 @@ Fra arkitekturspinen. **Startmal:** Arkitekturen bruker ingen startmal. Det er e
 - **AR-4 Database og migreringer (AD-13):** Samme kode mot SQLite (lokalt og i test) og Postgres (Supabase og CI). Bare Alembic, med `render_as_batch=True`. Én migrering per story. CI feiler ved mer enn ett hode. Etter første produksjonspublisering legger migreringer bare til. Transaction pooler (6543, `NullPool`, `prepare_threshold=None`) for appen og session pooler (5432) for Alembic i Actions.
 - **AR-5 Miljø (AD-14):** Én `Settings` med `APP_ENV` lik `local`, `test` eller `production`, og en ukjent verdi stopper oppstarten. Produksjon krever en ekte `SECRET_KEY` og har ingen seed, demokontoer eller testbrytere (`/_test/tilstand` gir 404).
 - **AR-6 Postnumre (AD-1, AD-10):** `data/postnumre.tsv` fra Brings register, konvertert til UTF-8 og lastet med en datamigrering. Tilgang bare gjennom `core/postnummer.py`. `core/static/postnumre.json` genereres og sjekkes inn, og en test sammenligner de to. README krediterer «Postnummerdata fra Posten Bring, lisensiert under NLOD 2.0.»
-- **AR-7 CI/CD:** `ci.yml` (pytest mot SQLite og Postgres, `alembic heads`, Playwright med axe, gitleaks), `deploy.yml` (på `main`: `alembic upgrade head` og så `vercel deploy --prod`) og `keepalive.yml` (besøk hver 3. dag). `main` er beskyttet og tar bare PR med grønn CI. `vercel.json` slår av automatisk publisering og preview og har `maxDuration = 30`. Workflows bruker aldri `pull_request_target`. Vercel må kobles til GitHub (Vercels GitHub-app på organisasjonen, bare dette repoet).
+- **AR-7 CI/CD:** `ci.yml` (pytest mot SQLite og Postgres, `alembic heads`, Playwright med axe, gitleaks), `deploy.yml` (på `main`: `alembic upgrade head` og så `vercel deploy --prod`) og `keepalive.yml` (besøk hver 3. dag). All kode går via PR med grønn CI før merge, etter regelen i README; `main` kan ikke beskyttes teknisk fordi ingen i gruppen har admin-rettighet (avvik, PRD §9.2). Logger og `sprint-status.yaml` kan pushes direkte til `main`. `vercel.json` slår av automatisk publisering og preview og har `maxDuration = 30`. Workflows bruker aldri `pull_request_target`. Publiseringen skjer med `vercel deploy` fra Actions, så Vercels GitHub-app trengs ikke (story 1.3).
 - **AR-8 Konfig og hemmeligheter:** Appen leser `APP_ENV`, `DATABASE_URL`, `SECRET_KEY`, `OPENROUTER_API_KEY` og `OPENROUTER_MODEL` (i `.env.example` uten verdier og i Vercel env). `MIGRATION_DATABASE_URL` og `VERCEL_*` ligger bare i GitHub Secrets. `.vercel/` er git-ignorert.
 - **AR-9 Admin-verktøy (AD-6):** `uv run python -m app.admin nytt-passord|slett-konto <e-post>` for manuell hjelp (glemt passord er utsatt).
 - **AR-10 README:** Kontoeiere og reserve (Vercel, Supabase, OpenRouter), kreditering av postnummerdata, testbrukere merket «bare for lokal testing», og at eieren sjekker Supabase før demo.
@@ -303,7 +303,7 @@ slik at alle senere stories bygger på samme kjerne, de samme reglene og den sam
 
 **Gitt** en tom database
 **Når** `alembic upgrade head` kjøres
-**Så** finnes tabellen `postnummer` med alle postnumrene fra `data/postnumre.tsv` (UTF-8, konvertert fra Brings register)
+**Så** finnes tabellen `postnummer` med alle postnumrene for gateadresser (Brings kategori G og B) fra `data/postnumre.tsv` (UTF-8, konvertert fra Brings register). Postboks- og servicenumre utelates (PRD §9.2)
 **Og** `core/postnummer.py` gir `finnes("0571") == True` og `poststed("0571") == "Oslo"`, og et ukjent nummer gir `finnes == False` (AD-1, AD-10)
 **Og** `core/static/postnumre.json` er generert av `uv run python -m app.core.postnummer`, og en test sjekker at fila stemmer med TSV-fila
 **Og** migreringen lager også tabellene `bruker` og `sesjon`, som mellomvaren trenger for å slå opp innlogging (AD-4)
@@ -337,7 +337,7 @@ slik at alle senere stories bygger på samme kjerne, de samme reglene og den sam
 **Gitt** en PR mot `main`
 **Når** CI kjører (`ci.yml`)
 **Så** kjører pytest mot SQLite og mot en Postgres-container, `alembic heads` gir nøyaktig én linje, og gitleaks skanner hele historikken (AR-7, NFR-3)
-**Og** `main` er beskyttet, slik at bare PR-er med grønn CI kan merges.
+**Og** README har regelen om at all kode går via PR med grønn CI før merge, fordi `main` ikke kan beskyttes teknisk (avvik, PRD §9.2).
 
 **Gitt** repoet
 **Når** det sjekkes
