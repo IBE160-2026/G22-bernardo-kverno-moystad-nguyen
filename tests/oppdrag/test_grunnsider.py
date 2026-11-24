@@ -75,7 +75,10 @@ def test_mine_oppdrag_har_tomtilstand(kari_klient: TestClient) -> None:
 
 @pytest.mark.parametrize("sti", ["/", "/mine-oppdrag", "/profil"])
 def test_ingen_lenker_til_funksjoner_som_ikke_finnes(kari_klient: TestClient, sti: str) -> None:
-    """Story 1.2: ingen «Legg ut oppdrag», postnummerfilter eller registrering ennå."""
+    """Story 1.2: ingen «Legg ut oppdrag» eller postnummerfilter ennå.
+
+    Registreringen (story 1.4) lenkes bare fra innloggingssiden, aldri fra sider for innloggede.
+    """
     html = kari_klient.get(sti).text
     for tekst in ("Legg ut oppdrag", "Velg et annet postnummer", "/registrer", "Postnummer</label>"):
         assert tekst not in html, tekst

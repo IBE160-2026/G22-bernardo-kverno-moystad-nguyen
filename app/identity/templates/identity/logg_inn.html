@@ -1,7 +1,7 @@
 {% extends "core/base.html" %}
 {% import "core/makroer.html" as m with context %}
 {# Innloggingssiden (FR-2, UX-DR12, UX-DR13, UX-DR22, UX-DR27, UX-DR28).
-   Ingen lenke til registrering før story 1.4. #}
+   Lenken til registrering står nederst (FR-1). #}
 {% block innhold %}
 <div class="skjemabredde">
   <h1>Logg inn</h1>
@@ -33,5 +33,9 @@
       <button class="knapp knapp--primar" type="submit">Logg inn</button>
     </div>
   </form>
+  <div class="annen-side">
+    <p>Har du ikke konto?</p>
+    <a class="tekstknapp" href="{{ url_for('identity.registrer') }}">Registrer deg</a>
+  </div>
 </div>
 {% endblock %}

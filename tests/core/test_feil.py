@@ -8,7 +8,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from app.core.feil import FinnesIkke, IngenTilgang
+from app.core.feil import FinnesIkke, IngenTilgang, RegelBrudd
 from app.core.sesjon import offentlig
 from app.core.headere import SIKKERHETSHEADERE
 
@@ -145,3 +145,17 @@ def test_valideringsfeil_gir_vennlig_side(klient: TestClient, feilruter) -> None
 def test_api_dokumentasjon_er_slatt_av(klient: TestClient) -> None:
     for sti in ("/docs", "/redoc", "/openapi.json"):
         assert klient.get(sti).status_code == 404
+
+
+def test_regelbrudd_barer_alle_feil_i_rekkefolge() -> None:
+    """AR-26, NFR-10: `RegelBrudd` har alle feltfeilene, i rekkefølgen de ble gitt."""
+    feil = [("navn", "Skriv navnet ditt."), ("epost", "Skriv e-postadressen din.")]
+    brudd = RegelBrudd(feil)
+    assert brudd.feil == feil
+    assert brudd.feil is not feil  # kopi, så den som kastet, ikke endrer den etterpå
+    assert "Skriv" not in str(brudd)  # meldingen har bare antallet
+
+
+def test_regelbrudd_krever_minst_en_feil() -> None:
+    with pytest.raises(ValueError):
+        RegelBrudd([])

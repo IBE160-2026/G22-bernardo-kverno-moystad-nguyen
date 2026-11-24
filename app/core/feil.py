@@ -7,8 +7,10 @@
 - Én handler tar alle `HTTPException` (404 «Fant ikke siden», 405 og andre)
   og `RequestValidationError`, så brukeren aldri ser JSON eller `detail`.
 - `FinnesIkke` og `IngenTilgang` gir begge 404 og samme side.
+- `RegelBrudd` bærer alle feltfeilene i et skjema, i feltrekkefølge. Ruta
+  fanger den og viser skjemaet igjen med 422, alle feilene og verdiene (NFR-10).
 
-`RegelBrudd`, `Konflikt` og `Duplikat` kommer i storyene som trenger dem.
+`Konflikt` og `Duplikat` kommer i storyene som trenger dem.
 """
 
 from __future__ import annotations
@@ -35,6 +37,20 @@ NODSIDE = (
     "<title>Noe gikk galt – Nabolagshelten</title></head>"
     f'<body><main><h1>{NOE_GIKK_GALT}</h1><p><a href="/logg-inn">Tilbake</a></p></main></body></html>'
 )
+
+
+class RegelBrudd(Exception):
+    """Ett eller flere felt bryter reglene (422, AR-26, NFR-10).
+
+    `feil` er `(felt, melding)` i feltrekkefølge, samme form som feiloppsummeringen
+    i `render` bruker. Meldingene er faste tekster og inneholder aldri det brukeren skrev.
+    """
+
+    def __init__(self, feil: list[tuple[str, str]]) -> None:
+        if not feil:
+            raise ValueError("RegelBrudd krever minst én feil.")
+        super().__init__(f"{len(feil)} regelbrudd")
+        self.feil = list(feil)
 
 
 class FinnesIkke(Exception):
