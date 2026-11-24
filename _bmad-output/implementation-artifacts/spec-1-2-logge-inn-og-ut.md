@@ -64,37 +64,37 @@ context:
 **Execution:** Seks trinn i avhengighetsrekkefølge. Hvert trinn ender med grønn `uv run pytest` og én eller noen få commits med krav-ID-er. Testene committes sammen med koden de tester.
 
 *Trinn 1: Passord, e-post og sperre (ingen HTTP)*
-- [ ] `pyproject.toml`, `uv.lock` -- `bcrypt~=5.0.0` -- AD-6
-- [ ] `app/identity/models.py`, `migrations/versions/0002_innloggingsforsok.py` -- `innloggingsforsok(id, epost String(320) indeksert, tidspunkt UtcDateTime indeksert)` -- AR-14
-- [ ] `app/identity/service.py` -- `normaliser_epost`, `hash_passord`/`sjekk_passord`, dummy-hash, sperren og oppryddingen, `logg_inn`/`logg_ut` -- AD-4, AD-6, AR-16
-- [ ] `tests/conftest.py` -- `lag_bruker(**felt)`; bcrypt med kostnad 4 i test -- AR-29
-- [ ] `tests/identity/` -- `passord_hash` inneholder ikke passordet, normalisering, sperre og opprydding med `sett_na`, og hashen begynner med `$2b$04$` i test (kostnaden avgjøres av `settings.app_env`: 12, eller 4 i test) -- NFR-4, NFR-5
+- [x] `pyproject.toml`, `uv.lock` -- `bcrypt~=5.0.0` -- AD-6
+- [x] `app/identity/models.py`, `migrations/versions/0002_innloggingsforsok.py` -- `innloggingsforsok(id, epost String(320) indeksert, tidspunkt UtcDateTime indeksert)` -- AR-14
+- [x] `app/identity/service.py` -- `normaliser_epost`, `hash_passord`/`sjekk_passord`, dummy-hash, sperren og oppryddingen, `logg_inn`/`logg_ut` -- AD-4, AD-6, AR-16
+- [x] `tests/conftest.py` -- `lag_bruker(**felt)`; bcrypt med kostnad 4 i test -- AR-29
+- [x] `tests/identity/` -- `passord_hash` inneholder ikke passordet, normalisering, sperre og opprydding med `sett_na`, og hashen begynner med `$2b$04$` i test (kostnaden avgjøres av `settings.app_env`: 12, eller 4 i test) -- NFR-4, NFR-5
 
 *Trinn 2: Innlogging kreves*
-- [ ] `app/core/sesjon.py` -- protokollen utvidet med `logg_inn`/`logg_ut`, avhengigheten `innlogget_bruker`, `trygg_neste()` -- AD-4, AR-17
-- [ ] `app/core/mellomvare.py`, `app/core/templates/core/logg_inn_igjen.html` -- håndheving med 303/401, 401-siden uten database, `Cache-Control: no-store` på alle svar unntatt `/static/` -- FR-3, AR-14
-- [ ] `tests/core/` -- FR-3-testen over `app.routes` (fyller stiparametre med `1`, feiler på ruter den ikke klarer å bygge, og sjekker at minst fem ruter er testet), `trygg_neste`, 401 uten databaseinnhold, `no-store` -- FR-3, NFR-5
+- [x] `app/core/sesjon.py` -- protokollen utvidet med `logg_inn`/`logg_ut`, avhengigheten `innlogget_bruker`, `trygg_neste()` -- AD-4, AR-17
+- [x] `app/core/mellomvare.py`, `app/core/templates/core/logg_inn_igjen.html` -- håndheving med 303/401, 401-siden uten database, `Cache-Control: no-store` på alle svar unntatt `/static/` -- FR-3, AR-14
+- [x] `tests/core/` -- FR-3-testen over `app.routes` (fyller stiparametre med `1`, feiler på ruter den ikke klarer å bygge, og sjekker at minst fem ruter er testet), `trygg_neste`, 401 uten databaseinnhold, `no-store` -- FR-3, NFR-5
 
 *Trinn 3: Meny og grunnsider*
-- [ ] `app/core/templates/core/{base,makroer}.html`, `static/css/app.css` -- meny i topplinjen fra 768 px og som bunnmeny under, `aria-current` -- NFR-11, UX-DR3
-- [ ] `app/oppdrag/routes.py` + maler -- `/` (`oppdrag.oversikt`) og `/mine-oppdrag` (`oppdrag.mine`) -- FR-21 grunnsider
-- [ ] `app/identity/service.py`, `app/profil/routes.py` + maler -- `OffentligBruker`, `hent_offentlig_bruker`, `/profil` (`profil.min`) og `/profil/{bruker_id:int}` (`profil.vis`) -- FR-21, AR-24, AD-16
-- [ ] `app/__init__.py` -- koble inn rutene for `oppdrag` og `profil`
-- [ ] `tests/conftest.py` -- `logg_inn_som(klient, bruker)`, som setter sesjonsraden og cookien direkte -- AR-29
-- [ ] `tests/oppdrag/`, `tests/profil/` -- meny og `aria-current`, titler og tomtilstander, AR-24-testen, 404 for ukjent eller slettet id, 303 fra `/profil/{egen id}` -- AR-24, NFR-5
+- [x] `app/core/templates/core/{base,makroer}.html`, `static/css/app.css` -- meny i topplinjen fra 768 px og som bunnmeny under, `aria-current` -- NFR-11, UX-DR3
+- [x] `app/oppdrag/routes.py` + maler -- `/` (`oppdrag.oversikt`) og `/mine-oppdrag` (`oppdrag.mine`) -- FR-21 grunnsider
+- [x] `app/identity/service.py`, `app/profil/routes.py` + maler -- `OffentligBruker`, `hent_offentlig_bruker`, `/profil` (`profil.min`) og `/profil/{bruker_id:int}` (`profil.vis`) -- FR-21, AR-24, AD-16
+- [x] `app/__init__.py` -- koble inn rutene for `oppdrag` og `profil`
+- [x] `tests/conftest.py` -- `logg_inn_som(klient, bruker)`, som setter sesjonsraden og cookien direkte -- AR-29
+- [x] `tests/oppdrag/`, `tests/profil/` -- meny og `aria-current`, titler og tomtilstander, AR-24-testen, 404 for ukjent eller slettet id, 303 fra `/profil/{egen id}` -- AR-24, NFR-5
 
 *Trinn 4: Innlogging og utlogging*
-- [ ] `app/core/kvittering.py`, `app/core/render.py`, `base.html` -- kvittering i signert cookie, lest og slettet ved neste side; feiloppsummering -- AR-27, UX-DR22
-- [ ] `app/identity/routes.py`, `logg_inn.html` -- POST `/logg-inn` (`offentlig`), POST `/logg-ut`, skjult felt `neste` -- FR-2, UX-DR12, UX-DR27
-- [ ] `tests/identity/` -- hver rad i I/O-matrisen, `Set-Cookie` ved innlogging og utlogging -- FR-2, NFR-5
+- [x] `app/core/kvittering.py`, `app/core/render.py`, `base.html` -- kvittering i signert cookie, lest og slettet ved neste side; feiloppsummering -- AR-27, UX-DR22
+- [x] `app/identity/routes.py`, `logg_inn.html` -- POST `/logg-inn` (`offentlig`), POST `/logg-ut`, skjult felt `neste` -- FR-2, UX-DR12, UX-DR27
+- [x] `tests/identity/` -- hver rad i I/O-matrisen, `Set-Cookie` ved innlogging og utlogging -- FR-2, NFR-5
 
 *Trinn 5: Testbrukere og admin*
-- [ ] `app/seed.py`, `README.md` -- seks testbrukere og tabell i README, merket «bare for lokal testing», og admin-kommandoen -- NFR-2
-- [ ] `app/admin.py` -- `nytt-passord <e-post>` -- AR-9
-- [ ] `tests/` -- seed to ganger, admin bytter passord og sletter sesjoner og tellere -- NFR-2, AR-9, NFR-5
+- [x] `app/seed.py`, `README.md` -- seks testbrukere og tabell i README, merket «bare for lokal testing», og admin-kommandoen -- NFR-2
+- [x] `app/admin.py` -- `nytt-passord <e-post>` -- AR-9
+- [x] `tests/` -- seed to ganger, admin bytter passord og sletter sesjoner og tellere -- NFR-2, AR-9, NFR-5
 
 *Trinn 6: Progressiv forbedring*
-- [ ] `app/core/static/js/{vis_passord,sending}.js` -- «Vis passord» med `aria-pressed`, `aria-disabled` på sendeknappen og nullstilling ved `pageshow` -- UX-DR13, UX-DR28
+- [x] `app/core/static/js/{vis_passord,sending}.js` -- «Vis passord» med `aria-pressed`, `aria-disabled` på sendeknappen og nullstilling ved `pageshow` -- UX-DR13, UX-DR28
 
 **Acceptance Criteria:**
 - Gitt innlogget bruker, så har hver side menyen Oppdrag · Mine oppdrag · Profil med aktivt valg markert med fet skrift, strek og `aria-current="page"`. Oversikten har overskriften «Ledige oppdrag i <postnummer> <poststed>» og «Ingen ledige oppdrag i <postnummer> <poststed> akkurat nå.». «Mine oppdrag» viser «Du har ikke lagt ut noen oppdrag.». «Min profil» har navnet som `h1`, postnummer med poststed og knappen «Logg ut».
@@ -105,6 +105,14 @@ context:
 - Gitt utlogging, så viser tilbakeknappen ikke innhold, fordi alle svar unntatt `/static/` har `Cache-Control: no-store`, og cookien `sesjon` er slettet med samme `Path` som den ble satt med.
 
 ## Implementation Notes
+
+- **FastAPI 0.165 og `app.routes`:** en inkludert router ligger som én `_IncludedRouter` i `app.routes`, ikke som enkeltruter. `core.sesjon.alle_ruter()` flater dem ut med `effective_route_contexts()`. Mellomvaren, FR-3-testen, AR-24-testen og testen av unike rutenavn bruker den samme funksjonen. Testen av unike rutenavn var tom før dette (den så ingen navngitte ruter).
+- **Menyen** rendres to ganger: `meny--topp` i topplinjen og `meny--bunn` etter `main`. Den som ikke gjelder for bredden, er `display: none`, så skjermlesere finner bare én «Hovedmeny», og bunnmenyen kan ligge nederst i sideflyten (`position: static`) på lav skjerm.
+- **Feil ved innlogging:** «Feil e-post eller passord.» og sperremeldingen vises i feiloppsummeringen («Skjemaet har 1 feil») med lenke til feltet «E-post», uten feltfeil ved feltene. Passordfeltet får hjelpeteksten «Skriv passordet på nytt.».
+- **Tomme felt** sjekkes i `identity.service.sjekk_innloggingsskjema` før `Autentisering.logg_inn`; `logg_inn` avviser også tomme felt uten å telle dem.
+- **POST til en sti som bare har GET** (for eksempel POST `/`) gir 401 uten innlogging og 405 med innlogging. Testene for 405 logger derfor inn først.
+- **Commits:** trinn 2–4 ble utviklet samlet, så commitene for trinn 2, 3 og 4 er ikke grønne hver for seg (malene og `render` henger sammen). Trinn 1, 5 og 6 og sluttresultatet er grønne.
+- **gitleaks** finnes ikke lokalt og er ikke kjørt; CI kjører den over hele historikken.
 
 ## Spec Change Log
 
