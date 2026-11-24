@@ -1,0 +1,9 @@
+{% extends "core/base.html" %}
+{# 401 uten innlogging (FR-3, AR-17, enkel versjon av AD-7). Rendres uten databasekall.
+   Full gjenvisning av skjemaet kommer i story 2.6. #}
+{% block innhold %}
+<div class="lesebredde">
+  <h1>Du må logge inn igjen.</h1>
+  <p><a class="knapp knapp--primar" href="{{ innlogging_url }}">Logg inn</a></p>
+</div>
+{% endblock %}

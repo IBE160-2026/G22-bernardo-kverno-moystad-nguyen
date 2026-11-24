@@ -9,7 +9,7 @@ Ruter får den innloggede brukeren bare gjennom avhengigheten `innlogget_bruker`
 from __future__ import annotations
 
 import unicodedata
-from collections.abc import Callable
+from collections.abc import Callable, Iterable, Iterator
 from dataclasses import dataclass
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Protocol, TypeVar, runtime_checkable
@@ -109,6 +109,22 @@ def offentlig(endepunkt: F) -> F:
 
 def er_offentlig(endepunkt: Callable[..., Any] | None) -> bool:
     return bool(getattr(endepunkt, "er_offentlig", False))
+
+
+def alle_ruter(ruter: Iterable[Any]) -> Iterator[Any]:
+    """Rutene i appen som en flat liste, i samme rekkefølge som ruteren prøver dem.
+
+    FastAPI 0.165 legger en inkludert router inn som én rute som velger blant
+    sine egne ruter (med prefiks). `effective_route_contexts()` gir dem enkeltvis,
+    hver med `matches`, `endpoint`, `methods` og `path_format`. Brukes av
+    mellomvaren og av FR-3-testen, så de ser de samme rutene.
+    """
+    for rute in ruter:
+        kontekster = getattr(rute, "effective_route_contexts", None)
+        if callable(kontekster):
+            yield from kontekster()
+        else:
+            yield rute
 
 
 def trygg_neste(verdi: str | None) -> str:
