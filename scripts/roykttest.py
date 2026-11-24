@@ -12,6 +12,9 @@ Sjekkene (radene i I/O-matrisen i spec-1-3):
   «Feil e-post eller passord.» (eller sperremeldingen). Det viser at CSRF- og
   Origin-sjekken slipper gjennom bak Vercels proxy, at kroppen spilles av for
   ruta, at Supabase svarer, og at det ikke finnes demokontoer i produksjon.
+- GET `/registrer` gir 200, sikkerhetsheaderne og knappen «Opprett konto»
+  (spec-1-4). Røyktesten registrerer aldri kontoer; testkontoen i produksjon
+  lages for hånd.
 - GET `/_test/tilstand` gir 404 (testruta finnes bare i `test`).
 - GET `/static/css/app.css` gir 200.
 
@@ -46,6 +49,8 @@ FORVENTEDE_HEADERE = {navn.decode(): verdi.decode() for navn, verdi in SIKKERHET
 # Seed-brukeren fra README (bare for lokal testing). Finnes aldri i produksjon.
 SEED_EPOST = "kari@eksempel.no"
 SEED_PASSORD = "kari-lokal-1"
+
+OPPRETT_KONTO = "Opprett konto"
 
 CSRF_FELT = re.compile(r'name="csrf_token" value="([^"]+)"')
 
@@ -89,13 +94,24 @@ def _sjekk(url: str, klient: httpx.Client) -> list[str]:
 
     # 1. Innloggingssiden, sikkerhetsheaderne og Secure på CSRF-cookien
     svar = klient.get("/logg-inn", follow_redirects=False)
+    innloggingsside = svar
     if svar.status_code != 200:
         return [f"GET /logg-inn: status {svar.status_code}, forventet 200 (startet appen?)"]
     avvik += sjekk_headere(svar, "/logg-inn")
     avvik += sjekk_secure_cookie(svar)
 
-    # 2. Innlogging med seed-passordet: skal avvises med 422
-    treff = CSRF_FELT.search(svar.text)
+    # 2. Registreringssiden svarer (FR-1). Ingen konto opprettes. Sjekkes før
+    #    innloggingen, så en eventuell demokonto ikke gir 303 her.
+    svar = klient.get("/registrer", follow_redirects=False)
+    if svar.status_code != 200:
+        avvik.append(f"GET /registrer: status {svar.status_code}, forventet 200")
+    else:
+        avvik += sjekk_headere(svar, "/registrer")
+        if OPPRETT_KONTO not in svar.text:
+            avvik.append(f"GET /registrer: fant ikke «{OPPRETT_KONTO}»")
+
+    # 3. Innlogging med seed-passordet: skal avvises med 422
+    treff = CSRF_FELT.search(innloggingsside.text)
     if treff is None:
         avvik.append("GET /logg-inn: fant ikke det skjulte feltet csrf_token")
     else:
@@ -122,12 +138,12 @@ def _sjekk(url: str, klient: httpx.Client) -> list[str]:
         elif FEIL_INNLOGGING not in svar.text and FOR_MANGE_FORSOK not in svar.text:
             avvik.append(f"POST /logg-inn: 422, men uten «{FEIL_INNLOGGING}» eller sperremeldingen")
 
-    # 3. Testruta finnes ikke utenfor test
+    # 4. Testruta finnes ikke utenfor test
     svar = klient.get("/_test/tilstand", follow_redirects=False)
     if svar.status_code != 404:
         avvik.append(f"GET /_test/tilstand: status {svar.status_code}, forventet 404")
 
-    # 4. Statiske filer
+    # 5. Statiske filer
     svar = klient.get("/static/css/app.css", follow_redirects=False)
     if svar.status_code != 200:
         avvik.append(f"GET /static/css/app.css: status {svar.status_code}, forventet 200")
