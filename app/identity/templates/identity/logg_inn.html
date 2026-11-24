@@ -1,0 +1,22 @@
+{% extends "core/base.html" %}
+{% import "core/makroer.html" as m with context %}
+{# Innloggingssiden (FR-2, UX-DR2). Innsendingen kommer i story 1.2. #}
+{% block innhold %}
+<div class="skjemabredde">
+  <h1>Logg inn</h1>
+  <form class="skjema" method="post" action="{{ url_for('identity.logg_inn') }}" novalidate>
+    {{ m.csrf_felt() }}
+    <div class="felt">
+      <label for="epost">E-post</label>
+      <input id="epost" name="epost" type="email" autocomplete="email" required>
+    </div>
+    <div class="felt">
+      <label for="passord">Passord</label>
+      <input id="passord" name="passord" type="password" autocomplete="current-password" required>
+    </div>
+    <div class="skjema__knapper">
+      <button class="knapp knapp--primar" type="submit">Logg inn</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

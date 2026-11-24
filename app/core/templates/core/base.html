@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="nb">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ sidetittel }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='css/app.css') }}">
+</head>
+<body>
+  <a class="hopp-til-innhold" href="#innhold">Hopp til innholdet</a>
+  <header class="topplinje">
+    <div class="topplinje__innhold">
+      {% if innlogget %}
+      <a class="logo" href="/" aria-label="Nabolagshelten, til oversikten">
+        {% include "core/logo.svg" %}
+        <span class="logo__navn">Nabolagshelten</span>
+      </a>
+      {% else %}
+      <span class="logo">
+        {% include "core/logo.svg" %}
+        <span class="logo__navn">Nabolagshelten</span>
+      </span>
+      {% endif %}
+    </div>
+  </header>
+  <main id="innhold" class="innhold" tabindex="-1">
+    {% block innhold %}{% endblock %}
+  </main>
+</body>
+</html>

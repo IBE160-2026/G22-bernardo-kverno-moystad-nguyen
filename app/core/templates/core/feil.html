@@ -1,0 +1,8 @@
+{% extends "core/base.html" %}
+{# Feilside uten databasekall (AR-26, NFR-10). Teksten er fra EXPERIENCE.md. #}
+{% block innhold %}
+<div class="lesebredde">
+  <h1>{{ overskrift }}</h1>
+  <p><a class="tekstknapp" href="{{ tilbake_url }}">Tilbake</a></p>
+</div>
+{% endblock %}
