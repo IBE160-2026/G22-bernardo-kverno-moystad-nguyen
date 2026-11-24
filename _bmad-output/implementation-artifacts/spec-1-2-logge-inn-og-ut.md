@@ -2,7 +2,7 @@
 title: 'Story 1.2: Logge inn og ut'
 type: 'feature'
 created: '2026-11-24'
-status: 'draft'
+status: 'ready-for-dev'
 route: 'dispatch'
 baseline_commit: 'ab54a16a8f3db09717dca37b9e1e5262158f23e3'
 review_loop_iteration: 0
@@ -68,7 +68,7 @@ context:
 - [ ] `app/identity/models.py`, `migrations/versions/0002_innloggingsforsok.py` -- `innloggingsforsok(id, epost String(320) indeksert, tidspunkt UtcDateTime indeksert)` -- AR-14
 - [ ] `app/identity/service.py` -- `normaliser_epost`, `hash_passord`/`sjekk_passord`, dummy-hash, sperren og oppryddingen, `logg_inn`/`logg_ut` -- AD-4, AD-6, AR-16
 - [ ] `tests/conftest.py` -- `lag_bruker(**felt)`; bcrypt med kostnad 4 i test -- AR-29
-- [ ] `tests/identity/` -- `passord_hash` inneholder ikke passordet, normalisering, sperre og opprydding med `sett_na`, og hashen begynner med `$2b$04$` i test (kostnaden leses fra `Settings`) -- NFR-4, NFR-5
+- [ ] `tests/identity/` -- `passord_hash` inneholder ikke passordet, normalisering, sperre og opprydding med `sett_na`, og hashen begynner med `$2b$04$` i test (kostnaden avgjøres av `settings.app_env`: 12, eller 4 i test) -- NFR-4, NFR-5
 
 *Trinn 2: Innlogging kreves*
 - [ ] `app/core/sesjon.py` -- protokollen utvidet med `logg_inn`/`logg_ut`, avhengigheten `innlogget_bruker`, `trygg_neste()` -- AD-4, AR-17
@@ -132,7 +132,7 @@ Valg tatt i planleggingen (dokumentene sier ikke noe om dem, eller story-AC-en g
 2. `app.admin nytt-passord` flyttes til 1.3, fordi den først trengs når produksjonen har brukere.
 3. `/profil/{id}` flyttes til 2.3, der den første lenken dit kommer.
 
-Et kutt endrer Intent. Det føres derfor i Spec Change Log, i epics og i `sprint-status.yaml` før det gjennomføres. Kuttene utløses på faste tidspunkter, så torsdag og fredag er satt av til 1.3–1.5 før sjekkpunktet for Epic 1 fredag 28. nov:
+Et kutt endrer Intent. Det føres derfor i Spec Change Log, i epics og i `sprint-status.yaml` før det gjennomføres. Kuttene utløses på faste tidspunkter, så torsdag til lørdag er satt av til 1.3–1.5 før sjekkpunktet for Epic 1 lørdag 28. nov:
 - *Onsdag 25. nov kl. 20:* er trinn 4 ikke grønt, utløses kutt 1 og 2.
 - *Torsdag 26. nov kl. 12:* er PR-en ikke åpnet, utløses kutt 3, og PR-en åpnes med det som er ferdig.
 
