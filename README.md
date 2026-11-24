@@ -21,7 +21,7 @@ Prosjektet er i implementasjonsfasen (Epic 1). Frist for innlevering er 15. dese
 | UX-design | Ferdig: designsystem, atferd, mockups og tilgjengelighetsgjennomgang |
 | Arkitektur | Ferdig: FastAPI + Jinja, SQLite lokalt og Supabase Postgres på Vercel (AD-1–AD-17) |
 | Epics og stories | Ferdig: [epics.md](_bmad-output/planning-artifacts/epics.md) og [sprint-status.yaml](_bmad-output/implementation-artifacts/sprint-status.yaml) |
-| Implementasjon og testing | Pågår: story 1.1 (skjelett lokalt og i CI) |
+| Implementasjon og testing | Pågår: story 1.1 ferdig, story 1.2 (logge inn og ut) under arbeid |
 
 ## Kom i gang
 
@@ -44,9 +44,33 @@ uv run uvicorn main:app --reload
 ```
 
 - `uv sync` installerer avhengighetene i `.venv/` med de låste versjonene i `uv.lock`.
-- `uv run python -m app.seed` kjører `alembic upgrade head`. Det lager SQLite-fila `nabolagshelten.db` med tabellene og postnumrene. Eksempelbrukere og eksempeloppdrag kommer i story 1.2 og senere.
-- Åpne <http://127.0.0.1:8000/logg-inn> i nettleseren. Stopp appen med Ctrl+C.
-- I story 1.1 vises innloggingsskjemaet bare. Innsendingen kommer i story 1.2, så «Logg inn» gir foreløpig en feilside.
+- `uv run python -m app.seed` kjører `alembic upgrade head`. Det lager SQLite-fila `nabolagshelten.db` med tabellene og postnumrene, og legger inn de seks testbrukerne under. Seed kan kjøres flere ganger; brukere som finnes, røres ikke. Eksempeloppdrag kommer i story 2.1 og senere.
+- Åpne <http://127.0.0.1:8000/> i nettleseren og logg inn med en av testbrukerne. Stopp appen med Ctrl+C.
+
+### Testbrukere (bare for lokal testing)
+
+Seed legger inn seks oppdiktede brukere i tre postnumre (NFR-2). E-post og passord er **bare for lokal testing**. De finnes aldri i produksjon, fordi seed nekter å kjøre der. Passordene lagres bare som hash (NFR-4).
+
+| Navn | E-post | Passord | Postnummer | Brukes til |
+|---|---|---|---|---|
+| Kari Nordmann | kari@eksempel.no | kari-lokal-1 | 0571 Oslo | Oppdragsgiver (UJ-1): legger ut oppdrag og velger hjelper. |
+| Ola Hansen | ola@eksempel.no | ola-lokal-1 | 0571 Oslo | Hjelper i samme postnummer som Kari: melder interesse og konkurrerer med Amir. |
+| Amir Haddad | amir@eksempel.no | amir-lokal-1 | 0572 Oslo | Hjelper (UJ-2): melder interesse, blir valgt og bygger profil. |
+| Nora Berg | nora@eksempel.no | nora-lokal-1 | 0572 Oslo | Oppdragsgiver i 0572: oppdrag i et annet postnummer enn Kari. |
+| Sofie Lie | sofie@eksempel.no | sofie-lokal-1 | 5006 Bergen | Oppdragsgiver i Bergen: viser at oversikten bare viser eget postnummer. |
+| Jonas Dahl | jonas@eksempel.no | jonas-lokal-1 | 5006 Bergen | Hjelper i Bergen: tester postnummerfilteret og andre postnumre. |
+
+Etter fem feil passord på samme e-post innen 15 minutter er innloggingen sperret i 15 minutter (FR-2).
+
+### Nytt passord for en bruker
+
+Appen har ikke «glemt passord» i v1 (PRD §6.2). Gruppen setter et nytt passord for hånd:
+
+```bash
+uv run python -m app.admin nytt-passord kari@eksempel.no
+```
+
+Kommandoen viser hvilken database den er koblet til (uten passord), spør etter det nye passordet to ganger (8–64 tegn, vises ikke på skjermen) og krever at du skriver `ja`. Brukerens gamle innlogginger og mislykkede forsøk slettes. Den virker mot den `DATABASE_URL` som er satt, også produksjon, så sjekk databasenavnet før du skriver `ja`.
 
 Vil du overstyre en innstilling, kopier `.env.example` til `.env` og fyll inn verdien. Tomme verdier gir standardverdien.
 
@@ -99,9 +123,10 @@ Postnummerdata fra Posten Bring, lisensiert under NLOD 2.0.
 main.py             Inngangspunkt for uvicorn og Vercel: app = lag_app()
 app/                Appen: core/ (felles kjerne) og slicene identity/, oppdrag/, profil/, ki/
 app/seed.py         Gjør databasen klar lokalt (uv run python -m app.seed)
+app/admin.py        Manuell hjelp: nytt passord (uv run python -m app.admin nytt-passord <e-post>)
 data/postnumre.tsv  Brings postnummerregister i UTF-8
 migrations/         Alembic-migreringer (skjema og postnumre)
-tests/              pytest-tester; tests/core/ har arkitektur, mellomvare, feil og migrering
+tests/              pytest-tester per slice; tests/core/ har arkitektur, mellomvare, tilgang, feil og migrering
 .github/workflows/  CI (ci.yml)
 pyproject.toml      Avhengigheter; uv.lock låser versjonene
 .claude/skills/     BMAD-skills og sesjonslogg-skillen for Claude Code
