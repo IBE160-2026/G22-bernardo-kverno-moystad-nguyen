@@ -6,7 +6,8 @@ for hånd. Kommandoen bruker de samme funksjonene som innloggingen
 mislykkede innloggingsforsøk.
 
 - Passordet leses to ganger med `getpass`, aldri som argument, så det ikke
-  havner i skallhistorikken. Det må ha 8–64 tegn (FR-1).
+  havner i skallhistorikken. Det må ha 8–64 tegn (FR-1) og ikke bare
+  mellomrom, fordi innloggingen regner et slikt passord som tomt.
 - Kommandoen virker mot den `DATABASE_URL` som er satt, også produksjon.
   Før den endrer noe, viser den hvilken database den er koblet til (uten
   passord) og krever at du skriver `ja`.
@@ -47,6 +48,9 @@ def nytt_passord(
 ) -> int:
     print(f"Database: {url_uten_passord(database_url)}")
     passord = les_passord("Nytt passord: ")
+    if not passord.strip():
+        print("Passordet kan ikke bare være mellomrom. Ingenting er endret.", file=sys.stderr)
+        return 1
     if not passord_har_gyldig_lengde(passord):
         print(f"Passordet må ha {PASSORD_MIN}–{PASSORD_MAKS} tegn. Ingenting er endret.", file=sys.stderr)
         return 1

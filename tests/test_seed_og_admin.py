@@ -108,10 +108,11 @@ def test_admin_nytt_passord(db, sesjonsfabrikk, lag_bruker, capsys) -> None:
     ("passord", "bekreftelse", "melding"),
     [
         (("kort", "kort"), "ja", "8–64 tegn"),
+        (("        ", "        "), "ja", "bare være mellomrom"),
         (("nytt-passord-9", "annet-passord-9"), "ja", "ikke like"),
         (("nytt-passord-9", "nytt-passord-9"), "nei", "Avbrutt"),
     ],
-    ids=["for-kort", "ulike", "ikke-ja"],
+    ids=["for-kort", "bare-mellomrom", "ulike", "ikke-ja"],
 )
 def test_admin_endrer_ingenting_ved_feil(
     db, sesjonsfabrikk, lag_bruker, capsys, passord, bekreftelse, melding
@@ -127,6 +128,7 @@ def test_admin_endrer_ingenting_ved_feil(
     assert kode == 1
     utskrift = capsys.readouterr()
     assert melding in utskrift.out + utskrift.err
+    assert "Ingenting er endret." in utskrift.out + utskrift.err
     db.expire_all()
     assert db.get(Bruker, kari.id).passord_hash == gammel_hash
 
