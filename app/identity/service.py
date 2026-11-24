@@ -40,6 +40,7 @@ SESJON_VARIGHET = timedelta(days=7)
 SPERREVINDU = timedelta(minutes=15)
 MAKS_MISLYKKEDE = 5
 PASSORD_MIN = 8
+MAKS_EPOST = 320  # lengden på `bruker.epost` og `innloggingsforsok.epost`
 PASSORD_MAKS = 64
 BCRYPT_KOSTNAD = 12
 BCRYPT_KOSTNAD_TEST = 4
@@ -150,7 +151,8 @@ def logg_inn(
 ) -> Innloggingsresultat:
     """Logger inn med e-post og passord (FR-2, AD-4).
 
-    - Tomme felt gir `FEIL` og telles ikke.
+    - Tomme felt, og e-post over 320 tegn eller med NUL, gir `FEIL` uten
+      databasekall og telles ikke.
     - Ved hvert forsøk slettes alle forsøk eldre enn 15 minutter.
     - Har e-posten 5 eller flere forsøk igjen, avvises forsøket som `SPERRET`,
       uten passordsjekk og uten å lagres.
@@ -161,6 +163,9 @@ def logg_inn(
     """
     normalisert = normaliser_epost(epost)
     if not normalisert or not passord:
+        return Innloggingsresultat(Innloggingsutfall.FEIL)
+    if len(normalisert) > MAKS_EPOST or "\x00" in normalisert:
+        # Ville gitt DataError i Postgres. Kan ikke være en lagret e-post.
         return Innloggingsresultat(Innloggingsutfall.FEIL)
 
     na = klokke.na()
@@ -220,6 +225,11 @@ class IdentityAutentisering:
 
     Tabellen lagrer `hash_sesjonsnokkel(nokkel)`, aldri selve nøkkelen fra cookien.
     """
+
+    def __init__(self) -> None:
+        # Dummy-hashen lages ved oppstart, så første forsøk med ukjent e-post
+        # ikke koster to bcrypt-kjøringer og avslører seg på svartiden.
+        _dummy_hash()
 
     def finn_innlogget(self, request: Request) -> Innlogget | None:
         nokkel = request.cookies.get(SESJON_COOKIE)

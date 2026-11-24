@@ -158,3 +158,24 @@ def test_logg_ut_sletter_sesjonen(db, kari) -> None:
     logg_ut(db, nokkel)
     assert antall_sesjoner(db, kari.id) == 0
     logg_ut(db, None)  # uten cookie skjer ingenting
+
+
+@pytest.mark.parametrize("epost", ["a" * 310 + "@eksempel.no", "kari\x00@eksempel.no"], ids=["over-320", "nul"])
+def test_ugyldig_epost_gir_feil_uten_databasekall(db, kari, epost, monkeypatch) -> None:
+    """E-post over 320 tegn eller med NUL når aldri databasen (ville gitt DataError i Postgres)."""
+
+    def ingen_database(*args, **kwargs):
+        raise AssertionError("skal ikke bruke databasen")
+
+    monkeypatch.setattr(db, "execute", ingen_database)
+    monkeypatch.setattr(db, "scalar", ingen_database)
+    monkeypatch.setattr(db, "scalars", ingen_database)
+    monkeypatch.setattr(db, "add", ingen_database)
+    assert logg_inn(db, epost, STANDARD_PASSORD).utfall is Innloggingsutfall.FEIL
+
+
+def test_dummy_hashen_lages_ved_oppstart(monkeypatch) -> None:
+    """Første forsøk med ukjent e-post skal ikke koste en ekstra bcrypt-kjøring."""
+    service._dummy_hash.cache_clear()
+    service.IdentityAutentisering()
+    assert service._dummy_hash.cache_info().currsize == 1
