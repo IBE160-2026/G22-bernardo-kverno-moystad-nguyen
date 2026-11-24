@@ -106,3 +106,21 @@ Gjøre ferdig det som gjensto for story 1.2: pushe loggen først, merge PR #2 og
 ### Åpne punkter
 - De manuelle sjekkene for 1.2 (320 px, tastatur, `app.admin` i ekte terminal) og JS-testene i 1.5 står fortsatt åpne i `issues.md`.
 - Sjekkpunkt lørdag 28. nov: Epic 1 ferdig. Story 1.3–1.5 gjenstår (står allerede i `issues.md`).
+
+## 2026-11-24 kl. 14:40 — Heidi
+
+### Oppgave
+Teste nettsiden for story 1.2 lokalt etter merge.
+
+### Plan
+- Sjekke at appen starter fra `main` og at innloggingen virker (curl mot `/`, `/logg-inn`, `/mine-oppdrag` og `/profil`).
+- Starte appen på http://127.0.0.1:8000/ slik at Heidi kunne teste i nettleseren.
+
+### Resultat
+- Røyktest fra `main` (`1e44aef`): `/` uten innlogging gir 303 til `/logg-inn?neste=/`. Innlogging som Kari gir 303 til `/`, og deretter gir `/`, `/mine-oppdrag` og `/profil` 200, og profilen viser «Kari Nordmann».
+- **Manuell test av Heidi:** Kari logget inn og ut i nettleseren uten problemer.
+- Første forsøk ga «failed to load page» fordi appen ikke kjørte. Ingen kodefeil.
+- Ingen kode er endret.
+
+### Åpne punkter
+- Sjekken ved 320 px, tastatursjekken og `app.admin` i ekte terminal står fortsatt åpne i `issues.md`. Denne testen dekket bare innlogging og utlogging.
