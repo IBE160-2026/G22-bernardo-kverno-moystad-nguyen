@@ -16,6 +16,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import func, inspect, select
 from sqlalchemy.orm import Session
 
+from app.core.config import Settings
 from app.identity.models import Bruker, Sesjon
 from app.identity.service import hash_sesjonsnokkel
 
@@ -142,7 +143,7 @@ def test_poststed_er_knyttet_til_postnummerfeltet(klient: TestClient) -> None:
     assert postnummer["aria-describedby"] == "postnummer-sted"
     assert postnummer["data-poststed"] == "postnummer-sted"
     assert postnummer["data-postnumre"] == "/static/postnumre.json"
-    assert '<span id="postnummer-sted"></span>' in html
+    assert '<span id="postnummer-sted" aria-live="polite"></span>' in html
     assert "/static/js/poststed.js" in html
     assert klient.get("/static/postnumre.json").status_code == 200
     assert klient.get("/static/js/poststed.js").status_code == 200
@@ -244,23 +245,54 @@ def test_kontoen_kan_logge_ut_og_inn_igjen(klient: TestClient) -> None:
     assert klient.get("/profil").status_code == 200
 
 
-def test_innlogget_registrering_erstatter_gammel_sesjon(
+def test_innlogget_post_sendes_til_oversikten(
     klient: TestClient, db: Session, lag_bruker, logg_inn_som
 ) -> None:
-    """Som ved innlogging: den gamle sesjonen slettes når en ny lages."""
+    """Innloggede sendes til `/`: ingen ny konto, og den gamle sesjonen er urørt."""
     gammel = logg_inn_som(klient, lag_bruker())
-    assert send(klient).status_code == 303
-    assert hash_sesjonsnokkel(gammel) not in set(db.scalars(select(Sesjon.nokkel)))
+    svar = send(klient, epost="ny@x.no")
+    assert svar.status_code == 303
+    assert svar.headers["location"] == "/"
+    assert not any(c.startswith("sesjon=") for c in svar.headers.get_list("set-cookie"))
+    assert antall_brukere(db) == 1
+    assert set(db.scalars(select(Sesjon.nokkel))) == {hash_sesjonsnokkel(gammel)}
+
+
+def test_sesjonscookien_er_secure_i_produksjon(sesjonsfabrikk) -> None:
+    """AD-4: registreringen setter `Secure` på sesjonscookien i produksjon, som innloggingen."""
+    from app import lag_app
+
+    settings = Settings(
+        _env_file=None, app_env="production", secret_key="x" * 32,
+        database_url="postgresql+psycopg://u@localhost/d",
+    )
+    app = lag_app(settings=settings)
+    app.state.sesjonsfabrikk = sesjonsfabrikk
+    with TestClient(app, base_url="https://testserver") as klient:
+        token = re.search(r'name="csrf_token" value="([^"]+)"', klient.get("/registrer").text).group(1)
+        svar = klient.post("/registrer", data={"csrf_token": token, **GYLDIG}, follow_redirects=False)
+    assert svar.status_code == 303
+    (cookie,) = [c for c in svar.headers.get_list("set-cookie") if c.startswith("sesjon=")]
+    assert "secure" in cookie.lower()
 
 
 def test_registrering_logger_ikke_personopplysninger(klient: TestClient, caplog) -> None:
-    """AR-30: e-post, telefon og passord havner aldri i loggen."""
+    """AR-30: navn, e-post, telefon, fødselsdato og passord havner aldri i loggen."""
     caplog.set_level(logging.DEBUG)
     send(klient)
     send(klient, navn="", telefon="12")
     for post in caplog.records:
         tekst = post.getMessage()
-        for verdi in ("kari@x.no", "Kari@X.no", "912 34 567", "91234567", GYLDIG["passord"]):
+        for verdi in (
+            GYLDIG["navn"],
+            "kari@x.no",
+            "Kari@X.no",
+            "912 34 567",
+            "91234567",
+            GYLDIG["fodselsdato"],
+            "1954-05-03",
+            GYLDIG["passord"],
+        ):
             assert verdi not in tekst, post.name
 
 
@@ -422,13 +454,13 @@ def test_passordfeil_gir_ikke_skriv_pa_nytt(klient: TestClient) -> None:
 def test_poststed_vises_etter_innsending_uten_js(klient: TestClient) -> None:
     """UX-DR13: med feil i et annet felt vises poststedet for et gyldig postnummer."""
     html = send(klient, navn="", postnummer="5006").text
-    assert '<span id="postnummer-sted">Bergen</span>' in html
+    assert '<span id="postnummer-sted" aria-live="polite">Bergen</span>' in html
     assert felt(html, "postnummer")["aria-describedby"] == "postnummer-sted"
 
 
 def test_ukjent_postnummer_gir_ikke_poststed(klient: TestClient) -> None:
     html = send(klient, postnummer="9999").text
-    assert '<span id="postnummer-sted"></span>' in html
+    assert '<span id="postnummer-sted" aria-live="polite"></span>' in html
     assert felt(html, "postnummer")["aria-describedby"] == "postnummer-sted postnummer-feil"
 
 

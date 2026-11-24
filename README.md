@@ -27,7 +27,7 @@ Prosjektet er i implementasjonsfasen (Epic 1). Frist for innlevering er 15. dese
 
 Appen kjører lokalt mot en SQLite-fil, uten `.env`, kontoer eller nøkler (NFR-1).
 
-Produksjonsversjonen ligger på <https://nabolagshelten.vercel.app/>. Der finnes ingen testbrukere fra seed. Lag en egen konto på <https://nabolagshelten.vercel.app/registrer> (FR-1). Se [Publisering i produksjon](#publisering-i-produksjon).
+Produksjonsversjonen ligger på <https://nabolagshelten.vercel.app/>. Der finnes ingen testbrukere fra seed. Lag en egen konto på <https://nabolagshelten.vercel.app/registrer> (FR-1). Bruk bare oppdiktede opplysninger, fordi kontoer ikke kan slettes før story 4.5 er ferdig. Se [Publisering i produksjon](#publisering-i-produksjon).
 
 ### Forutsetninger
 

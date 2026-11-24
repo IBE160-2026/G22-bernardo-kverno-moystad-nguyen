@@ -5,7 +5,8 @@ Tabelltester for skrivemåter, tosifret år, 29. februar og grensene ved 18 og 1
 
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+import zoneinfo
+from datetime import date, datetime, timedelta, timezone
 
 import pytest
 
@@ -48,6 +49,17 @@ def test_i_dag_er_datoen_i_oslo(sett_na, utc: datetime, forventet: date) -> None
     """AD-9: «i dag» er datoen i Europe/Oslo, regnet fra `klokke.na()`."""
     sett_na(utc)
     assert tid.i_dag() == forventet
+
+
+def test_europe_oslo_finnes_i_tzdata_pakken() -> None:
+    """AD-9: Europe/Oslo løses fra `tzdata`, også uten tidssonedata i operativsystemet (Vercel)."""
+    opprinnelig = zoneinfo.TZPATH
+    try:
+        zoneinfo.reset_tzpath(to=[])
+        oslo = zoneinfo.ZoneInfo.no_cache("Europe/Oslo")
+    finally:
+        zoneinfo.reset_tzpath(to=opprinnelig)
+    assert datetime(2026, 11, 24, 12, 0, tzinfo=oslo).utcoffset() == timedelta(hours=1)
 
 
 # ---------- skrivemåter ----------

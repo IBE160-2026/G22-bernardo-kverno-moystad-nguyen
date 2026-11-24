@@ -156,14 +156,15 @@ def send_registrer(request: Request, db: Session = Depends(hent_db)) -> Response
     """FR-1: oppretter kontoen og logger inn, eller viser skjemaet igjen med alle feilene.
 
     Ved feil: 422, verdiene beholdt, passordet tømt og fokus på feiloppsummeringen.
-    Ved suksess: ny sesjon og 303 til oversikten.
+    Ved suksess: ny sesjon og 303 til oversikten. Innloggede sendes til `/` uten ny konto.
     """
+    if request.state.innlogget is not None:
+        return RedirectResponse("/", status_code=303)
     skjema: dict[str, str] = request.state.skjema
     verdier = {felt: skjema.get(felt, "") for felt in REGISTRERINGSFELT}
-    gammel_nokkel = request.cookies.get(SESJON_COOKIE) if request.state.innlogget else None
     try:
         with db.begin():
-            nokkel = registrer(db, **verdier, gammel_nokkel=gammel_nokkel)
+            nokkel = registrer(db, **verdier)
     except RegelBrudd as brudd:
         return _vis_registrering(request, verdier=verdier, feil=brudd.feil, status_code=422)
 

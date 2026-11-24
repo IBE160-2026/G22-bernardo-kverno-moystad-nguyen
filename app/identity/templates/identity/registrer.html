@@ -52,7 +52,7 @@
       <div class="postnummerfelt">
         <input id="postnummer" name="postnummer" type="text" inputmode="numeric" autocomplete="postal-code" required value="{{ verdier.postnummer }}" data-poststed="postnummer-sted" data-postnumre="{{ url_for('static', path='postnumre.json') }}"
           {{- ugyldig("postnummer") }}{{ beskrevet_av(["postnummer-sted", "postnummer-feil" if feltfeil.get("postnummer") else ""]) }}>
-        <span id="postnummer-sted">{{ poststed }}</span>
+        <span id="postnummer-sted" aria-live="polite">{{ poststed }}</span>
       </div>
       {{ m.feltfeil("postnummer-feil", feltfeil.get("postnummer")) }}
     </div>

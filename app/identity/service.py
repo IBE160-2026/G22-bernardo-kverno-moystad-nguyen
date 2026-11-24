@@ -9,7 +9,7 @@
 - Maler får aldri ORM-objekter for `bruker`, bare `OffentligBruker` (AD-16, AR-24).
 
 Funksjonene her committer aldri. Ruta eier transaksjonen (AD-17).
-Passord, e-post, telefon og sesjonsnøkler logges aldri.
+Navn, passord, e-post, telefon, fødselsdato og sesjonsnøkler logges aldri.
 """
 
 from __future__ import annotations
