@@ -89,6 +89,30 @@ def test_get_uten_innlogging_gir_303_med_neste(klient: TestClient, sti: str, nes
         assert "neste=/profil/3%3Fx%3D1" in lokasjon
 
 
+def test_head_uten_innlogging_gir_303(klient: TestClient) -> None:
+    svar = klient.head("/profil", follow_redirects=False)
+    assert svar.status_code == 303
+    assert svar.headers["location"] == "/logg-inn?neste=/profil"
+
+
+def test_post_med_x_fragment_uten_innlogging_gir_401_fragment(klient: TestClient) -> None:
+    nokkel = hent_csrf(klient)
+    svar = klient.post(
+        "/logg-ut", data={"csrf_token": nokkel}, headers={"X-Fragment": "1"}, follow_redirects=False
+    )
+    assert svar.status_code == 401
+    assert "Du må logge inn igjen." in svar.text
+    assert "<html" not in svar.text
+
+
+def test_post_til_sti_som_bare_har_get_gir_401_uten_innlogging(klient: TestClient) -> None:
+    """Match.PARTIAL: stien finnes bare for GET. Uten innlogging gir POST 401, ikke 405."""
+    nokkel = hent_csrf(klient)
+    svar = klient.post("/", data={"csrf_token": nokkel}, follow_redirects=False)
+    assert svar.status_code == 401
+    assert "Du må logge inn igjen." in svar.text
+
+
 def test_ukjent_sti_uten_innlogging_gir_404(klient: TestClient) -> None:
     assert klient.get("/finnes-ikke", follow_redirects=False).status_code == 404
 
@@ -214,6 +238,9 @@ def test_statiske_filer_har_ikke_no_store(klient: TestClient) -> None:
         ("/logg-ut", "/"),
         ("/logg-inn?neste=/profil", "/"),
         ("/logg-inn/", "/"),
+        ("/%2F%2Fevil.no", "/"),
+        ("/%5Cevil.no", "/"),
+        ("/logg%2Dut", "/"),
         ("/" + "a" * 2048, "/"),
         ("/" + "a" * 2047, "/" + "a" * 2047),
     ],
