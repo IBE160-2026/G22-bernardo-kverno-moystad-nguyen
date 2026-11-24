@@ -3,7 +3,7 @@ title: 'Story 1.4: Registrere konto'
 type: 'feature'
 created: '2026-11-24'
 baseline_commit: 'ef1dd338874a013025672242e0d8f44c81a344c2'
-status: 'in-review'
+status: 'done'
 route: 'dispatch'
 review_loop_iteration: 0
 story_key: '1-4-registrere-konto'
