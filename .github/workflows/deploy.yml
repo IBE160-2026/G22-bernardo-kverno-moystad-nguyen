@@ -1,6 +1,6 @@
 # Publisering til produksjon (AR-1, AR-7, AD-13, NFR-3).
 # Kjører ved push til main som endrer kode, og manuelt (workflow_dispatch).
-# Rekkefølge: alembic upgrade head mot Supabase (session pooler, port 5432)
+# Rekkefølge: CI (ci.yml) på samme commit → alembic upgrade head mot Supabase (session pooler, port 5432)
 # → vercel deploy --prod → røyktest mot produksjonsadressen.
 # Feiler migreringen, publiseres ingenting. Vercels GitHub-app brukes ikke.
 # Hemmelighetene kommer bare fra GitHub Secrets og skrives aldri ut.
@@ -30,8 +30,13 @@ env:
   PRODUKSJON_URL: https://nabolagshelten.vercel.app
 
 jobs:
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+
   deploy:
     name: Migrering, deploy og røyktest
+    needs: ci
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -46,7 +51,14 @@ jobs:
       - name: Migrer databasen (alembic upgrade head)
         env:
           DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL }}
-        run: uv run alembic upgrade head
+        run: |
+          # Uten hemmeligheten faller Settings tilbake til SQLite, og migreringen
+          # ville «lykkes» på runneren. Verdien skrives aldri ut.
+          case "$DATABASE_URL" in
+            postgres*) ;;
+            *) echo "::error::MIGRATION_DATABASE_URL mangler eller er ikke en Postgres-URL. Migreringen stopper."; exit 1 ;;
+          esac
+          uv run alembic upgrade head
 
       - name: Publiser på Vercel (produksjon)
         env:
