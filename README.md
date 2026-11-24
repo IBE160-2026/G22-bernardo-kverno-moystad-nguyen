@@ -17,7 +17,7 @@ Prosjektet er i implementasjonsfasen (Epic 1). Frist for innlevering er 15. dese
 | Steg | Status |
 |---|---|
 | Product brief | Ferdig (v2.2), revidert etter tilbakemelding fra faglærer |
-| PRD (kravdokument) | Ferdig (v1.2) |
+| PRD (kravdokument) | Ferdig (v1.2.1) |
 | UX-design | Ferdig: designsystem, atferd, mockups og tilgjengelighetsgjennomgang |
 | Arkitektur | Ferdig: FastAPI + Jinja, SQLite lokalt og Supabase Postgres på Vercel (AD-1–AD-17) |
 | Epics og stories | Ferdig: [epics.md](_bmad-output/planning-artifacts/epics.md) og [sprint-status.yaml](_bmad-output/implementation-artifacts/sprint-status.yaml) |
@@ -46,6 +46,7 @@ uv run uvicorn main:app --reload
 - `uv sync` installerer avhengighetene i `.venv/` med de låste versjonene i `uv.lock`.
 - `uv run python -m app.seed` kjører `alembic upgrade head`. Det lager SQLite-fila `nabolagshelten.db` med tabellene og postnumrene. Eksempelbrukere og eksempeloppdrag kommer i story 1.2 og senere.
 - Åpne <http://127.0.0.1:8000/logg-inn> i nettleseren. Stopp appen med Ctrl+C.
+- I story 1.1 vises innloggingsskjemaet bare. Innsendingen kommer i story 1.2, så «Logg inn» gir foreløpig en feilside.
 
 Vil du overstyre en innstilling, kopier `.env.example` til `.env` og fyll inn verdien. Tomme verdier gir standardverdien.
 

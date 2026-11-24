@@ -65,7 +65,7 @@ Pilene betyr «kan importere fra». Bare direkte piler gjelder.
     | ki | ki_bruk |
     | core | postnummer (skrives bare av migreringen) |
 
-  - Postnumre er referansedata. En Alembic-datamigrering laster dem fra `data/postnumre.tsv`, slik at de finnes i alle miljøer. Fila kommer fra Brings postnummerregister (`https://www.bring.no/postnummerregister-ansi.txt`), som Felles datakatalog oppgir under NLOD 2.0. README oppgir kilden: «Postnummerdata fra Posten Bring, lisensiert under NLOD 2.0.» All tilgang går gjennom `core/postnummer.py` (`normaliser_postnummer`, `finnes`, `poststed`). Postnummer lagres som tekst med fire sifre.
+  - Postnumre er referansedata. En Alembic-datamigrering laster dem fra `data/postnumre.tsv`, slik at de finnes i alle miljøer. Fila kommer fra Brings postnummerregister (`https://www.bring.no/postnummerregister-ansi.txt`), som Felles datakatalog oppgir under NLOD 2.0. Bare postnumre for gateadresser (Brings kategori G og B) lastes og godtas (presisering 2026-11-24, PRD §9.2). README oppgir kilden: «Postnummerdata fra Posten Bring, lisensiert under NLOD 2.0.» All tilgang går gjennom `core/postnummer.py` (`normaliser_postnummer`, `finnes`, `poststed`). Postnummer lagres som tekst med fire sifre.
   - Unntak: `app/seed.py` og testfabrikkene skriver eksempeldata direkte med modellene, bare når `APP_ENV` er `local` eller `test`. Seed tømmer aldri `postnummer`.
 
 ### AD-2 — Status og statusavhengige skrivinger er atomiske [ADOPTED]
@@ -331,7 +331,7 @@ graph LR
   dev[Utvikler: uv run] --> sqlite[(SQLite-fil)]
   dev --> mock[KI-mock]
   pr[GitHub PR] --> ci[CI: pytest SQLite + Postgres, alembic heads, Playwright, gitleaks]
-  ci -->|grønn + merge| main[main, beskyttet]
+  ci -->|grønn + merge| main[main, PR-regel i README]
   main --> mig[Actions: alembic upgrade head]
   mig --> dep[Actions: vercel deploy --prod]
   dep --> prod[Vercel Production]
@@ -346,7 +346,7 @@ graph LR
 | Test/CI | midlertidig SQLite-fil + Postgres-container | mock, testdobbel per test | ingen |
 | Produksjon | Supabase | OpenRouter med kredittgrense, eller mock | Vercel env og GitHub Secrets |
 
-- **Main er beskyttet:** endringer kommer bare via PR med grønn CI.
+- **Main er beskyttet:** endringer kommer bare via PR med grønn CI. Avvik 2026-11-24: GitHub sin beskyttelse kan ikke slås på (ingen i gruppen har admin-rettighet), så den er erstattet av en skrevet regel i README (PRD §9.2).
 - **Publisering:** Automatisk publisering fra `main` er slått av i `vercel.json` (`git.deploymentEnabled.main: false`). Det samme gjelder preview-publisering. En Actions-jobb på `main` migrerer først og publiserer deretter.
 - **Vercel-oppsett:** Vercel bruker `app` i `main.py` i roten, og hele appen kjører som én Vercel Function. `vercel.json` setter `functions."main.py".maxDuration = 30`. Statiske filer mountes på `/static`.
 - **Lokalt:** `uv run python -m app.seed` kjører først `alembic upgrade head`, som også laster postnumre, og laster så eksempeldata.
