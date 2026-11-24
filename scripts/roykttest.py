@@ -6,6 +6,8 @@ Standard-url er produksjonsadressen. `deploy.yml` kjører testen etter hver publ
 Sjekkene (radene i I/O-matrisen i spec-1-3):
 - GET `/logg-inn` gir 200 og sikkerhetsheaderne. At siden svarer, viser også at
   appen startet, altså at `data/postnumre.tsv` fulgte med i funksjonen.
+- CSRF-cookien har `Secure`. Den settes bare når `APP_ENV=production`; uten den
+  kjører appen som `local` med den kjente standardnøkkelen.
 - POST `/logg-inn` med CSRF-nøkkel, `Origin` og Karis seed-passord gir 422 med
   «Feil e-post eller passord.» (eller sperremeldingen). Det viser at CSRF- og
   Origin-sjekken slipper gjennom bak Vercels proxy, at kroppen spilles av for
@@ -14,31 +16,36 @@ Sjekkene (radene i I/O-matrisen i spec-1-3):
 - GET `/static/css/app.css` gir 200.
 
 Avslutter med kode 0 og «Røyktest OK», ellers kode 1 og én kort linje per avvik.
-Skriver aldri ut cookies eller CSRF-nøkler.
+Skriver aldri ut cookies eller CSRF-nøkler. Tekstene og headerne hentes fra
+appen selv, så de ikke kan skli fra hverandre. `tests/test_roykttest.py` kjører
+`kjor()` mot testappen i CI.
 """
 
 from __future__ import annotations
 
 import re
 import sys
+from pathlib import Path
 from urllib.parse import urlsplit
 
 import httpx
 
+# Så `uv run python scripts/roykttest.py` fra rotmappa finner pakken `app`.
+ROT = Path(__file__).resolve().parents[1]
+if str(ROT) not in sys.path:
+    sys.path.insert(0, str(ROT))
+
+from app.core.csrf import CSRF_COOKIE  # noqa: E402
+from app.core.headere import SIKKERHETSHEADERE  # noqa: E402
+from app.identity.service import FEIL_INNLOGGING, FOR_MANGE_FORSOK  # noqa: E402
+
 STANDARD_URL = "https://nabolagshelten.vercel.app"
 
-FORVENTEDE_HEADERE = {
-    "content-security-policy": "frame-ancestors 'none'",
-    "x-frame-options": "DENY",
-    "x-content-type-options": "nosniff",
-    "referrer-policy": "same-origin",
-}
+FORVENTEDE_HEADERE = {navn.decode(): verdi.decode() for navn, verdi in SIKKERHETSHEADERE}
 
 # Seed-brukeren fra README (bare for lokal testing). Finnes aldri i produksjon.
 SEED_EPOST = "kari@eksempel.no"
 SEED_PASSORD = "kari-lokal-1"
-FEIL_INNLOGGING = "Feil e-post eller passord."
-FOR_MANGE_FORSOK = "For mange mislykkede forsøk. Prøv igjen om 15 minutter."
 
 CSRF_FELT = re.compile(r'name="csrf_token" value="([^"]+)"')
 
@@ -52,55 +59,78 @@ def sjekk_headere(svar: httpx.Response, sti: str) -> list[str]:
     return avvik
 
 
-def kjor(url: str) -> list[str]:
+def sjekk_secure_cookie(svar: httpx.Response) -> list[str]:
+    """CSRF-cookien skal ha `Secure`, som bare settes i produksjon."""
+    for cookie in svar.headers.get_list("set-cookie"):
+        if cookie.startswith(f"{CSRF_COOKIE}="):
+            attributter = {a.strip().lower() for a in cookie.split(";")[1:]}
+            if "secure" in attributter:
+                return []
+            return [
+                f"GET /logg-inn: cookien {CSRF_COOKIE} mangler Secure. "
+                "APP_ENV er trolig ikke production"
+            ]
+    return [f"GET /logg-inn: fikk ingen {CSRF_COOKIE}-cookie"]
+
+
+def kjor(url: str, klient: httpx.Client | None = None) -> list[str]:
+    """Kjører sjekkene og gir avvikene. `klient` kan være en `TestClient` i testene."""
     url = url.rstrip("/")
+    if klient is None:
+        with httpx.Client(base_url=url, timeout=30) as egen_klient:
+            return _sjekk(url, egen_klient)
+    return _sjekk(url, klient)
+
+
+def _sjekk(url: str, klient: httpx.Client) -> list[str]:
     deler = urlsplit(url)
     opphav = f"{deler.scheme}://{deler.netloc}"
     avvik: list[str] = []
 
-    with httpx.Client(base_url=url, follow_redirects=False, timeout=30) as klient:
-        # 1. Innloggingssiden og sikkerhetsheaderne
-        svar = klient.get("/logg-inn")
-        if svar.status_code != 200:
-            return [f"GET /logg-inn: status {svar.status_code}, forventet 200 (startet appen?)"]
-        avvik += sjekk_headere(svar, "/logg-inn")
+    # 1. Innloggingssiden, sikkerhetsheaderne og Secure på CSRF-cookien
+    svar = klient.get("/logg-inn", follow_redirects=False)
+    if svar.status_code != 200:
+        return [f"GET /logg-inn: status {svar.status_code}, forventet 200 (startet appen?)"]
+    avvik += sjekk_headere(svar, "/logg-inn")
+    avvik += sjekk_secure_cookie(svar)
 
-        # 2. Innlogging med seed-passordet: skal avvises med 422
-        treff = CSRF_FELT.search(svar.text)
-        if treff is None:
-            avvik.append("GET /logg-inn: fant ikke det skjulte feltet csrf_token")
-        else:
-            svar = klient.post(
-                "/logg-inn",
-                data={
-                    "csrf_token": treff.group(1),
-                    "neste": "/",
-                    "epost": SEED_EPOST,
-                    "passord": SEED_PASSORD,
-                },
-                headers={"Origin": opphav},
+    # 2. Innlogging med seed-passordet: skal avvises med 422
+    treff = CSRF_FELT.search(svar.text)
+    if treff is None:
+        avvik.append("GET /logg-inn: fant ikke det skjulte feltet csrf_token")
+    else:
+        svar = klient.post(
+            "/logg-inn",
+            data={
+                "csrf_token": treff.group(1),
+                "neste": "/",
+                "epost": SEED_EPOST,
+                "passord": SEED_PASSORD,
+            },
+            headers={"Origin": opphav},
+            follow_redirects=False,
+        )
+        if svar.status_code == 403:
+            avvik.append(
+                "POST /logg-inn: 403. CSRF- eller Origin-sjekken avviser skjemaet bak proxyen "
+                "(se app/core/csrf.py:_samme_opphav)"
             )
-            if svar.status_code == 403:
-                avvik.append(
-                    "POST /logg-inn: 403. CSRF- eller Origin-sjekken avviser skjemaet bak proxyen "
-                    "(se app/core/csrf.py:_samme_opphav)"
-                )
-            elif svar.status_code in (302, 303):
-                avvik.append("POST /logg-inn: innloggingen lyktes. Det finnes en demokonto i produksjon")
-            elif svar.status_code != 422:
-                avvik.append(f"POST /logg-inn: status {svar.status_code}, forventet 422")
-            elif FEIL_INNLOGGING not in svar.text and FOR_MANGE_FORSOK not in svar.text:
-                avvik.append("POST /logg-inn: 422, men uten «Feil e-post eller passord.» eller sperremeldingen")
+        elif svar.status_code in (302, 303):
+            avvik.append("POST /logg-inn: innloggingen lyktes. Det finnes en demokonto i produksjon")
+        elif svar.status_code != 422:
+            avvik.append(f"POST /logg-inn: status {svar.status_code}, forventet 422")
+        elif FEIL_INNLOGGING not in svar.text and FOR_MANGE_FORSOK not in svar.text:
+            avvik.append(f"POST /logg-inn: 422, men uten «{FEIL_INNLOGGING}» eller sperremeldingen")
 
-        # 3. Testruta finnes ikke utenfor test
-        svar = klient.get("/_test/tilstand")
-        if svar.status_code != 404:
-            avvik.append(f"GET /_test/tilstand: status {svar.status_code}, forventet 404")
+    # 3. Testruta finnes ikke utenfor test
+    svar = klient.get("/_test/tilstand", follow_redirects=False)
+    if svar.status_code != 404:
+        avvik.append(f"GET /_test/tilstand: status {svar.status_code}, forventet 404")
 
-        # 4. Statiske filer
-        svar = klient.get("/static/css/app.css")
-        if svar.status_code != 200:
-            avvik.append(f"GET /static/css/app.css: status {svar.status_code}, forventet 200")
+    # 4. Statiske filer
+    svar = klient.get("/static/css/app.css", follow_redirects=False)
+    if svar.status_code != 200:
+        avvik.append(f"GET /static/css/app.css: status {svar.status_code}, forventet 200")
 
     return avvik
 
