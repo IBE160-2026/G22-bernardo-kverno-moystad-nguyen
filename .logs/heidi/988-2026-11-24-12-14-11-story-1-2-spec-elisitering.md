@@ -33,6 +33,7 @@ Specen er committet som `4bbaab1` på `story/1-2-logge-inn-og-ut`. Endringer fra
 - Ikke tatt med: å lagre e-posten i `innloggingsforsok` som SHA-256, fordi det avviker fra spinen. Metodene Boundary & Edge Case Sweep og Assumption Audit ble ikke kjørt.
 - Ingen kode er skrevet. Story 1.2 er `in-progress`, og specen står fortsatt som `draft`.
 - `_bmad-output/party-mode/` er privat og skal ikke committes. Den ignoreres bare lokalt, gjennom `.git/info/exclude`, med vilje ikke i `.gitignore`. Mappa finnes ikke i git-historikken.
+- `epic-1-context.md` (beslutningene fra 1.1, endret før økta) er committet som `a8e71cc` etter en sjekk av at den ikke har personlige opplysninger eller hemmeligheter.
 
 ### Åpne punkter
 - Implementer story 1.2 etter specen med `bmad-build`, fra trinn 1.
