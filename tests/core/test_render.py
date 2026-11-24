@@ -165,7 +165,8 @@ def test_stilarket_har_lyst_tema_systemskrifter_og_fokusring() -> None:
     assert "@font-face" not in css and "fonts.googleapis" not in css
     assert "--focus-width: 3px;" in css and "--focus-offset: 3px;" in css
     assert "outline: var(--focus-width) solid var(--color-focus);" in css
-    assert '[tabindex="-1"]:focus' in css
+    assert '[tabindex="-1"]:not(main):focus {' in css  # ring også ved trykk (UX-DR4)
+    assert 'main[tabindex="-1"]:focus-visible {' in css  # main bare ved tastatur
     assert "@media (forced-colors: active)" in css
     assert "outline: none" not in css and "outline:none" not in css
     for forbudt in ("#fff;", "#ffffff", "#000;", "#000000"):

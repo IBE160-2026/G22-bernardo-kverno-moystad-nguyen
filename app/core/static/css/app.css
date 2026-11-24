@@ -179,13 +179,15 @@ a {
 }
 
 /* Elementer appen flytter fokus til, viser ringen også ved trykk med finger eller mus. */
-[tabindex="-1"]:focus {
+[tabindex="-1"]:not(main):focus {
   outline: var(--focus-width) solid var(--color-focus);
   outline-offset: var(--focus-offset);
 }
 
-/* main får fokus fra «Hopp til innholdet»; ringen tegnes innenfor kanten. */
-main[tabindex="-1"]:focus {
+/* main får fokus fra «Hopp til innholdet»; ringen tegnes innenfor kanten, og bare
+ * ved tastaturbruk, så den ikke vises ved hvert museklikk i innholdet. */
+main[tabindex="-1"]:focus-visible {
+  outline: var(--focus-width) solid var(--color-focus);
   outline-offset: calc(-1 * var(--focus-width));
 }
 
@@ -196,7 +198,7 @@ main[tabindex="-1"]:focus {
 
 @media (forced-colors: active) {
   :focus-visible,
-  [tabindex="-1"]:focus {
+  [tabindex="-1"]:not(main):focus {
     outline-color: Highlight;
   }
 
