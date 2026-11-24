@@ -2,7 +2,7 @@
 title: 'Story 1.3: Skjelett – appen publiseres i produksjon'
 type: 'feature'
 created: '2026-11-24'
-status: 'in-progress'
+status: 'in-review'
 baseline_commit: '449786eafd63365d69b0b467c4c6e956ebc7a59d'
 route: 'dispatch'
 review_loop_iteration: 0
@@ -81,6 +81,37 @@ context:
 ## Spec Change Log
 
 ## Review Triage Log
+
+Runde 1 (2026-11-24). B = blind, K = kanttilfeller, V = verifikasjonshull. Patch = rettes i denne runden.
+
+| # | Funn | Verdikt | Begrunnelse | Rute |
+|---|------|---------|-------------|------|
+| B1 | `deploy.yml` venter ikke på CI for samme commit | medium | Stemmer: egen workflow på push, uten `needs`. En merge-commit eller direkte push kan migrere og publisere før CI går rød. Retting: `ci.yml` får `workflow_call`, og deploy-jobben får `needs: ci`. Concurrency-gruppen i `ci.yml` må ta med `github.workflow`, så kallet ikke avbryter push-kjøringen | patch (med K2, V2) |
+| B2 | Ingen tilbakerulling når røyktesten feiler | low | Stemmer, versjonen blir liggende. Automatisk `vercel rollback` er mer logikk, og ved første publisering finnes det ingenting å rulle tilbake til. Direkte retting: README sier at eieren bruker Instant Rollback i Vercel | patch (README, med K3) |
+| B3 | Røyktesten blir grønn selv om `APP_ENV` mangler i Vercel | medium | Stemmer: appen kjører da som `local` mot Supabase med den kjente standardnøkkelen, og alle sjekkene passerer. `csrf`-cookien har `Secure` bare når `settings.produksjon` (`mellomvare.py:113`). Retting: røyktesten sjekker `Secure` på cookien | patch |
+| B4 | Røyktesten har ingen tester | medium | Stemmer (grep etter `roykttest` i `tests/` gir ingen treff). Endrer noen malen eller en tekst, går deploy rød etter at versjonen er publisert. Retting: `kjor()` tar en valgfri klient, og en test kjører den mot `lag_app()` | patch (med V3, B5) |
+| B5 | Røyktesten kopierer konstanter fra appen, og CSP sammenlignes eksakt | low | Stemmer. Direkte retting: importer `SIKKERHETSHEADERE` og `FEIL_INNLOGGING`/`FOR_MANGE_FORSOK` | patch (med B4) |
+| B6 | Produksjonsadressen er hardkodet fire steder | low | Stemmer, men rettes én gang etter `vercel link`. En repo-variabel krever et ekstra manuelt steg | avvist |
+| B7 | Hemmelighetene er på repo-nivå, og actions er ikke pinnet til SHA | low | `environment` krever admin-rettighet (PRD §9.2). Alle med push-rettighet er i gruppen. SHA-pinning avviker fra `ci.yml` | avvist |
+| B8 | Manglende TSV gir rå `FileNotFoundError`, og `_register` er privat | low | Tracebacken viser stien tydelig i Vercel-loggen. Å gjøre funksjonen offentlig og pakke inn feilen er mer enn en direkte retting | avvist |
+| B9 | README sier ikke at produksjon foreløpig bare viser innloggingen, eller hvem som sjekker Supabase under sensur | low | Stemmer. Direkte tekstretting | patch (README) |
+| B10 | Keepalive: cookienavnet er ikke testet, GitHub slår av planlagte workflows etter 60 dager, og e-posten går til den som sist endret cron | low | Testdelen er V1. 60-dagersgrensen nevnes i README (direkte retting). E-posten går til Heidi | patch (med V1, README) |
+| B11 | Navnet på storyen er forskjellig i `sprint-status.yaml`, branch og spec | low | `story_key` i specen kobler dem. Specen er committet (`e40ea39`) | avvist |
+| B12 | `.vercelignore` tar med `migrations/` og `*.md` i roten uten begrunnelse | low | Ufarlig: litt større bunt, ingen feil | avvist |
+| K1 | Manglende `MIGRATION_DATABASE_URL` gir tom streng, og migreringen kjører mot SQLite på runneren | medium | Stemmer: `env_ignore_empty=True` faller tilbake til `sqlite:///` (`config.py`). Steget blir grønt, og deploy fortsetter uten migrert Supabase. Retting: vakt i steget som krever en Postgres-URL | patch (med V4) |
+| K2 | Deploy kjører samtidig med CI | medium | Samme som B1 | patch (med B1) |
+| K3 | Ingen tilbakerulling etter at røyktesten feiler | low | Samme som B2 | patch (med B2) |
+| K4 | Migreringen lykkes, men deploy feiler, så nytt skjema kjører med gammel kode | false | AD-13: etter første publisering legger migreringer bare til, så gammel kode virker med det nye skjemaet | avvist |
+| K5 | Røyktesten treffer aliaset og ikke deploy-URL-en | maybe-false | `vercel deploy --prod` venter til aliaset er satt. Avgjøres ved å se loggen fra første publisering. Ville bare vært low | avvist |
+| K6 | Sperren (5 forsøk) gjør at demokonto-sjekken hoppes over | low | Stemmer, men krever 5 publiseringer på 15 min, og seed nekter å kjøre i produksjon. Retting krever ny logikk | avvist |
+| K7 | `httpx.InvalidURL` fanges ikke og gir traceback | low | Stemmer, men skriptet avslutter likevel med kode ≠ 0. Gjelder bare utviklere | avvist (med K8) |
+| K8 | Påstanden om «én kort melding per avvik» holder ikke for uventede unntak | low | Samme som K7 | avvist |
+| V1 | Ingen test sier at keepalive får noe annet enn 303 når databasen feiler | gap | Arkivert evidens: ingen test gjør sesjonsoppslaget med en database som feiler. En «myk» `except` i `finn_innlogget` ville skjult en pauset Supabase | patch |
+| V2 | Deploy venter ikke på CI | gap | Samme som B1 | patch (med B1) |
+| V3 | `roykttest.py` kjøres aldri før deploy | gap | Samme som B4 | patch (med B4) |
+| V4 | Hemmeligheten for migreringen mangler, og SQLite migreres | medium | Samme som K1 | patch (med K1) |
+| V5 | Sjekken av `/_test/tilstand` kan aldri feile, fordi ruta ikke finnes | low | Stemmer i dag. Sjekken er et akseptansekriterium i epics (AD-14) og får mening når T1-infrastrukturen kommer i 1.5 | avvist |
+| V6 | Røyktesten feiler mot en lokal server med seed, men README sier den kan kjøres lokalt | low | Stemmer. Direkte retting: «mot en lokal server uten seed» | patch (README) |
 
 ## Design Notes
 
