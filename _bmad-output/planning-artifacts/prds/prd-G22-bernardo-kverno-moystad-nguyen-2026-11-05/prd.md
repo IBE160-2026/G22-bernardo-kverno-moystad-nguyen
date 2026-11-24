@@ -2,7 +2,7 @@
 title: PRD – Nabolagshelten
 status: final
 created: 2026-11-05
-updated: 2026-11-23
+updated: 2026-11-24
 ---
 
 # PRD – Nabolagshelten
@@ -10,7 +10,7 @@ updated: 2026-11-23
 | | |
 |---|---|
 | **Gruppe** | G22 – Bernardo, Kverno, Møystad, Nguyen |
-| **Versjon** | 1.2 (ferdig) |
+| **Versjon** | 1.2.1 (ferdig) |
 | **Bygger på** | [Product brief v2.2](../../product-brief-nabolagshelten.md) (= «proposal» i sensorveiledningen), [skisser av skjermbilder](../../skisser-skjermbilder.md) (erstattet av UX-spinene) |
 | **Avstemt mot (v1.2)** | UX-spinene [DESIGN.md](../../ux-designs/ux-G22-bernardo-kverno-moystad-nguyen-2026-11-07/DESIGN.md) og [EXPERIENCE.md](../../ux-designs/ux-G22-bernardo-kverno-moystad-nguyen-2026-11-07/EXPERIENCE.md), [arkitekturspinen](../../architecture/architecture-G22-bernardo-kverno-moystad-nguyen-2026-11-08/ARCHITECTURE-SPINE.md) |
 
@@ -764,7 +764,7 @@ Briefen v2.2 avgjør ikke alt. Tabellen viser hvor PRD-en presiserer, avviker el
 | Melding ved interesse | «kort melding» | Valgfri, maks 500 tegn (FR-12) | Skissen viser feltet som valgfritt; grense avklart med gruppen |
 | Kommentar og «om meg» | Ingen lengdegrense | Maks 500 tegn (FR-20, FR-22) | Avklart med gruppen |
 | Redigere profil | «Om meg» nevnes, ikke hvordan | «Om meg», postnummer og telefonnummer kan endres etter registrering; andre felt ikke (FR-22) | Brukere må kunne skrive om seg selv, endre postnummer ved flytting og rette feil telefonnummer |
-| Postnummer | Fire siffer | Må finnes i lista over norske postnumre; poststedet vises (§3) | Ellers kan et oppdrag havne i et postnummer ingen ser |
+| Postnummer | Fire siffer | Må finnes i lista over norske postnumre; poststedet vises (§3). **Presisering (2026-11-24):** bare postnumre for gateadresser godtas (Brings kategori G og B, 3 382 numre). Postboksnumre (P) og servicenumre (S) avvises | Ellers kan et oppdrag havne i et postnummer ingen ser. Postboks- og servicenumre er ikke steder der noen bor eller trenger hjelp |
 | Egne oppdrag i oversikten | Ikke sagt | Vises ikke; finnes under «Mine oppdrag» (FR-10) | Oversikten er for å finne oppdrag man kan hjelpe med (jf. R2) |
 | Tall i menyen og grupper | Ikke sagt (skisse-spørsmål 3) | «Mine oppdrag» i menyen viser antall oppdrag som trenger handling; nytt merke «Velg hjelper»; gruppene «Trenger handling», «Pågår» og «Ferdige» (FR-18, NFR-11) | Uten varsler (§6.2) må brukeren se at noe venter uten å åpne siden, og se det som venter på hen først |
 | Fullførte oppdrag | Ikke presisert | Teller bare oppdrag som valgt hjelper (FR-21) | Profilen skal vise erfaring som hjelper |
@@ -783,6 +783,7 @@ Briefen v2.2 avgjør ikke alt. Tabellen viser hvor PRD-en presiserer, avviker el
 | Eksempeldata | 6 brukere, 10–15 oppdrag i ulike statuser | Dekker hvert steg i kjerneflyten, med datoer regnet fra innlasting (NFR-2) | Sensor skal kunne prøve alt uten å lage data selv |
 | Prioritering | Ikke sagt | Må / Bør (§6.1) | Fristen; KI er valgfritt ifølge faglæreren |
 | Universell utforming, robusthet og repo | Delvis | WCAG 2.1 AA (NFR-7), robust mot ugyldig input (NFR-10), navigasjon (NFR-11), `.gitignore` og testkommando i README (NFR-1, NFR-3) | Fra sensorveiledningen |
+| Beskyttelse av `main` | Ikke sagt | **Avvik fra arkitekturen (2026-11-24):** `main` kan ikke beskyttes teknisk. README har regelen i stedet: all kode går via PR med grønn CI før merge, mens logger (`.logs/`) og `sprint-status.yaml` kan pushes direkte til `main` | Ingen i gruppen har admin-rettighet på repoet i organisasjonen IBE160-2026, så GitHub sin beskyttelse av grener kan ikke slås på (beslutning av Heidi, story 1.1) |
 
 ## Endringslogg
 
@@ -794,3 +795,4 @@ Briefen v2.2 avgjør ikke alt. Tabellen viser hvor PRD-en presiserer, avviker el
 | 2026-11-07 | 1.0 | Ferdigstilt. Avstemt mot brief, skisser, faglærers tilbakemelding og sensorveiledning (rettet FR-9, FR-10, FR-18, FR-24, NFR-1, NFR-3, NFR-7, NFR-8; ny NFR-10). Review-funn rettet: sporingstabell R1–R13 og SK1–SK10 → FR i §4, KI-tidsavbrudd 10 s, testbar ventetilstand, NFR-4, NFR-5, NFR-8, SM-1, SM-4. Tidssone og interesser ved redigering avgjort. Ny §10 (nå §9.2) med alle presiseringer i forhold til briefen. Utsatte funn fra reviewen av briefen tatt inn: glemt passord og rapportering/blokkering utsatt (§7.2, nå §6.2), uverifisert erfaring som kjent begrensning (§4.7, FR-21), eksempeldata som dekker hele kjerneflyten (NFR-2). Språkvask. |
 | 2026-11-07 | 1.1 | Rettet etter review med fire linser (`review-prd-v1.0-2026-11-07.md`) og rubrikk-review av utkastet (`review-rubric-v1.1.md`). **Produktvalg:** oppdragsgiveren kan markere Utført når tidspunktet er passert (FR-19, avvik fra R7); interesser meldt før en endring merkes (FR-6); prioritet Må/Bør med følger av kutt (§6.1); telefonnummer kan endres (FR-22); postnummerliste med poststed; rolle på tilbakemeldinger (FR-21); passord ved sletting (FR-4). **Hull tettet:** statusmodellen og «Mine oppdrag» (FR-15, FR-7, FR-12, FR-17, FR-18); sletting (FR-4); felles regler (§4.0); sikkerhet (FR-2, FR-3, FR-23, ny NFR-12); KI-svar og mock-regler (FR-25, FR-26); egen profil (FR-21); eksempeldata med relative datoer (NFR-2); kjente begrensninger for profil og glemt passord. **Struktur:** sporing og prioritet per krav, «Testes ved» i alle NFR-er, ny NFR-11 Navigasjon, sporingen samlet i §9.1, §6 og §7 slått sammen (§8–§10 er nå §7–§9). |
 | 2026-11-23 | 1.2 | Avstemt mot UX-spinene og arkitekturspinen. **FR-18:** nytt merke «Velg hjelper»; flere merker på samme oppdrag vises alle; gruppene «Trenger handling», «Pågår» og «Ferdige» i begge faner; hjelper-fanen grupperes etter brukerens egen situasjon, ikke oppdragets status (endrer v1.1); tall ved «Mine oppdrag» i menyen (også NFR-11). **NFR-7:** flyter om ved 320 px (WCAG 1.4.10), og «Testes ved» viser til T1–T5 i EXPERIENCE.md. **SM-5:** viser til test T1 i EXPERIENCE.md, med flere tilstander (tomme tilstander, KI-feil, feilside, slettet bruker) og sjekk ved 320 px. **FR-5:** tid angis og vises i norsk tid, med testbare regler ved sommertid; lagringen avgjøres i arkitekturen (AD-9). **Etter rubrikk-review (`review-rubric-v1.2.md`):** «Merke» og «Situasjon» i ordlisten (§3), og UJ-2 bruker «står som» om situasjoner; merket «Oppdraget er endret …» vises bare ved «Venter på svar» (FR-6, FR-18); situasjonen «Tidspunktet er passert» står under «Ferdige»; avveiningen for «Hjelperen trakk seg» er skrevet inn. §8 markert som løst, ny rad i §9.2. |
+| 2026-11-24 | 1.2.1 | To rader i §9.2 fra story 1.1: postnumre bare for gateadresser (Brings kategori G og B), og regelen om PR med grønn CI i README i stedet for teknisk beskyttelse av `main`. |

@@ -12,20 +12,63 @@ Appen har én kjerneflyt: legge ut et oppdrag → melde interesse → velge hjel
 
 ## Status
 
-Prosjektet er i planleggingsfasen. Frist for innlevering er begynnelsen av desember 2026.
+Prosjektet er i implementasjonsfasen (Epic 1). Frist for innlevering er 15. desember 2026.
 
 | Steg | Status |
 |---|---|
 | Product brief | Ferdig (v2.2), revidert etter tilbakemelding fra faglærer |
-| PRD (kravdokument) | Ferdig (v1.1) |
+| PRD (kravdokument) | Ferdig (v1.2.1) |
 | UX-design | Ferdig: designsystem, atferd, mockups og tilgjengelighetsgjennomgang |
 | Arkitektur | Ferdig: FastAPI + Jinja, SQLite lokalt og Supabase Postgres på Vercel (AD-1–AD-17) |
-| Epics og stories | Etter arkitekturen |
-| Implementasjon og testing | Etter epics og stories |
+| Epics og stories | Ferdig: [epics.md](_bmad-output/planning-artifacts/epics.md) og [sprint-status.yaml](_bmad-output/implementation-artifacts/sprint-status.yaml) |
+| Implementasjon og testing | Pågår: story 1.1 (skjelett lokalt og i CI) |
 
 ## Kom i gang
 
-Appen er ikke laget ennå. Teknologien er valgt i arkitekturen: Python 3.12 med uv, FastAPI og SQLite lokalt, uten nøkler. Kjøreinstruksjonene kommer i første story: forutsetninger med versjoner, kommandoer for oppstart og eksempeldata, testbrukere og kommandoen som kjører testene. De skal virke på en ren maskin uten betalte tjenester eller gruppens egne nøkler (krav NFR-1 og NFR-2 i PRD-en).
+Appen kjører lokalt mot en SQLite-fil, uten `.env`, kontoer eller nøkler (NFR-1).
+
+### Forutsetninger
+
+- [uv](https://docs.astral.sh/uv/getting-started/installation/), testet med 0.12.13. Sjekk med `uv --version`, og oppdater med `uv self update` hvis den er eldre.
+- Python 3.12. Har du ikke Python 3.12, laster `uv sync` det ned automatisk (versjonen står i `.python-version`).
+- Git. Ingen database, Node eller Docker trengs.
+
+### Start appen
+
+Kjør fra rotmappa i repoet:
+
+```bash
+uv sync
+uv run python -m app.seed
+uv run uvicorn main:app --reload
+```
+
+- `uv sync` installerer avhengighetene i `.venv/` med de låste versjonene i `uv.lock`.
+- `uv run python -m app.seed` kjører `alembic upgrade head`. Det lager SQLite-fila `nabolagshelten.db` med tabellene og postnumrene. Eksempelbrukere og eksempeloppdrag kommer i story 1.2 og senere.
+- Åpne <http://127.0.0.1:8000/logg-inn> i nettleseren. Stopp appen med Ctrl+C.
+- I story 1.1 vises innloggingsskjemaet bare. Innsendingen kommer i story 1.2, så «Logg inn» gir foreløpig en feilside.
+
+Vil du overstyre en innstilling, kopier `.env.example` til `.env` og fyll inn verdien. Tomme verdier gir standardverdien.
+
+### Kjør testene
+
+```bash
+uv run pytest
+```
+
+Testene bruker en midlertidig SQLite-fil som slettes etterpå. Med miljøvariabelen `TEST_DATABASE_URL` kjører de mot Postgres i stedet, slik CI gjør.
+
+### Arbeidsflyt og CI
+
+- All kode går via pull request mot `main`, og en PR merges bare når CI er grønn. Logger (`.logs/`) og `sprint-status.yaml` kan pushes direkte til `main`.
+- Regelen er skrevet her fordi ingen i gruppen har admin-rettighet på repoet, så GitHub sin beskyttelse av `main` kan ikke slås på (avvik ført i PRD §9.2).
+- CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) kjører på hver PR og ved push til `main`: pytest mot SQLite og mot Postgres 17, sjekk av at Alembic har nøyaktig ett hode, og gitleaks over hele historikken (NFR-3).
+
+### Data og lisens
+
+Postnummerdata fra Posten Bring, lisensiert under NLOD 2.0.
+
+`data/postnumre.tsv` er Brings postnummerregister (<https://www.bring.no/postnummerregister-ansi.txt>) konvertert til UTF-8 med alle rader og kolonner uendret. Appen godtar bare postnumre for gateadresser (Brings kategori G og B). `app/core/static/postnumre.json` lages fra TSV-fila med `uv run python -m app.core.postnummer`.
 
 ## Dokumentasjon
 
@@ -53,12 +96,20 @@ Appen er ikke laget ennå. Teknologien er valgt i arkitekturen: Python 3.12 med 
 ## Mappestruktur
 
 ```text
-.claude/skills/   BMAD-skills og sesjonslogg-skillen for Claude Code
-_bmad/            BMAD-rammeverket: konfigurasjon og skript
-_bmad-output/     Dokumenter laget med BMAD (brief, PRD, UX, arkitektur)
-docs/             Sensorveiledning
-.logs/            KI-sesjonslogger per gruppemedlem
-CLAUDE.md         Instruksjoner til Claude Code
+main.py             Inngangspunkt for uvicorn og Vercel: app = lag_app()
+app/                Appen: core/ (felles kjerne) og slicene identity/, oppdrag/, profil/, ki/
+app/seed.py         Gjør databasen klar lokalt (uv run python -m app.seed)
+data/postnumre.tsv  Brings postnummerregister i UTF-8
+migrations/         Alembic-migreringer (skjema og postnumre)
+tests/              pytest-tester; tests/core/ har arkitektur, mellomvare, feil og migrering
+.github/workflows/  CI (ci.yml)
+pyproject.toml      Avhengigheter; uv.lock låser versjonene
+.claude/skills/     BMAD-skills og sesjonslogg-skillen for Claude Code
+_bmad/              BMAD-rammeverket: konfigurasjon og skript
+_bmad-output/       Dokumenter laget med BMAD (brief, PRD, UX, arkitektur, epics, stories)
+docs/               Sensorveiledning
+.logs/              KI-sesjonslogger per gruppemedlem
+CLAUDE.md           Instruksjoner til Claude Code
 ```
 
 ## For gruppen: oppsett for BMAD

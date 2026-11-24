@@ -1,0 +1,11 @@
+# gitleaks-oppsett (NFR-3). Bruker standardreglene og unntar bare filer med kjente falske funn.
+title = "Nabolagshelten"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Kjente falske funn"
+# BMADs filmanifest har SHA-256-hasher av rammeverksfilene. Regelen generic-api-key
+# slår til når filnavnet inneholder «key» (for eksempel key-screens.md). Ingen hemmeligheter.
+paths = ['''_bmad/_config/files-manifest\.csv''']

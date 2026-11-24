@@ -29,6 +29,10 @@ __pycache__/
 .ipynb_checkpoints/
 pip-wheel-metadata/
 
+# Lokal SQLite-database (AD-13)
+*.db
+*.db-journal
+
 # Tests / coverage
 coverage/
 htmlcov/
