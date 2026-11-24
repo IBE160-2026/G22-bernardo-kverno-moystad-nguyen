@@ -2,7 +2,7 @@
 title: 'Story 1.2: Logge inn og ut'
 type: 'feature'
 created: '2026-11-24'
-status: 'in-progress'
+status: 'done'
 route: 'dispatch'
 baseline_commit: 'ab54a16a8f3db09717dca37b9e1e5262158f23e3'
 review_loop_iteration: 0
@@ -117,6 +117,45 @@ context:
 ## Spec Change Log
 
 ## Review Triage Log
+
+Runde 1 (2026-11-24). B = blind, K = kanttilfeller, T = testhull. Patch = rettes i denne runden.
+
+| # | Funn | Verdikt | Begrunnelse | Rute |
+|---|------|---------|-------------|------|
+| B1 | Sperren er glidende og kan vare ca. 11 min når de 5 feilene er spredt | low | Stemmer, men det er spinens semantikk (rader eldre enn 15 min slettes), og egenskapen som beskytter (høyst 5 feil i et hvilket som helst 15-minuttersvindu) holder. Teksten «Prøv igjen om 15 minutter» overdriver bare ventetiden. Sjelden i bruk, og en fast sperretid krever mer tilstand | avvist |
+| B2 | `app.admin` godtar passord med bare mellomrom, som innloggingen avviser som tomt | low | Stemmer: `passord_har_gyldig_lengde` sjekker ikke `strip()`, mens `sjekk_innloggingsskjema` gjør det. Direkte retting | patch (med K5) |
+| B3 | Dummy-hashen lages lat, så første ukjente e-post per prosess tar dobbel bcrypt-tid | low | Stemmer (`lru_cache` uten oppvarming). Kaldstart på Vercel gjør det merkbart. Direkte retting: varm opp i `IdentityAutentisering.__init__` | patch (med K3, K10) |
+| B4 | Sperresvaret viser «Skriv passordet på nytt.» og lenker til `#epost` | low | Stemmer, men er sjeldent og ufarlig. Retting krever et nytt flagg i rute og mal | avvist |
+| B5 | «Logg ut» etter utløpt sesjon gir 401 og lar cookien ligge | low | Stemmer, men den frosne I/O-matrisen krever 401 for POST `/logg-ut` uten innlogging. Den gamle cookien gir ingen tilgang. Retting endrer spesifikasjonen | avvist |
+| B6 | `sprint-status.yaml` står på in-progress mens spesifikasjonen er in-review | false | Workflowen setter `review` i steg 5. Ingen avvik | avvist |
+| B7 | Punktet om hashet sesjonsnøkkel i `issues.md` er ikke lukket | false | Lukkes i sesjonsloggen ved slutten av økta, ikke i koden | avvist |
+| B8 | Commitene for trinn 2–4 passerer ikke hver for seg, og det står ikke i Spec Change Log | low | Stemmer og står i Implementation Notes. Change Log er for review-loopbacks. Å dele commitene på nytt er mer enn en direkte retting | avvist |
+| B9 | Manuelle sjekker og gitleaks er ikke dokumentert som gjort | low | gitleaks kjøres før PR og i CI. 320 px og tastatursjekken føres som åpent punkt i sesjonsloggen | avvist (åpent punkt) |
+| B10 | JS-oppførselen (Vis passord, sending) har ingen tester | low | Stemmer. Krever nettleser; dekkes av T1/Playwright i 1.5 | avvist (1.5) |
+| B11 | `sending.js` låser skjemaet hvis navigasjonen stoppes | low | Stemmer (Esc under innsending, `pageshow` kommer ikke). Sjeldent, ny lasting løser det, og retting legger til tidsfrist-logikk | avvist (med K8) |
+| B12 | Trykket tilstand på «Vis passord» vises bare med farge | low | Feltet viser selv om passordet er synlig, og `aria-pressed` gir tilstanden til skjermleser | avvist |
+| B13 | Skjemaet poster til GET-rutens navn | low | Stemmer; virker bare fordi stiene er like. Direkte retting | patch |
+| B14 | Telefonnumrene i seed og test kan tilhøre ekte personer | low | Numrene vises aldri (AR-24) og finnes bare lokalt. Usikkert hvilket område som er reservert | avvist |
+| B15 | Utestet: kvitteringen utløper etter 60 s, POST med `X-Fragment`, HEAD uten innlogging, gyldig sesjon overlever feil innlogging | low | Stemmer (grep). Testene er rett fram | patch (med T3) |
+| B16 | AR-24-testen ser etter for få formater | low | Stemmer. Utvid med `+47`, mellomromsvarianter og «3. mai 1954» | patch |
+| B17 | `app.admin` spør om alt før den sjekker at brukeren finnes | low | Gjelder bare gruppen. Ingen skade, bare én ekstra runde | avvist |
+| B18 | bcrypt-kostnaden leser global `hent_settings()`, ikke `app.state.settings` | low | Samme verdi i alle faktiske kjøringer; avviker bare i tester som bygger egne `Settings` | avvist |
+| T1 | 401 for ikke-GET mot en GET-sti uten innlogging (`Match.PARTIAL`) er utestet | gap | Filed evidence: FR-3-testen sender bare metodene ruta har | patch |
+| T2 | Dekodingen i `trygg_neste` er utestet | gap | Filed evidence: ingen kodede tilfeller (`%2F`, `%5C`) i testene | patch |
+| T3 | 60 s utløp for kvitteringen er utestet på serveren | gap | Samme som B15 | patch (med B15) |
+| T4 | Kvitteringstesten signerer med hardkodet nøkkel, ikke `app.state.settings.secret_key` | low | Stemmer; en lokal `.env` med `SECRET_KEY` gjør testen svakere. Direkte retting | patch |
+| T5 | `no-store` mangler på svar fra de ytre mellomvarene (403, 413, 500) | low | Stemmer: settes bare i `SesjonMellomvare`, mens AC-en sier alle svar unntatt `/static/`. Retting: flytt den til `headere.py` | patch (med K9) |
+| K1 | E-post over 320 tegn eller med NUL gir `DataError` og 500 på Postgres | low | Stemmer: INSERT i `innloggingsforsok` (String(320)) og NUL i psycopg. Krever laget forespørsel. Direkte vakt før databasen | patch |
+| K2 | Sperren løftes 15 min etter det eldste forsøket | low | Samme som B1 | avvist (med B1) |
+| K3 | Lat dummy-hash ved kaldstart | low | Samme som B3 | patch (med B3) |
+| K4 | `/profil/99999999999999999999` gir OverflowError og 500 | low | Stemmer (SQLite tåler ikke tall over 2^63; Postgres har heltallsgrense). Direkte vakt | patch |
+| K5 | `app.admin` godtar passord med bare mellomrom | low | Samme som B2 | patch (med B2) |
+| K6 | Ctrl+C eller Ctrl+D i `app.admin` gir traceback | low | Bare for gruppen, og ingenting er endret på det tidspunktet | avvist |
+| K7 | «Logg ut» etter utløpt sesjon | low | Samme som B5 | avvist (med B5) |
+| K8 | `sending.js` låser ved stoppet navigasjon | low | Samme som B11 | avvist (med B11) |
+| K9 | `no-store` gjelder ikke alle svar | low | Samme som T5 | patch (med T5) |
+| K10 | Svartiden avslører ukjent konto én gang per prosess | low | Samme som B3 | patch (med B3) |
+| K11 | Glidende sperre motsier «15 min sperre» | low | Samme som B1 | avvist (med B1) |
 
 ## Design Notes
 
