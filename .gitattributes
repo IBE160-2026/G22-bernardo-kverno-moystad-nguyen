@@ -1,0 +1,3 @@
+# Datafiler og generert JSON har alltid LF (AR-2, AD-10)
+*.tsv text eol=lf
+*.json text eol=lf
