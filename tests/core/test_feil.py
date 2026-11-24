@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.core.feil import FinnesIkke, IngenTilgang
+from app.core.sesjon import offentlig
 from app.core.headere import SIKKERHETSHEADERE
 
 from .test_mellomvare import hent_csrf
@@ -28,18 +29,22 @@ def er_vennlig_html(svar) -> bool:
 @pytest.fixture
 def feilruter(app: FastAPI) -> FastAPI:
     @app.get("/_test/krasj")
+    @offentlig
     def krasj() -> None:
         raise RuntimeError("kari@example.no 91234567")  # skal ikke i loggen
 
     @app.get("/_test/finnes-ikke")
+    @offentlig
     def finnes_ikke() -> None:
         raise FinnesIkke
 
     @app.get("/_test/ingen-tilgang")
+    @offentlig
     def ingen_tilgang() -> None:
         raise IngenTilgang
 
     @app.get("/_test/tall")
+    @offentlig
     def tall(n: int) -> dict:
         return {"n": n}
 
@@ -55,9 +60,10 @@ def test_ukjent_sti_gir_vennlig_404(klient: TestClient) -> None:
     assert 'href="/logg-inn">Tilbake</a>' in svar.text  # vei videre
 
 
-def test_feil_metode_gir_vennlig_405(klient: TestClient) -> None:
+def test_feil_metode_gir_vennlig_405(klient: TestClient, lag_bruker, logg_inn_som) -> None:
     nokkel = hent_csrf(klient)
-    svar = klient.post("/logg-inn", data={"csrf_token": nokkel})
+    logg_inn_som(klient, lag_bruker())
+    svar = klient.post("/", data={"csrf_token": nokkel})
     assert svar.status_code == 405
     assert er_vennlig_html(svar)
     assert "Noe gikk galt. Prøv igjen om litt." in svar.text

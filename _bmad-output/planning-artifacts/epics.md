@@ -237,10 +237,10 @@ Fra DESIGN.md og EXPERIENCE.md. Tekstene markert [ASSUMPTION] i EXPERIENCE.md og
 
 | Dato | Skal være ferdig | Hvis ikke |
 |---|---|---|
-| fredag 28. nov. | Epic 1 | Kutt story 2.6 (fullstendig AD-7) og 2.2 (to steg på mobil) |
-| onsdag 3. des. | Epic 2 | Kutt Epic 5 (KI) |
-| mandag 8. des. | Epic 3 | Kutt story 4.4 (redigere profil, FR-22) |
-| fredag 12. des. | Epic 4 og story 6.3 | Lever det som er ferdig, med kuttene dokumentert i PRD §9.2 |
+| lørdag 28. nov. | Epic 1 | Kutt story 2.6 (fullstendig AD-7) og 2.2 (to steg på mobil) |
+| torsdag 3. des. | Epic 2 | Kutt Epic 5 (KI) |
+| tirsdag 8. des. | Epic 3 | Kutt story 4.4 (redigere profil, FR-22) |
+| lørdag 12. des. | Epic 4 og story 6.3 | Lever det som er ferdig, med kuttene dokumentert i PRD §9.2 |
 
 Testpersonene til story 6.2 (to personer utenfor gruppen, minst én over 60 år) og 6.3 (én person som setter opp appen på en ren maskin) avtales tidlig, med tidspunkt rundt 8.–10. desember.
 

@@ -60,6 +60,7 @@ def lag_app(
     )
     motor = lag_motor(settings.database_url)
     app.state.settings = settings
+    app.state.autentisering = autentisering
     app.state.motor = motor
     app.state.sesjonsfabrikk = lag_sesjonsfabrikk(motor)
 
@@ -67,6 +68,10 @@ def lag_app(
     app.mount("/static", StaticFiles(directory=STATIC_MAPPE), name="static")
 
     from app.identity.routes import router as identity_router
+    from app.oppdrag.routes import router as oppdrag_router
+    from app.profil.routes import router as profil_router
 
     app.include_router(identity_router)
+    app.include_router(oppdrag_router)
+    app.include_router(profil_router)
     return app

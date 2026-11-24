@@ -16,6 +16,7 @@ from pathlib import Path
 import pytest
 
 from app import lag_app
+from app.core.sesjon import alle_ruter
 
 ROT = Path(__file__).resolve().parents[2]
 APP = ROT / "app"
@@ -145,7 +146,8 @@ def test_filer_leses_med_utf8() -> None:
 def test_rutenavn_er_unike_og_folger_monsteret() -> None:
     """AR-27: rutenavn er `<slice>.<handling>` og unike."""
     app = lag_app()
-    navn = [r.name for r in app.routes if getattr(r, "name", None) and r.name != "static"]
+    navn = [r.name for r in alle_ruter(app.routes) if getattr(r, "name", None) and r.name != "static"]
+    assert len(navn) >= 7  # inkluderte routere telles enkeltvis
     assert len(navn) == len(set(navn))
     for n in navn:
         slice_, _, handling = n.partition(".")
@@ -154,7 +156,7 @@ def test_rutenavn_er_unike_og_folger_monsteret() -> None:
 
 def test_ingen_testruter_i_lag_app() -> None:
     app = lag_app()
-    stier = [getattr(r, "path", "") for r in app.routes]
+    stier = [getattr(r, "path", "") for r in alle_ruter(app.routes)]
     assert not any(s.startswith("/_test") for s in stier)
 
 

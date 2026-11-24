@@ -1,0 +1,12 @@
+{% extends "core/base.html" %}
+{% import "core/makroer.html" as m with context %}
+{# «Mine oppdrag» (FR-21 grunnside). Fanene, gruppene og lenken «Legg ut oppdrag»
+   kommer i story 2.1 og 2.4. #}
+{% block innhold %}
+<h1>Mine oppdrag</h1>
+{{ m.meldinger() }}
+<div class="tomtilstand">
+  <svg class="tomtilstand__ikon" aria-hidden="true" focusable="false" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2.8h6V4M9 10h6M9 14h6"/></svg>
+  <p>Du har ikke lagt ut noen oppdrag.</p>
+</div>
+{% endblock %}

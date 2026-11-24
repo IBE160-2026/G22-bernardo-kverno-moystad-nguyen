@@ -25,7 +25,7 @@ from app.core.db import hent_db
 from app.core.feil import FeilMellomvare
 from app.core.headere import SIKKERHETSHEADERE, HeaderMellomvare
 from app.core.mellomvare import SesjonMellomvare
-from app.core.sesjon import Innlogget
+from app.core.sesjon import Innlogget, Innloggingsresultat, Innloggingsutfall, offentlig
 from app.identity.models import Bruker, Sesjon
 from app.identity.service import IdentityAutentisering, hash_sesjonsnokkel
 
@@ -50,6 +50,7 @@ def testruter(app: FastAPI) -> FastAPI:
     """Ekko- og skriveruter, registrert bare i testene (aldri i lag_app())."""
 
     @app.post("/_test/ekko")
+    @offentlig
     async def ekko(request: Request) -> JSONResponse:
         skjema = await request.form()
         felt = {k: v for k, v in skjema.multi_items() if isinstance(v, str)}
@@ -57,16 +58,19 @@ def testruter(app: FastAPI) -> FastAPI:
         return JSONResponse({"rute": felt, "filer": filer, "state": request.state.skjema})
 
     @app.post("/_test/form")
+    @offentlig
     def form_parameter(navn: str = Form()) -> JSONResponse:
         return JSONResponse({"navn": navn})
 
     @app.post("/_test/skriv")
+    @offentlig
     def skriv(db: Session = Depends(hent_db)) -> JSONResponse:
         with db.begin():
             db.add(Bruker(navn="Skrevet av testrute", opprettet=klokke.na()))
         return JSONResponse({"ok": True})
 
     @app.get("/_test/innlogget")
+    @offentlig
     def innlogget(request: Request) -> JSONResponse:
         bruker = request.state.innlogget
         return JSONResponse({"bruker_id": bruker.bruker_id if bruker else None})
@@ -89,6 +93,12 @@ class TellendeAutentisering:
 
     def finn_innlogget(self, request: Request) -> Innlogget | None:
         self.kall += 1
+        return None
+
+    def logg_inn(self, db, epost, passord, *, gammel_nokkel=None) -> Innloggingsresultat:
+        return Innloggingsresultat(Innloggingsutfall.FEIL)
+
+    def logg_ut(self, db, nokkel) -> None:
         return None
 
 
@@ -132,9 +142,10 @@ def test_sikkerhetsheadere_pa_get(klient: TestClient, sti: str) -> None:
         assert svar.headers.get(navn) == verdi, f"{navn} mangler på {sti}"
 
 
-def test_sikkerhetsheadere_pa_405(klient: TestClient) -> None:
+def test_sikkerhetsheadere_pa_405(klient: TestClient, lag_bruker, logg_inn_som) -> None:
     nokkel = hent_csrf(klient)
-    svar = klient.post("/logg-inn", data={"csrf_token": nokkel})
+    logg_inn_som(klient, lag_bruker())
+    svar = klient.post("/", data={"csrf_token": nokkel})
     assert svar.status_code == 405
     for navn, verdi in SIKKERHETSHEADERE_TEKST.items():
         assert svar.headers[navn] == verdi

@@ -1,5 +1,5 @@
 /*
- * Nabolagshelten – felles stilark (UX-DR1, UX-DR2, UX-DR4, UX-DR6).
+ * Nabolagshelten – felles stilark (UX-DR1, UX-DR2, UX-DR3, UX-DR4, UX-DR6, UX-DR22).
  * Tokenene er fra frontmatter i DESIGN.md. Ett lyst tema, ingen mørk modus.
  * Størrelser i rem (1rem = 16 px), så zoom og tekststørrelse virker.
  */
@@ -111,6 +111,9 @@
   /* Fokusring (UX-DR4) */
   --focus-width: 3px;
   --focus-offset: 3px;
+
+  /* Bunnmenyen: 56 px minstehøyde + 3 px strek. Plassen den reserverer nederst. */
+  --bunnmeny-plass: calc(3.5rem + 3px);
 }
 
 *,
@@ -239,7 +242,10 @@ main[tabindex="-1"]:focus-visible {
 
 .topplinje__innhold {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-2) var(--spacing-4);
   min-height: 3.5rem;
   max-width: var(--spacing-content-max);
   margin: 0 auto;
@@ -266,6 +272,151 @@ main[tabindex="-1"]:focus-visible {
   font-weight: var(--weight-brand);
   line-height: var(--leading-brand);
   letter-spacing: var(--tracking-brand);
+}
+
+/* ---------- Meny (NFR-11, UX-DR3) ----------
+ * To utgaver av samme meny: i topplinjen fra 768 px og som bunnmeny under.
+ * Den som ikke gjelder, er display: none, så skjermlesere bare finner én.
+ * Aktivt valg: fet tekst og 3 px strek, ikke bare farge.
+ */
+.meny__liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.meny__valg {
+  color: var(--color-topbar-text);
+  font-size: var(--text-option);
+  font-weight: var(--weight-regular);
+  line-height: var(--leading-option);
+  text-decoration: none;
+}
+
+.meny__valg[aria-current] {
+  font-weight: var(--weight-bold);
+}
+
+.meny :focus-visible {
+  outline-color: var(--color-topbar-focus);
+}
+
+.meny--topp {
+  display: none;
+}
+
+.meny--topp .meny__liste {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-1);
+}
+
+.meny--topp .meny__valg {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--spacing-touch-target);
+  padding: 0 var(--spacing-3);
+  border-bottom: 3px solid transparent;
+  border-radius: var(--rounded-sm) var(--rounded-sm) 0 0;
+}
+
+.meny--topp .meny__valg[aria-current] {
+  border-bottom-color: var(--color-nav-indicator);
+}
+
+.meny--topp :focus-visible {
+  outline-offset: 2px;
+}
+
+.meny--bunn {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 50;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--color-topbar);
+}
+
+.meny--bunn .meny__liste {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.meny--bunn .meny__valg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 3.5rem;
+  padding: var(--spacing-1) 2px;
+  border-top: 3px solid transparent;
+  line-height: 1.2;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+.meny--bunn .meny__valg[aria-current] {
+  border-top-color: var(--color-nav-indicator);
+}
+
+.meny--bunn :focus-visible {
+  outline-offset: calc(-1 * var(--focus-width));
+}
+
+.meny__ikon {
+  flex: none;
+}
+
+/* Fast bunnmeny reserverer plass, så innhold og fokus aldri havner bak den. */
+.har-meny {
+  padding-bottom: calc(var(--bunnmeny-plass) + env(safe-area-inset-bottom));
+}
+
+html:has(.har-meny) {
+  scroll-padding-bottom: var(--bunnmeny-plass);
+}
+
+/* Lav skjerm (liggende telefon, stor zoom, skjermtastatur): menyen ligger
+ * nederst i sideflyten i stedet for fast. */
+@media (max-height: 30em) {
+  .meny--bunn {
+    position: static;
+  }
+
+  .har-meny {
+    padding-bottom: 0;
+  }
+
+  html:has(.har-meny) {
+    scroll-padding-bottom: 0;
+  }
+}
+
+@media (min-width: 48em) {
+  .meny--topp {
+    display: block;
+  }
+
+  .meny--bunn {
+    display: none;
+  }
+
+  .har-meny {
+    padding-bottom: 0;
+  }
+
+  html:has(.har-meny) {
+    scroll-padding-bottom: 0;
+  }
+}
+
+@media (forced-colors: active) {
+  .meny__valg[aria-current] {
+    text-decoration: underline;
+  }
 }
 
 /* ---------- Innhold ---------- */
@@ -332,6 +483,23 @@ textarea[aria-invalid="true"] {
   border: 2px solid var(--color-error);
 }
 
+.hjelpetekst {
+  margin: 0;
+  color: var(--color-ink-muted);
+}
+
+.passordfelt {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+}
+
+.passordfelt input {
+  flex: 1 1 12rem;
+  width: auto;
+  min-width: 0;
+}
+
 .feltfeil {
   display: flex;
   gap: var(--spacing-2);
@@ -367,6 +535,16 @@ textarea[aria-invalid="true"] {
   background: var(--color-primary);
   color: var(--color-on-primary);
   border: 2px solid var(--color-primary);
+}
+
+.knapp--sekundar {
+  background: transparent;
+  color: var(--color-link);
+  border: 1.5px solid var(--color-link);
+}
+
+.knapp--sekundar[aria-pressed="true"] {
+  background: var(--color-surface-card);
 }
 
 .knapp[aria-disabled="true"] {
@@ -407,6 +585,82 @@ textarea[aria-invalid="true"] {
   .skjema__knapper .knapp {
     width: auto;
   }
+}
+
+/* ---------- Meldinger (UX-DR22) ----------
+ * Feiloppsummering og kvittering rett etter h1. Stripe, ikon og tekst, ikke bare farge.
+ */
+.melding {
+  margin: 0 0 var(--spacing-5);
+  padding: var(--spacing-3) var(--spacing-4);
+  background: var(--color-surface-card);
+  border: 1px solid var(--color-border);
+  border-left-width: 6px;
+  border-radius: var(--rounded-sm);
+}
+
+.melding--feil {
+  border-left-color: var(--color-error);
+  color: var(--color-error);
+}
+
+.melding--kvittering {
+  border-left-color: var(--color-success);
+  color: var(--color-success);
+}
+
+.melding__overskrift,
+.melding__tekst {
+  display: flex;
+  gap: var(--spacing-2);
+  align-items: flex-start;
+  margin: 0;
+  font-weight: var(--weight-bold);
+}
+
+.melding__overskrift {
+  font-size: var(--text-heading-3);
+  line-height: var(--leading-heading-3);
+}
+
+.melding__liste {
+  margin: var(--spacing-2) 0 0;
+  padding-left: var(--spacing-5);
+}
+
+.melding__liste a {
+  color: var(--color-link);
+  font-weight: var(--weight-bold);
+}
+
+/* ---------- Tomtilstand og profil ---------- */
+.tomtilstand {
+  padding: var(--spacing-6) var(--spacing-4);
+  text-align: center;
+}
+
+.tomtilstand p {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.tomtilstand__ikon {
+  display: block;
+  margin: 0 auto var(--spacing-3);
+}
+
+.sted {
+  display: flex;
+  gap: var(--spacing-2);
+  align-items: flex-start;
+  color: var(--color-ink-muted);
+}
+
+.knapperad {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-3);
+  margin: 0 0 var(--spacing-5);
 }
 
 @media (prefers-reduced-motion: no-preference) {

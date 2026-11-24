@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 
 from fastapi import Request
 from sqlalchemy import DateTime, Engine, MetaData, create_engine, event
+from sqlalchemy.engine import make_url
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from sqlalchemy.pool import NullPool
 from sqlalchemy.types import TypeDecorator
@@ -84,6 +85,11 @@ def lag_motor(url: str) -> Engine:
         return motor
 
     return create_engine(url, poolclass=NullPool, connect_args={"prepare_threshold": None})
+
+
+def url_uten_passord(url: str) -> str:
+    """Database-URL-en uten passord, til meldinger fra seed og admin."""
+    return make_url(url).render_as_string(hide_password=True)
 
 
 def lag_sesjonsfabrikk(motor: Engine) -> sessionmaker[Session]:

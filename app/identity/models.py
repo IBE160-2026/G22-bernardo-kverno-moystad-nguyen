@@ -1,15 +1,18 @@
-"""Tabellene `bruker` og `sesjon`, eid av identity (AD-1, AD-4, AD-8, NFR-9).
+"""Tabellene `bruker`, `sesjon` og `innloggingsforsok`, eid av identity (AD-1, AD-4, AD-8, NFR-9).
 
 `bruker` har bare navn, e-post, passord-hash, telefon, postnummer, fødselsdato
 og tidspunkter, aldri adresse (NFR-9). Personfeltene kan være NULL, fordi en
 slettet bruker blir en gravstein med samme id (AD-8).
+
+`innloggingsforsok` har ett mislykket forsøk per rad, knyttet til normalisert
+e-post og ikke til en bruker, så også ukjente e-poster telles (AD-4, AR-14).
 """
 
 from __future__ import annotations
 
 from datetime import date, datetime
 
-from sqlalchemy import Date, ForeignKey, String
+from sqlalchemy import Date, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 # Importeres for å registrere `postnummer` i metadataen, slik at fremmednøkkelen finnes.
@@ -38,3 +41,11 @@ class Sesjon(Base):
     bruker_id: Mapped[int] = mapped_column(ForeignKey("bruker.id"), nullable=False, index=True)
     opprettet: Mapped[datetime] = mapped_column(UtcDateTime, nullable=False)
     utloper: Mapped[datetime] = mapped_column(UtcDateTime, nullable=False)
+
+
+class Innloggingsforsok(Base):
+    __tablename__ = "innloggingsforsok"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    epost: Mapped[str] = mapped_column(String(320), nullable=False, index=True)
+    tidspunkt: Mapped[datetime] = mapped_column(UtcDateTime, nullable=False, index=True)

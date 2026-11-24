@@ -1,9 +1,13 @@
 """Rendring av sider og fragmenter med ett Jinja-miljø (AR-27, AD-11).
 
 Alle sider rendres med `render`, som legger til tittel, innlogget bruker,
-CSRF-nøkkelen og `tilbake_url`. Autoescape er alltid på. Maler ligger i
-`app/<slice>/templates/<slice>/` og brukes som `"identity/logg_inn.html"`.
-Kvittering og antallet i menyen kommer i senere stories.
+CSRF-nøkkelen, `tilbake_url`, kvitteringen, aktivt menyvalg og fokusmålet. Autoescape er
+alltid på. Maler ligger i `app/<slice>/templates/<slice>/` og brukes som
+`"identity/logg_inn.html"`. Antallet i menyen kommer i story 2.4.
+
+Fokus (UX-DR27): høyst ett fokusmål per side, i rekkefølgen
+feiloppsummering > kvittering > sidens eget mål (`fokus`). Malen setter
+`autofocus` der `fokusmal` sier.
 """
 
 from __future__ import annotations
@@ -17,8 +21,11 @@ from starlette.requests import Request
 from starlette.responses import HTMLResponse
 from starlette.templating import Jinja2Templates
 
+from app.core.kvittering import har_kvitteringscookie, les_kvittering, slett_kvittering
+
 APP_MAPPE = Path(__file__).resolve().parents[1]
 APPNAVN = "Nabolagshelten"
+MENYVALG = (None, "oppdrag", "mine_oppdrag", "profil")
 
 
 def _lag_miljo() -> Environment:
@@ -57,8 +64,7 @@ def tilbake_url(request: Request) -> str:
     """`Referer` fra samme nettsted, ellers startsiden for brukeren.
 
     Aldri siden selv, og aldri en sti som begynner med `//`. Uten innlogging er
-    innloggingssiden startsiden, fordi oversikten krever innlogging og ikke
-    finnes før story 1.2.
+    innloggingssiden startsiden, fordi oversikten krever innlogging (FR-3).
     """
     referer = request.headers.get("referer")
     if referer:
@@ -72,6 +78,15 @@ def tilbake_url(request: Request) -> str:
     if getattr(request.state, "innlogget", None) is not None:
         return "/"
     return "/logg-inn"
+
+
+def fokusmal(*, feil: bool, kvittering: bool, fokus: str | None) -> str | None:
+    """Ett fokusmål: feiloppsummering > kvittering > sidens eget mål (UX-DR27)."""
+    if feil:
+        return "feiloppsummering"
+    if kvittering:
+        return "kvittering"
+    return fokus
 
 
 def _kontekst(request: Request, tittel: str, ctx: dict[str, Any]) -> dict[str, Any]:
@@ -96,12 +111,30 @@ def render(
     headers: dict[str, str] | None = None,
     **ctx: Any,
 ) -> HTMLResponse:
-    """Rendrer en hel side med `base.html`."""
+    """Rendrer en hel side med `base.html`.
+
+    `aktiv_meny` er `"oppdrag"`, `"mine_oppdrag"`, `"profil"` eller `None`.
+    `feil` (i `ctx`) er en liste med `(felt, melding)` til feiloppsummeringen.
+    """
+    if aktiv_meny not in MENYVALG:
+        raise ValueError(f"Ukjent menyvalg: {aktiv_meny!r}")
     kontekst = _kontekst(request, tittel, ctx)
-    kontekst.update(aktiv_meny=aktiv_meny, fokus=fokus)
-    return _maler.TemplateResponse(
+    kontekst.setdefault("feil", [])
+    kontekst.setdefault("kvittering", les_kvittering(request))
+    kontekst.update(
+        aktiv_meny=aktiv_meny,
+        fokus=fokus,
+        fokusmal=fokusmal(
+            feil=bool(kontekst["feil"]), kvittering=bool(kontekst["kvittering"]), fokus=fokus
+        ),
+    )
+    svar = _maler.TemplateResponse(
         request, mal, kontekst, status_code=status_code, headers=headers
     )
+    if har_kvitteringscookie(request):
+        # Kvitteringen vises én gang og slettes i samme svar (UX-DR22).
+        slett_kvittering(request, svar)
+    return svar
 
 
 def render_fragment(
