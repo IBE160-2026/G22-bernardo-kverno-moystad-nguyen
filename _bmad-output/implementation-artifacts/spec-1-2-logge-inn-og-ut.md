@@ -2,7 +2,7 @@
 title: 'Story 1.2: Logge inn og ut'
 type: 'feature'
 created: '2026-11-24'
-status: 'ready-for-dev'
+status: 'in-progress'
 route: 'dispatch'
 baseline_commit: 'ab54a16a8f3db09717dca37b9e1e5262158f23e3'
 review_loop_iteration: 0
