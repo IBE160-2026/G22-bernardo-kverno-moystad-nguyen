@@ -10,6 +10,7 @@ from app import lag_app
 from app.core.config import STANDARD_NOKKEL, KonfigFeil, Settings, hent_settings, les_settings
 
 EKTE_NOKKEL = "x" * 32
+POSTGRES_URL = "postgresql+psycopg://u@h:5432/d"
 
 
 def lag(**verdier) -> Settings:
@@ -40,8 +41,15 @@ def test_tom_verdi_gir_standardverdien(monkeypatch: pytest.MonkeyPatch) -> None:
         {"app_env": "production"},  # standardnøkkelen
         {"app_env": "production", "secret_key": STANDARD_NOKKEL},
         {"app_env": "production", "secret_key": "x" * 31},
+        {"app_env": "production", "secret_key": EKTE_NOKKEL, "database_url": "sqlite:///./prod.db"},
     ],
-    ids=["ukjent-miljo", "produksjon-uten-nokkel", "produksjon-standardnokkel", "produksjon-kort-nokkel"],
+    ids=[
+        "ukjent-miljo",
+        "produksjon-uten-nokkel",
+        "produksjon-standardnokkel",
+        "produksjon-kort-nokkel",
+        "produksjon-sqlite",
+    ],
 )
 def test_ugyldig_miljo_stopper(monkeypatch: pytest.MonkeyPatch, verdier: dict) -> None:
     monkeypatch.delenv("SECRET_KEY", raising=False)
@@ -50,7 +58,7 @@ def test_ugyldig_miljo_stopper(monkeypatch: pytest.MonkeyPatch, verdier: dict) -
 
 
 def test_produksjon_med_ekte_nokkel_godtas() -> None:
-    settings = lag(app_env="production", secret_key=EKTE_NOKKEL)
+    settings = lag(app_env="production", secret_key=EKTE_NOKKEL, database_url=POSTGRES_URL)
     assert settings.produksjon
 
 
@@ -88,6 +96,11 @@ def test_hemmelig_nokkel_vises_ikke_i_feilmeldingen(caplog: pytest.LogCaptureFix
         les_settings()
     assert "kort-hemmelig" not in str(feil.value)
     assert "kort-hemmelig" not in caplog.text
+
+
+def test_sqlite_i_produksjon_gir_tydelig_melding() -> None:
+    with pytest.raises(ValueError, match="DATABASE_URL"):
+        lag(app_env="production", secret_key=EKTE_NOKKEL, database_url="sqlite:///./prod.db")
 
 
 def test_postgres_url_bruker_psycopg() -> None:
@@ -141,7 +154,11 @@ def test_seed_nekter_i_produksjon(monkeypatch: pytest.MonkeyPatch) -> None:
     """AD-14: ingen seed i produksjon."""
     from app import seed
 
-    monkeypatch.setattr(seed, "hent_settings", lambda: lag(app_env="production", secret_key=EKTE_NOKKEL))
+    monkeypatch.setattr(
+        seed,
+        "hent_settings",
+        lambda: lag(app_env="production", secret_key=EKTE_NOKKEL, database_url=POSTGRES_URL),
+    )
     kalt = []
     monkeypatch.setattr(seed.command, "upgrade", lambda *a, **k: kalt.append(a))
     assert seed.main() == 1

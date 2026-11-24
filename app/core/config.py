@@ -63,6 +63,10 @@ class Settings(BaseSettings):
                 raise ValueError(
                     f"SECRET_KEY må ha minst {MINSTE_NOKKELLENGDE} tegn i produksjon."
                 )
+            if self.database_url.startswith("sqlite"):
+                raise ValueError(
+                    "DATABASE_URL peker på SQLite. Produksjon skal bruke Postgres (Supabase)."
+                )
         return self
 
     @property

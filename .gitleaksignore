@@ -1,3 +1,0 @@
-# Falske funn i gitleaks (NFR-3). Hver linje er et fingerprint fra «gitleaks git». Skriv hvorfor.
-# SHA-256-hash av en BMAD-fil i filmanifestet; regelen generic-api-key slår til fordi filnavnet inneholder «key».
-2d342666d2c176dadccfa5e7e20f64ef4544c055:_bmad/_config/files-manifest.csv:generic-api-key:48
