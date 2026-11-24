@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "git": {
+    "deploymentEnabled": false
+  },
+  "regions": ["dub1"],
+  "functions": {
+    "main.py": {
+      "maxDuration": 30
+    }
+  }
+}
