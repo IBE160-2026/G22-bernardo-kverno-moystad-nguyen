@@ -6,7 +6,7 @@
 <div class="skjemabredde">
   <h1>Logg inn</h1>
   {{ m.meldinger() }}
-  <form class="skjema" method="post" action="{{ url_for('identity.logg_inn') }}" novalidate>
+  <form class="skjema" method="post" action="{{ url_for('identity.send_logg_inn') }}" novalidate>
     {{ m.csrf_felt() }}
     <input type="hidden" name="neste" value="{{ neste }}">
     <div class="felt">

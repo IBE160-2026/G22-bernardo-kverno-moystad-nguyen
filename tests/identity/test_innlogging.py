@@ -6,10 +6,12 @@ Også `Set-Cookie` ved innlogging og utlogging, kvitteringen og fokus (UX-DR22, 
 from __future__ import annotations
 
 import re
+import time
 from datetime import datetime, timedelta, timezone
 
 import pytest
 from fastapi.testclient import TestClient
+from itsdangerous import TimestampSigner, URLSafeTimedSerializer
 from sqlalchemy import func, select
 
 from app.core.config import Settings
@@ -247,14 +249,39 @@ def test_kvittering_etter_utlogging_far_fokus(klient: TestClient, kari, logg_inn
     assert "role=" not in html
 
 
-def test_forfalsket_eller_ukjent_kvittering_ignoreres(klient: TestClient) -> None:
-    from itsdangerous import URLSafeTimedSerializer
+def signert_kvittering(app, nokkel: str) -> str:
+    return URLSafeTimedSerializer(app.state.settings.secret_key, salt="kvittering").dumps(nokkel)
 
+
+def test_gyldig_kvittering_vises(app, klient: TestClient) -> None:
+    """Kontroll for testene under: en riktig signert, fersk kvittering vises."""
+    klient.cookies.set(KVITTERING_COOKIE, signert_kvittering(app, "logget_ut"))
+    assert "Du er logget ut." in klient.get("/logg-inn").text
+
+
+def test_forfalsket_eller_ukjent_kvittering_ignoreres(app, klient: TestClient) -> None:
     klient.cookies.set(KVITTERING_COOKIE, "forfalsket")
     assert "melding--kvittering" not in klient.get("/logg-inn").text
-    ukjent = URLSafeTimedSerializer("lokal-utvikling-ikke-hemmelig", salt="kvittering").dumps("<b>hei</b>")
-    klient.cookies.set(KVITTERING_COOKIE, ukjent)
+    klient.cookies.set(KVITTERING_COOKIE, signert_kvittering(app, "<b>hei</b>"))
     assert "melding--kvittering" not in klient.get("/logg-inn").text
+
+
+def test_kvittering_eldre_enn_60_sekunder_ignoreres(app, klient: TestClient, monkeypatch) -> None:
+    with monkeypatch.context() as m:
+        m.setattr(TimestampSigner, "get_timestamp", lambda self: int(time.time()) - 61)
+        gammel = signert_kvittering(app, "logget_ut")
+    klient.cookies.set(KVITTERING_COOKIE, gammel)
+    assert "melding--kvittering" not in klient.get("/logg-inn").text
+
+
+def test_gyldig_sesjon_overlever_mislykket_innlogging(klient: TestClient, db, kari, logg_inn_som) -> None:
+    """En mislykket innlogging fra en innlogget nettleser logger ikke ut den gamle sesjonen."""
+    logg_inn_som(klient, kari)
+    svar = send_innlogging(klient, "kari@eksempel.no", "feil-passord")
+    assert svar.status_code == 422
+    assert set_cookies(svar, "sesjon") == []
+    assert antall_sesjoner(db, kari.id) == 1
+    assert klient.get("/profil", follow_redirects=False).status_code == 200
 
 
 # ---------- skjemaet ----------
