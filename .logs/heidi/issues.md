@@ -49,3 +49,5 @@
 - [ ] 2026-11-24 [story-1-1-skjelett](989-2026-11-24-02-17-20-story-1-1-skjelett.md) — story 1.3: sjekk de to utsatte funnene i `deferred-work.md` (Origin-sjekk bak Vercels proxy, og om `data/postnumre.tsv` følger med i Vercel-funksjonen)
 - [ ] 2026-11-24 [story-1-1-skjelett](989-2026-11-24-02-17-20-story-1-1-skjelett.md) — story 1.2: lagre `hash_sesjonsnokkel(nokkel)` i `sesjon`, aldri selve nøkkelen fra cookien
 - [x] 2026-11-24 [story-1-1-skjelett](989-2026-11-24-02-17-20-story-1-1-skjelett.md) — merge PR #1 og sett story 1.1 til `done` i `sprint-status.yaml` (løst 2026-11-24: merget som d9de0ad, story 1.1 er `done`)
+- [ ] 2026-11-24 [story-1-2-spec-elisitering](988-2026-11-24-12-14-11-story-1-2-spec-elisitering.md) — implementer story 1.2 etter specen med `bmad-build`, fra trinn 1
+- [ ] 2026-11-24 [story-1-2-spec-elisitering](988-2026-11-24-12-14-11-story-1-2-spec-elisitering.md) — kuttene i story 1.2: er trinn 4 ikke grønt onsdag 25. nov kl. 20, flyttes JS (til 1.4) og `app.admin` (til 1.3); er PR-en ikke åpnet torsdag 26. nov kl. 12, flyttes også `/profil/{id}` (til 2.3). Hvert kutt føres i Spec Change Log, epics og `sprint-status.yaml`
