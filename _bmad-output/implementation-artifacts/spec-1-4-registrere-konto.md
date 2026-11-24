@@ -87,7 +87,7 @@ context:
 - 2026-11-24 (implementasjon): alle oppgavene under Execution er gjort. `uv run pytest` gir 477 grønne mot SQLite. Postgres er ikke kjørt lokalt (Docker kjørte ikke) og sjekkes av CI.
 - Lokal røyktest mot `uvicorn` uten seed: eneste avvik er «cookien csrf mangler Secure», som før story 1.4, fordi `Secure` bare settes når `APP_ENV=production`. `tests/test_roykttest.py` forventer det samme avviket. Registrering, utlogging og innlogging mot den lokale serveren gikk gjennom (303 hver gang).
 - Valg som specen ikke låser: kontrolltegn i navn blir mellomrom (NUL gir ellers `DataError` i Postgres). Fødselsdato krever samme skilletegn begge steder. Lenketeksten på innloggingssiden er «Har du ikke konto?» + «Registrer deg». Ved feil i et annet felt står «Skriv passordet på nytt.» i tillegg til «8–64 tegn».
-- Manuell røyktest i produksjon (registrering, innlogging, utlogging) står igjen til etter merge og deploy.
+- Manuell røyktest i produksjon 2026-11-25: Heidi registrerte en testkonto med oppdiktede opplysninger på https://nabolagshelten.vercel.app/registrer, og kontoen kunne logge ut og inn igjen. Ingen verdier står i repoet. Kontoen slettes med `app.admin slett-konto` når story 4.5 er ferdig.
 
 ## Spec Change Log
 
