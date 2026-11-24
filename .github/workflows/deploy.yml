@@ -1,0 +1,71 @@
+# Publisering til produksjon (AR-1, AR-7, AD-13, NFR-3).
+# Kjører ved push til main som endrer kode, og manuelt (workflow_dispatch).
+# Rekkefølge: CI (ci.yml) på samme commit → alembic upgrade head mot Supabase (session pooler, port 5432)
+# → vercel deploy --prod → røyktest mot produksjonsadressen.
+# Feiler migreringen, publiseres ingenting. Vercels GitHub-app brukes ikke.
+# Hemmelighetene kommer bare fra GitHub Secrets og skrives aldri ut.
+# Bruker aldri pull_request_target.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - ".logs/**"
+      - "_bmad-output/**"
+      - "docs/**"
+      - "**.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# En publisering avbrytes aldri midt i; neste venter i kø.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  # Rettes hvis Vercel ga prosjektet et suffiks (se README § Publisering).
+  PRODUKSJON_URL: https://nabolagshelten.vercel.app
+
+jobs:
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    name: Migrering, deploy og røyktest
+    needs: ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          version: "0.12.13"
+          enable-cache: true
+      - name: Installer avhengigheter
+        run: uv sync --locked
+
+      - name: Migrer databasen (alembic upgrade head)
+        env:
+          DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL }}
+        run: |
+          # Uten hemmeligheten faller Settings tilbake til SQLite, og migreringen
+          # ville «lykkes» på runneren. Verdien skrives aldri ut.
+          case "$DATABASE_URL" in
+            postgres*) ;;
+            *) echo "::error::MIGRATION_DATABASE_URL mangler eller er ikke en Postgres-URL. Migreringen stopper."; exit 1 ;;
+          esac
+          uv run alembic upgrade head
+
+      - name: Publiser på Vercel (produksjon)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: npx --yes vercel@66.6.0 deploy --prod --yes --token "$VERCEL_TOKEN"
+
+      - name: Røyktest mot produksjon
+        run: uv run python scripts/roykttest.py "$PRODUKSJON_URL"

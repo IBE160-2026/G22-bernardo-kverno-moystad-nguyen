@@ -13,6 +13,7 @@ import pytest
 from fastapi import Depends, FastAPI, Form
 from fastapi.testclient import TestClient
 from sqlalchemy import func, select
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 from starlette.requests import Request
 from starlette.responses import JSONResponse
@@ -434,3 +435,28 @@ def test_identity_implementerer_autentisering() -> None:
     from app.core.sesjon import Autentisering
 
     assert isinstance(IdentityAutentisering(), Autentisering)
+
+
+# ---------- keepalive (AR-7): GET / med en falsk sesjonscookie ----------
+
+
+def test_keepalive_gir_303_etter_sesjonsoppslag(klient: TestClient) -> None:
+    """keepalive.yml forventer 303 når databasen svarer og sesjonen ikke finnes."""
+    klient.cookies.set("sesjon", "keepalive")
+    svar = klient.get("/", follow_redirects=False)
+    assert svar.status_code == 303
+    assert svar.headers["location"] == "/logg-inn?neste=/"
+
+
+def test_keepalive_gir_ikke_303_naar_databasen_feiler(app: FastAPI) -> None:
+    """Er Supabase på pause, skal keepalive feile (500), ikke få 303 som om alt var i orden.
+    Et «mykt» except rundt sesjonsoppslaget ville skjule det."""
+
+    def feilende_sesjonsfabrikk():
+        raise OperationalError("SELECT 1", {}, Exception("databasen svarer ikke"))
+
+    app.state.sesjonsfabrikk = feilende_sesjonsfabrikk
+    with TestClient(app, raise_server_exceptions=False) as klient:
+        klient.cookies.set("sesjon", "keepalive")
+        svar = klient.get("/", follow_redirects=False)
+    assert svar.status_code == 500

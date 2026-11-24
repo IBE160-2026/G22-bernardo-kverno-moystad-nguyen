@@ -1,0 +1,16 @@
+# Filer som ikke skal med til Vercel (AR-7). data/, migrations/ og app/ skal med:
+# appen leser data/postnumre.tsv ved oppstart.
+_bmad/
+_bmad-output/
+.claude/
+.logs/
+docs/
+tests/
+*.db
+*.db-journal
+.env*
+.venv/
+__pycache__/
+.pytest_cache/
+.github/
+scripts/

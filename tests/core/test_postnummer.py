@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
+from app import lag_app
 from app.core import postnummer
 from app.core.postnummer import (
     JSON_STI,
@@ -82,3 +84,22 @@ def test_postnumre_json_stemmer_med_tsv() -> None:
     innhold = JSON_STI.read_text(encoding="utf-8")
     assert json.loads(innhold) == dict(les_tsv())
     assert innhold == postnummer.lag_json(), "Kjør `uv run python -m app.core.postnummer`"
+
+
+def test_manglende_tsv_fil_stopper_oppstarten(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """AR-1, AD-10: følger ikke `data/postnumre.tsv` med (for eksempel i Vercel-funksjonen),
+    starter ikke appen. Feilen kommer ved oppstart, ikke ved første postnummeroppslag."""
+    monkeypatch.setattr(postnummer, "TSV_STI", tmp_path / "finnes-ikke.tsv")
+    postnummer._register.cache_clear()
+    try:
+        with pytest.raises(FileNotFoundError):
+            lag_app()
+    finally:
+        postnummer._register.cache_clear()
+
+
+def test_lag_app_laster_postnummerregisteret() -> None:
+    """AR-1: registeret ligger i minnet etter oppstart."""
+    postnummer._register.cache_clear()
+    lag_app()
+    assert postnummer._register.cache_info().currsize == 1

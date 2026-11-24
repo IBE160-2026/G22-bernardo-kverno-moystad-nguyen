@@ -1,6 +1,7 @@
 # CI for Nabolagshelten (AR-7, NFR-3, AD-13).
 # Kjører på hver PR og på push til main: pytest mot SQLite og Postgres,
-# ett Alembic-hode og gitleaks over hele historikken.
+# ett Alembic-hode og gitleaks over hele historikken. deploy.yml kaller den
+# også (workflow_call) før publisering, så bare testet kode når produksjon.
 # Bruker aldri pull_request_target, og jobbene trenger ingen hemmeligheter.
 name: CI
 
@@ -8,12 +9,13 @@ on:
   pull_request:
   push:
     branches: [main]
+  workflow_call:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:

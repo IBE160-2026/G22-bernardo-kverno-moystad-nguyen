@@ -4,8 +4,16 @@ title = "Nabolagshelten"
 [extend]
 useDefault = true
 
-[allowlist]
-description = "Kjente falske funn"
-# BMADs filmanifest har SHA-256-hasher av rammeverksfilene. Regelen generic-api-key
+[[allowlists]]
+description = "BMADs filmanifest"
+# Manifestet har SHA-256-hasher av rammeverksfilene. Regelen generic-api-key
 # slår til når filnavnet inneholder «key» (for eksempel key-screens.md). Ingen hemmeligheter.
 paths = ['''_bmad/_config/files-manifest\.csv''']
+
+[[allowlists]]
+description = "story_key i BMAD-spesifikasjoner"
+# Spesifikasjonene har `story_key: '<epic>-<story>-<tittel-i-kebab-case>'` i frontmatter.
+# Regelen generic-api-key slår til på «key» når tittelen er lang nok. Unntaket gjelder bare
+# verdier av formen <tall>-<tall>-<små bokstaver/sifre/bindestreker>, så ekte nøkler fanges.
+# Ingen sti her: en sti i et globalt unntak gjør at gitleaks hopper over hele fila.
+regexes = ['''^[0-9]+-[0-9]+-[a-z0-9-]+$''']

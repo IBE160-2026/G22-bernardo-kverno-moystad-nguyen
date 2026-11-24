@@ -21,11 +21,13 @@ Prosjektet er i implementasjonsfasen (Epic 1). Frist for innlevering er 15. dese
 | UX-design | Ferdig: designsystem, atferd, mockups og tilgjengelighetsgjennomgang |
 | Arkitektur | Ferdig: FastAPI + Jinja, SQLite lokalt og Supabase Postgres på Vercel (AD-1–AD-17) |
 | Epics og stories | Ferdig: [epics.md](_bmad-output/planning-artifacts/epics.md) og [sprint-status.yaml](_bmad-output/implementation-artifacts/sprint-status.yaml) |
-| Implementasjon og testing | Pågår: story 1.1 ferdig, story 1.2 (logge inn og ut) under arbeid |
+| Implementasjon og testing | Pågår: story 1.1 og 1.2 ferdig, story 1.3 (publisering i produksjon) under arbeid |
 
 ## Kom i gang
 
 Appen kjører lokalt mot en SQLite-fil, uten `.env`, kontoer eller nøkler (NFR-1).
+
+Produksjonsversjonen ligger på <https://nabolagshelten.vercel.app/>. Der finnes ingen testbrukere, og foreløpig vises bare innloggingssiden; registrering kommer i story 1.4. Se [Publisering i produksjon](#publisering-i-produksjon).
 
 ### Forutsetninger
 
@@ -87,6 +89,31 @@ Testene bruker en midlertidig SQLite-fil som slettes etterpå. Med miljøvariabe
 - All kode går via pull request mot `main`, og en PR merges bare når CI er grønn. Logger (`.logs/`) og `sprint-status.yaml` kan pushes direkte til `main`.
 - Regelen er skrevet her fordi ingen i gruppen har admin-rettighet på repoet, så GitHub sin beskyttelse av `main` kan ikke slås på (avvik ført i PRD §9.2).
 - CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) kjører på hver PR og ved push til `main`: pytest mot SQLite og mot Postgres 17, sjekk av at Alembic har nøyaktig ett hode, og gitleaks over hele historikken (NFR-3).
+- Etter merge til `main` publiseres appen automatisk, se under.
+
+### Publisering i produksjon
+
+Appen kjører på Vercel (region `dub1`, Irland) med database hos Supabase (`eu-west-1`): <https://nabolagshelten.vercel.app/> (AR-1, AR-7).
+
+- **Når:** hver push til `main` som endrer kode, kjører [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml). Endringer som bare gjelder `.logs/`, `_bmad-output/`, `docs/` eller `.md`-filer, publiseres ikke. Workflowen kan også startes for hånd (Actions → Deploy → Run workflow).
+- **Hva:** først kjører hele CI ([`ci.yml`](.github/workflows/ci.yml)) på samme commit (`needs: ci`), så bare testet kode publiseres. Deretter `alembic upgrade head` mot Supabase gjennom session pooler (port 5432). Feiler migreringen, publiseres ingenting. Så `vercel deploy --prod` med Vercel CLI (`vercel@66.6.0`), og til slutt en røyktest mot produksjonsadressen. Vercels GitHub-app og preview-miljøer brukes ikke (`vercel.json`). En publisering avbrytes aldri midt i; neste venter i kø.
+- **Røyktest:** `uv run python scripts/roykttest.py [url]` sjekker at innloggingssiden svarer med sikkerhetsheaderne, at et innloggingsforsøk med Karis lokale testpassord avvises med «Feil e-post eller passord.» (det viser at CSRF-sjekken virker bak Vercels proxy, at databasen svarer, og at det ikke finnes testbrukere i produksjon), at testruta `/_test/tilstand` gir 404, og at CSS-fila lastes. Den kan også kjøres mot en lokal server, men bare uten seed: seed lager Kari, og da rapporterer røyktesten en demokonto. `tests/test_roykttest.py` kjører den mot testappen i CI.
+- **Feiler røyktesten etter publisering:** eieren ruller tilbake i Vercel (Deployments → forrige versjon → Instant Rollback) og retter feilen i en ny PR.
+- **Keepalive:** [`.github/workflows/keepalive.yml`](.github/workflows/keepalive.yml) besøker forsiden hver tredje dag med en falsk sesjonscookie. Appen slår opp sesjonen i databasen og svarer 303, så Supabase-prosjektet ikke settes på pause. Feiler jobben, sender GitHub e-post.
+- **Ingen seed i produksjon:** seed nekter å kjøre der, og migreringer legger bare til etter første publisering.
+
+Hemmelighetene ligger bare hos Vercel og GitHub, aldri i repoet, i logger eller i chat (NFR-3). Her står bare navnene:
+
+| Hvor | Navn | Innhold |
+|---|---|---|
+| Vercel env (Production) | `APP_ENV` | `production` |
+| Vercel env (Production) | `DATABASE_URL` | Supabase transaction pooler (port 6543), brukt av appen |
+| Vercel env (Production) | `SECRET_KEY` | tilfeldig nøkkel på minst 32 tegn |
+| GitHub Secrets | `MIGRATION_DATABASE_URL` | Supabase session pooler (port 5432), brukt av migreringen |
+| GitHub Secrets | `VERCEL_TOKEN` | token for Vercel CLI |
+| GitHub Secrets | `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` | id-ene fra `.vercel/project.json` etter `vercel link` |
+
+Verdiene legges inn i Vercels nettside og med `gh secret set <NAVN>` (verdien limes inn skjult). `gh secret list` viser navnene uten verdier.
 
 ### Data og lisens
 
@@ -127,7 +154,9 @@ app/admin.py        Manuell hjelp: nytt passord (uv run python -m app.admin nytt
 data/postnumre.tsv  Brings postnummerregister i UTF-8
 migrations/         Alembic-migreringer (skjema og postnumre)
 tests/              pytest-tester per slice; tests/core/ har arkitektur, mellomvare, tilgang, feil og migrering
-.github/workflows/  CI (ci.yml)
+scripts/roykttest.py  Røyktest mot en publisert versjon (brukes av deploy.yml)
+.github/workflows/  CI (ci.yml), publisering (deploy.yml) og keepalive (keepalive.yml)
+vercel.json         Vercel-oppsett: region, maks kjøretid, Git-publisering av; .vercelignore utelater dokumenter og tester
 pyproject.toml      Avhengigheter; uv.lock låser versjonene
 .claude/skills/     BMAD-skills og sesjonslogg-skillen for Claude Code
 _bmad/              BMAD-rammeverket: konfigurasjon og skript
@@ -148,7 +177,9 @@ Sjekk med `python --version` og `uv --version`. Personlige BMAD-innstillinger li
 
 ## Kontoer for drift
 
-Appen publiseres på Vercel med database hos Supabase (se arkitekturspinen). Hemmeligheter ligger i Vercel og GitHub Secrets, aldri i repoet.
+Appen publiseres på Vercel med database hos Supabase (se [Publisering i produksjon](#publisering-i-produksjon) og arkitekturspinen). Hemmeligheter ligger i Vercel og GitHub Secrets, aldri i repoet.
+
+Eieren sjekker i Supabase at prosjektet er aktivt (ikke satt på pause) og at siste keepalive-kjøring er grønn, før hver demo og jevnlig til sensuren er ferdig, ikke bare før innlevering. GitHub slår av planlagte workflows etter 60 dager uten aktivitet i repoet, og da stopper keepalive.
 
 | Tjeneste | Eier | Reserve |
 |---|---|---|
