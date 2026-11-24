@@ -87,3 +87,22 @@ Pushe branchen for story 1.2 og åpne PR mot `main`.
 ### Åpne punkter
 - Merge PR #2, og sett deretter story 1.2 til `done` i `sprint-status.yaml`.
 - De manuelle sjekkene og JS-testene i 1.5 fra forrige seksjon står fortsatt åpne.
+
+## 2026-11-24 kl. 14:21 — Heidi
+
+### Oppgave
+Gjøre ferdig det som gjensto for story 1.2: pushe loggen først, merge PR #2 og sette storyen til `done`.
+
+### Plan
+- Pushe logg-commiten til PR-branchen og vente på grønn CI for den nye commiten.
+- Merge PR #2 og sette status `done` direkte på `main`, slik det ble gjort for story 1.1 (`887def3`).
+
+### Resultat
+- Logg-commiten `7f04baa` ble pushet, og CI var grønn på den (kjøring 45402301157: SQLite, Postgres og gitleaks).
+- PR #2 er merget i `9a8f7d2`, og branchen `story/1-2-logge-inn-og-ut` er slettet.
+- Story 1.2 står som `done` i `sprint-status.yaml` (`b8b10c3`). Epic 1 er fortsatt `in-progress`.
+- Lukket i `issues.md`: merge PR #2 og `done`-status.
+
+### Åpne punkter
+- De manuelle sjekkene for 1.2 (320 px, tastatur, `app.admin` i ekte terminal) og JS-testene i 1.5 står fortsatt åpne i `issues.md`.
+- Sjekkpunkt lørdag 28. nov: Epic 1 ferdig. Story 1.3–1.5 gjenstår (står allerede i `issues.md`).
