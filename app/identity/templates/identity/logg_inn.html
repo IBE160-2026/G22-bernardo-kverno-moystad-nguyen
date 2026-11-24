@@ -1,18 +1,33 @@
 {% extends "core/base.html" %}
 {% import "core/makroer.html" as m with context %}
-{# Innloggingssiden (FR-2, UX-DR2). Innsendingen kommer i story 1.2. #}
+{# Innloggingssiden (FR-2, UX-DR12, UX-DR13, UX-DR22, UX-DR27, UX-DR28).
+   Ingen lenke til registrering før story 1.4. #}
 {% block innhold %}
 <div class="skjemabredde">
   <h1>Logg inn</h1>
+  {{ m.meldinger() }}
   <form class="skjema" method="post" action="{{ url_for('identity.logg_inn') }}" novalidate>
     {{ m.csrf_felt() }}
+    <input type="hidden" name="neste" value="{{ neste }}">
     <div class="felt">
       <label for="epost">E-post</label>
-      <input id="epost" name="epost" type="email" autocomplete="email" required>
+      <input id="epost" name="epost" type="email" autocomplete="email" required value="{{ epost }}"
+        {%- if feltfeil.get("epost") %} aria-invalid="true" aria-describedby="epost-feil"{% endif %}
+        {%- if fokusmal == "epost" %} autofocus{% endif %}>
+      {{ m.feltfeil("epost-feil", feltfeil.get("epost")) }}
     </div>
     <div class="felt">
       <label for="passord">Passord</label>
-      <input id="passord" name="passord" type="password" autocomplete="current-password" required>
+      {% if feil and not feltfeil.get("passord") %}
+      <p class="hjelpetekst" id="passord-hjelp">Skriv passordet på nytt.</p>
+      {% endif %}
+      <div class="passordfelt">
+        <input id="passord" name="passord" type="password" autocomplete="current-password" required
+          {%- if feltfeil.get("passord") %} aria-invalid="true" aria-describedby="passord-feil"
+          {%- elif feil %} aria-describedby="passord-hjelp"{% endif %}>
+        <button class="knapp knapp--sekundar passordfelt__vis" type="button" aria-pressed="false" aria-controls="passord" data-vis-passord hidden>Vis passord</button>
+      </div>
+      {{ m.feltfeil("passord-feil", feltfeil.get("passord")) }}
     </div>
     <div class="skjema__knapper">
       <button class="knapp knapp--primar" type="submit">Logg inn</button>
