@@ -38,3 +38,34 @@ Specen er committet som `4bbaab1` på `story/1-2-logge-inn-og-ut`. Endringer fra
 ### Åpne punkter
 - Implementer story 1.2 etter specen med `bmad-build`, fra trinn 1.
 - Kuttene i story 1.2 utløses på faste tidspunkter: er trinn 4 ikke grønt onsdag 25. nov kl. 20, flyttes JS og `app.admin`. Er PR-en ikke åpnet torsdag 26. nov kl. 12, flyttes også `/profil/{id}`. Hvert kutt føres i Spec Change Log, epics og `sprint-status.yaml`.
+
+## 2026-11-24 kl. 13:05 — Heidi
+
+### Oppgave
+Kjøre `bmad-build` på story 1.2 (logge inn og ut) etter den elisiterte specen: sjekke at specen er klar, godkjenne, implementere, reviewe og rette.
+
+### Plan
+- Specen ble sjekket mot READY-standarden før godkjenning: [spec-1-2-logge-inn-og-ut.md](../../_bmad-output/implementation-artifacts/spec-1-2-logge-inn-og-ut.md).
+- En subagent implementerte de seks trinnene. Jeg sjekket diffen og matrisetestene selv.
+- Tre reviewere (blind, kanttilfeller, testhull) gikk gjennom diffen. Funnene ble vurdert i specens triage-logg, og den samme subagenten rettet dem.
+
+### Resultat
+- **Beslutning av Heidi:** sjekkpunktdatoene i `epics.md` hadde ukedager fra 2025-kalenderen. Datoene er beholdt, og ukedagene er rettet (lørdag 28. nov., torsdag 3. des., tirsdag 8. des., lørdag 12. des.), også i `epic-1-context.md` og kuttlinja i specen (`1be921b`).
+- Specen ble godkjent (`7d87a2d`) og står nå som `done`. Story 1.2 er `review` i `sprint-status.yaml` (`e33d665`).
+- **Kode** (`14e08fb`–`18e7b95`):
+  - bcrypt og tabellen `innloggingsforsok` (migrering `0002`), passord og e-post bare i `identity/service.py`, sperre etter 5 feil på 15 min, sesjon med hashet nøkkel i 7 dager.
+  - Innlogging kreves i sesjonsmellomvaren (303 for GET, 401 ellers), med FR-3-test over alle ruter.
+  - Meny, grunnsidene Oppdrag, Mine oppdrag og Profil, og andres profil med `OffentligBruker` og AR-24-test.
+  - POST `/logg-inn` og `/logg-ut`, kvittering i signert cookie og feiloppsummering med fokus.
+  - Seks testbrukere i seed og README, `app.admin nytt-passord`, og JS for «Vis passord» og sendeknappen.
+- **Review:** 34 funn. 11 er rettet (`92f991a`–`9a9f960`), blant annet `no-store` også på feilsider, dummy-hash ved oppstart, vakt mot for lang e-post og for stor profil-id, og flere tester. 23 er avvist med begrunnelse, og ingen er utsatt.
+- **Verifisert lokalt:** `uv run pytest` gir 280 bestått. `alembic heads` gir `0002`. Seed to ganger gir 6 og så 0 nye brukere. gitleaks 8.30.1 finner ingenting i 140 commits.
+- Commitene for trinn 2–4 passerer ikke testene hver for seg, fordi trinnene ble bygget samlet (står i specens Implementation Notes). Sluttilstanden er grønn.
+- Ingenting er pushet.
+- Lukket i `issues.md`: hashet sesjonsnøkkel (story 1.2), implementering av 1.2, og kuttene for trinn 4.
+
+### Åpne punkter
+- Push branchen og åpne PR mot `main` før torsdag 26. nov kl. 12, ellers flyttes `/profil/{id}` til 2.3 (kuttlinja). Story 1.2 settes til `done` når CI er grønn og PR-en er merget.
+- Manuelle sjekker gjenstår: ingen vannrett rulling ved 320 px, cirka fem minutters tastatursjekk av meny, innlogging og profil, og `app.admin nytt-passord` i en ekte terminal.
+- JS-oppførselen («Vis passord», sendeknappen med `aria-disabled` og `pageshow`) har ingen automatiske tester. Ta den med i T1/Playwright i story 1.5.
+
