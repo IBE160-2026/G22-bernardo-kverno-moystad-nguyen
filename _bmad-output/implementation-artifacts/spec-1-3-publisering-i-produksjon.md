@@ -2,7 +2,7 @@
 title: 'Story 1.3: Skjelett – appen publiseres i produksjon'
 type: 'feature'
 created: '2026-11-24'
-status: 'in-review'
+status: 'done'
 baseline_commit: '449786eafd63365d69b0b467c4c6e956ebc7a59d'
 route: 'dispatch'
 review_loop_iteration: 0
