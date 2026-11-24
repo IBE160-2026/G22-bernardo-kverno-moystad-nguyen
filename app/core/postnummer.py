@@ -75,7 +75,9 @@ def les_tsv(sti: Path = TSV_STI) -> list[tuple[str, str]]:
 
 @lru_cache(maxsize=1)
 def _register() -> dict[str, str]:
-    return dict(les_tsv())
+    """Registeret i minnet. `lag_app()` laster det ved oppstart, så en manglende
+    TSV-fil (for eksempel i Vercel-funksjonen) stopper oppstarten (AR-1)."""
+    return dict(les_tsv(TSV_STI))
 
 
 def normaliser_postnummer(verdi: str | None) -> str | None:

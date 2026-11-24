@@ -2,6 +2,8 @@
 
 Her kobles slicene til `core`: `Autentisering` fra identity (AD-4).
 Menykroken blir påkrevd fra story 2.4. Mangler en kobling, starter ikke appen.
+Postnummerregisteret lastes her, så en manglende `data/postnumre.tsv` stopper
+oppstarten og ikke den første forespørselen som trenger et postnummer (AR-1).
 """
 
 from __future__ import annotations
@@ -13,6 +15,7 @@ from typing import Any
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
+from app.core import postnummer
 from app.core.config import KonfigFeil, Settings, hent_settings
 from app.core.db import lag_motor, lag_sesjonsfabrikk
 from app.core.feil import registrer_feilhandlere
@@ -50,6 +53,8 @@ def lag_app(
         melding = "Oppstarten stopper: lag_app() mangler kobling til Autentisering (AD-1, AD-4)."
         logger.critical(melding)
         raise KonfigFeil(melding)
+
+    postnummer._register()
 
     app = FastAPI(
         title="Nabolagshelten",
