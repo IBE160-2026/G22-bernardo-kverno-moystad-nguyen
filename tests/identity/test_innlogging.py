@@ -304,4 +304,7 @@ def test_skjemaet_har_epost_som_fokus_og_vis_passord(klient: TestClient) -> None
         "csrf_token",
         "neste",
     ]
-    assert "registrer" not in html.lower()
+    # FR-1: lenken til registrering står nederst, etter skjemaet.
+    lenke = re.search(r'<a class="tekstknapp" href="/registrer">([^<]*)</a>', html)
+    assert lenke and lenke.group(1) == "Registrer deg"
+    assert html.index("</form>") < lenke.start()

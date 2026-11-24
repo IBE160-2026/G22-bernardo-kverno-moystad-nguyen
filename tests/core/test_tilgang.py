@@ -19,7 +19,13 @@ from app.identity.models import Sesjon
 
 from .test_mellomvare import hent_csrf
 
-OFFENTLIGE = {("GET", "/logg-inn"), ("POST", "/logg-inn")}
+# Story 1.4 la til `/registrer` (FR-1). Ingen andre ruter er offentlige (FR-3).
+OFFENTLIGE = {
+    ("GET", "/logg-inn"),
+    ("POST", "/logg-inn"),
+    ("GET", "/registrer"),
+    ("POST", "/registrer"),
+}
 
 
 def ruter_som_krever_innlogging(app: FastAPI) -> list[tuple[str, str]]:
@@ -60,7 +66,8 @@ def test_fr3_alle_ruter_krever_innlogging(app: FastAPI, klient: TestClient) -> N
             assert "Du må logge inn igjen." in svar.text
 
 
-def test_offentlige_ruter_er_bare_innloggingen(app: FastAPI) -> None:
+def test_offentlige_ruter_er_bare_innlogging_og_registrering(app: FastAPI) -> None:
+    """FR-3: bare innlogging og registrering er merket offentlige på selve ruta."""
     offentlige = set()
     for rute in alle_ruter(app.routes):
         if getattr(rute, "methods", None) and er_offentlig(rute.endpoint):

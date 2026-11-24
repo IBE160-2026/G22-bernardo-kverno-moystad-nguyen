@@ -500,6 +500,50 @@ textarea[aria-invalid="true"] {
   min-width: 0;
 }
 
+/* Korte felt (telefon, fødselsdato): bredden viser hvor lang verdien er. */
+.felt--kort {
+  max-width: 10.5em;
+}
+
+/* Postnummer med poststedet ved siden av, eller under når det ikke er plass (UX-DR13). */
+.postnummerfelt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2) var(--spacing-3);
+}
+
+.postnummerfelt input {
+  width: 7.5rem;
+}
+
+/* Personvern: vanlig tekst over knappen, ikke en boks (FR-1). */
+.personvern__overskrift {
+  font-size: var(--text-heading-3);
+  line-height: var(--leading-heading-3);
+  margin-bottom: var(--spacing-2);
+}
+
+.personvern ul {
+  margin: 0;
+  padding-left: var(--spacing-5);
+}
+
+.personvern li + li {
+  margin-top: var(--spacing-1);
+}
+
+/* «Har du konto fra før?» / «Har du ikke konto?» nederst i skjemaet. */
+.annen-side {
+  margin-top: var(--spacing-6);
+  padding-top: var(--spacing-5);
+  border-top: 1px solid var(--color-border);
+}
+
+.annen-side p {
+  margin: 0;
+}
+
 .feltfeil {
   display: flex;
   gap: var(--spacing-2);

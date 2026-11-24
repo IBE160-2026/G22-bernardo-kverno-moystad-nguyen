@@ -1,0 +1,85 @@
+{% extends "core/base.html" %}
+{% import "core/makroer.html" as m with context %}
+{# Registreringen (FR-1, NFR-9, NFR-10, UX-DR12, UX-DR13, UX-DR22, UX-DR27).
+   Feltrekkefølge, etiketter, hjelpetekster og personverntekst er fra mockupen
+   key-registrering.html. Passordet vises aldri igjen etter innsending. #}
+{% macro beskrevet_av(ider) %}
+{%- set ider = ider | select | list -%}
+{%- if ider %} aria-describedby="{{ ider | join(' ') }}"{% endif -%}
+{% endmacro %}
+{% macro ugyldig(felt) %}{% if feltfeil.get(felt) %} aria-invalid="true"{% endif %}{% endmacro %}
+{% block innhold %}
+<div class="skjemabredde">
+  <h1>Registrering</h1>
+  {{ m.meldinger() }}
+  <form class="skjema" method="post" action="{{ url_for('identity.send_registrer') }}" novalidate>
+    {{ m.csrf_felt() }}
+    <div class="felt">
+      <label for="navn">Navn</label>
+      <input id="navn" name="navn" type="text" autocomplete="name" required value="{{ verdier.navn }}"
+        {{- ugyldig("navn") }}{{ beskrevet_av(["navn-feil" if feltfeil.get("navn") else ""]) }}
+        {%- if fokusmal == "navn" %} autofocus{% endif %}>
+      {{ m.feltfeil("navn-feil", feltfeil.get("navn")) }}
+    </div>
+    <div class="felt">
+      <label for="epost">E-post</label>
+      <input id="epost" name="epost" type="email" autocomplete="email" required value="{{ verdier.epost }}"
+        {{- ugyldig("epost") }}{{ beskrevet_av(["epost-feil" if feltfeil.get("epost") else ""]) }}>
+      {{ m.feltfeil("epost-feil", feltfeil.get("epost")) }}
+    </div>
+    <div class="felt">
+      <label for="passord">Passord</label>
+      <p class="hjelpetekst" id="passord-hjelp">8–64 tegn</p>
+      {% set passord_pa_nytt = feil and not feltfeil.get("passord") %}
+      {% if passord_pa_nytt %}
+      <p class="hjelpetekst" id="passord-pa-nytt">Skriv passordet på nytt.</p>
+      {% endif %}
+      <div class="passordfelt">
+        <input id="passord" name="passord" type="password" autocomplete="new-password" required
+          {{- ugyldig("passord") }}{{ beskrevet_av(["passord-hjelp", "passord-pa-nytt" if passord_pa_nytt else "", "passord-feil" if feltfeil.get("passord") else ""]) }}>
+        <button class="knapp knapp--sekundar passordfelt__vis" type="button" aria-pressed="false" aria-controls="passord" data-vis-passord hidden>Vis passord</button>
+      </div>
+      {{ m.feltfeil("passord-feil", feltfeil.get("passord")) }}
+    </div>
+    <div class="felt">
+      <label for="telefon">Telefonnummer</label>
+      <input class="felt--kort" id="telefon" name="telefon" type="tel" autocomplete="tel" required value="{{ verdier.telefon }}"
+        {{- ugyldig("telefon") }}{{ beskrevet_av(["telefon-feil" if feltfeil.get("telefon") else ""]) }}>
+      {{ m.feltfeil("telefon-feil", feltfeil.get("telefon")) }}
+    </div>
+    <div class="felt">
+      <label for="postnummer">Postnummer</label>
+      <div class="postnummerfelt">
+        <input id="postnummer" name="postnummer" type="text" inputmode="numeric" autocomplete="postal-code" required value="{{ verdier.postnummer }}" data-poststed="postnummer-sted" data-postnumre="{{ url_for('static', path='postnumre.json') }}"
+          {{- ugyldig("postnummer") }}{{ beskrevet_av(["postnummer-sted", "postnummer-feil" if feltfeil.get("postnummer") else ""]) }}>
+        <span id="postnummer-sted">{{ poststed }}</span>
+      </div>
+      {{ m.feltfeil("postnummer-feil", feltfeil.get("postnummer")) }}
+    </div>
+    <div class="felt">
+      <label for="fodselsdato">Fødselsdato</label>
+      <p class="hjelpetekst" id="fodselsdato-hjelp">dd.mm.åååå, for eksempel 03.05.1954</p>
+      <input class="felt--kort" id="fodselsdato" name="fodselsdato" type="text" autocomplete="bday" required value="{{ verdier.fodselsdato }}"
+        {{- ugyldig("fodselsdato") }}{{ beskrevet_av(["fodselsdato-hjelp", "fodselsdato-feil" if feltfeil.get("fodselsdato") else ""]) }}>
+      {{ m.feltfeil("fodselsdato-feil", feltfeil.get("fodselsdato")) }}
+    </div>
+    <section class="personvern" aria-labelledby="personvern-overskrift">
+      <h2 class="personvern__overskrift" id="personvern-overskrift">Personvern</h2>
+      <ul>
+        <li>Vi lagrer det du skriver her. Passordet lagres slik at ingen kan lese det.</li>
+        <li>Navnet, postnummeret og profilen din vises for alle som er logget inn.</li>
+        <li>Telefonnummeret ditt vises bare for den andre i et oppdrag, når en hjelper er valgt. E-post og fødselsdato vises ikke for andre.</li>
+        <li>Trykker du «Få forslag» når du legger ut et oppdrag, sendes beskrivelsen til en ekstern KI-tjeneste.</li>
+        <li>Du kan slette kontoen din når du vil, under Profil.</li>
+      </ul>
+    </section>
+    <div class="skjema__knapper">
+      <button class="knapp knapp--primar" type="submit">Opprett konto</button>
+    </div>
+  </form>
+  <div class="annen-side">
+    <p>Har du konto fra før?</p>
+    <a class="tekstknapp" href="{{ url_for('identity.logg_inn') }}">Logg inn</a>
+  </div>
+</div>
+{% endblock %}
