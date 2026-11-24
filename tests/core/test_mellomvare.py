@@ -25,7 +25,7 @@ from app.core.db import hent_db
 from app.core.feil import FeilMellomvare
 from app.core.headere import SIKKERHETSHEADERE, HeaderMellomvare
 from app.core.mellomvare import SesjonMellomvare
-from app.core.sesjon import Innlogget
+from app.core.sesjon import Innlogget, Innloggingsresultat, Innloggingsutfall
 from app.identity.models import Bruker, Sesjon
 from app.identity.service import IdentityAutentisering, hash_sesjonsnokkel
 
@@ -89,6 +89,12 @@ class TellendeAutentisering:
 
     def finn_innlogget(self, request: Request) -> Innlogget | None:
         self.kall += 1
+        return None
+
+    def logg_inn(self, db, epost, passord, *, gammel_nokkel=None) -> Innloggingsresultat:
+        return Innloggingsresultat(Innloggingsutfall.FEIL)
+
+    def logg_ut(self, db, nokkel) -> None:
         return None
 
 

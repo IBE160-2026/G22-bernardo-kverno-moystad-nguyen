@@ -6,8 +6,12 @@
 - Hver test kjører i en ytre transaksjon som rulles tilbake. Appens
   sesjonsfabrikk byttes på `app.state`, så ruter og mellomvare bruker den samme
   tilkoblingen (`join_transaction_mode="create_savepoint"`).
-- `sett_na` stiller klokka. Fabrikkene (`lag_bruker` osv.) kommer i storyene som
-  lager tabellene: 1.2, 2.1, 3.1 og 4.2.
+- `sett_na` stiller klokka.
+- Fabrikkene kommer i storyene som lager tabellene: `lag_bruker` og
+  `logg_inn_som` i 1.2, `lag_oppdrag` i 2.1, `lag_interesse` i 3.1 og
+  `lag_tilbakemelding` i 4.2. Fabrikkene committer bare sin egen SAVEPOINT, så
+  alt rulles tilbake etter testen.
+- bcrypt kjører med kostnad 4 fordi `APP_ENV=test` (AR-29).
 """
 
 from __future__ import annotations
@@ -16,8 +20,10 @@ import atexit
 import os
 import shutil
 import tempfile
-from collections.abc import Iterator
-from datetime import datetime
+import itertools
+import secrets
+from collections.abc import Callable, Iterator
+from datetime import date, datetime
 from pathlib import Path
 
 os.environ["APP_ENV"] = "test"
@@ -42,6 +48,16 @@ from app import lag_app  # noqa: E402
 from app.core import klokke  # noqa: E402
 from app.core.config import hent_settings  # noqa: E402
 from app.core.db import lag_motor  # noqa: E402
+from app.core.sesjon import SESJON_COOKIE  # noqa: E402
+from app.identity.models import Bruker, Sesjon  # noqa: E402
+from app.identity.service import (  # noqa: E402
+    SESJON_VARIGHET,
+    hash_passord,
+    hash_sesjonsnokkel,
+    normaliser_epost,
+)
+
+STANDARD_PASSORD = "test-passord-1"
 
 ROT = Path(__file__).resolve().parents[1]
 
@@ -117,3 +133,56 @@ def sett_na() -> Iterator:
 
     yield _sett
     klokke.sett_na(None)
+
+
+_lopenummer = itertools.count(1)
+
+
+@pytest.fixture
+def lag_bruker(db: Session) -> Callable[..., Bruker]:
+    """Lager en bruker. Feltene kan overstyres, og `passord` hashes med `hash_passord`.
+
+    Standard: postnummer 0571, passord `STANDARD_PASSORD` og unik e-post.
+    """
+
+    def _lag(**felt) -> Bruker:
+        nummer = next(_lopenummer)
+        passord = felt.pop("passord", STANDARD_PASSORD)
+        verdier = {
+            "navn": f"Testbruker {nummer}",
+            "epost": f"testbruker{nummer}@eksempel.no",
+            "telefon": f"4{nummer:07d}",
+            "postnummer": "0571",
+            "fodselsdato": date(1980, 1, 1),
+            "opprettet": klokke.na(),
+            **felt,
+        }
+        verdier["epost"] = normaliser_epost(verdier["epost"]) if verdier["epost"] else None
+        bruker = Bruker(passord_hash=hash_passord(passord) if passord else None, **verdier)
+        db.add(bruker)
+        db.commit()
+        return bruker
+
+    return _lag
+
+
+@pytest.fixture
+def logg_inn_som(db: Session) -> Callable[[TestClient, Bruker], str]:
+    """Logger inn ved å lage sesjonsraden og sette cookien direkte. Gir nøkkelen."""
+
+    def _logg_inn(klient: TestClient, bruker: Bruker) -> str:
+        nokkel = secrets.token_urlsafe(32)
+        na = klokke.na()
+        db.add(
+            Sesjon(
+                nokkel=hash_sesjonsnokkel(nokkel),
+                bruker_id=bruker.id,
+                opprettet=na,
+                utloper=na + SESJON_VARIGHET,
+            )
+        )
+        db.commit()
+        klient.cookies.set(SESJON_COOKIE, nokkel)
+        return nokkel
+
+    return _logg_inn
