@@ -1,0 +1,31 @@
+# Keepalive for Supabase (AR-7). Supabase setter gratisprosjekter på pause etter
+# en uke uten aktivitet. Hver tredje dag besøkes forsiden med en falsk
+# sesjonscookie: appen slår opp sesjonen i databasen og svarer 303 til
+# innloggingen. Ingen ny offentlig rute trengs (FR-3).
+# Annet svar enn 303 gjør at jobben feiler, og GitHub sender e-post.
+name: Keepalive
+
+on:
+  schedule:
+    - cron: "17 5 */3 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # Rettes hvis Vercel ga prosjektet et suffiks (se README § Publisering).
+  PRODUKSJON_URL: https://nabolagshelten.vercel.app
+
+jobs:
+  keepalive:
+    name: Besøk appen (sesjonsoppslag i databasen)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: GET / med sesjon=keepalive, forventer 303
+        run: |
+          status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+            --max-time 30 --retry 2 --cookie 'sesjon=keepalive' "$PRODUKSJON_URL/")"
+          echo "Svarstatus: $status"
+          test "$status" = "303"
