@@ -5,6 +5,7 @@ Krav: AD-5, NFR-12, AR-15, AR-29. Sesjonsoppslaget: AD-4.
 
 from __future__ import annotations
 
+import asyncio
 import re
 from datetime import datetime, timedelta, timezone
 
@@ -18,6 +19,7 @@ from starlette.responses import JSONResponse
 
 from app import lag_app
 from app.core import klokke
+from app.core.config import Settings
 from app.core.csrf import MAKS_KROPP, CsrfMellomvare
 from app.core.db import hent_db
 from app.core.feil import FeilMellomvare
@@ -25,7 +27,7 @@ from app.core.headere import SIKKERHETSHEADERE, HeaderMellomvare
 from app.core.mellomvare import SesjonMellomvare
 from app.core.sesjon import Innlogget
 from app.identity.models import Bruker, Sesjon
-from app.identity.service import IdentityAutentisering
+from app.identity.service import IdentityAutentisering, hash_sesjonsnokkel
 
 SIKKERHETSHEADERE_TEKST = {n.decode(): v.decode() for n, v in SIKKERHETSHEADERE}
 CSRF_FELT_MONSTER = re.compile(r'name="csrf_token" value="([^"]+)"')
@@ -88,6 +90,16 @@ class TellendeAutentisering:
     def finn_innlogget(self, request: Request) -> Innlogget | None:
         self.kall += 1
         return None
+
+
+def test_statiske_filer_slar_ikke_opp_sesjonen(sesjonsfabrikk) -> None:
+    """AD-4: /static trenger ikke databaseoppslag."""
+    teller = TellendeAutentisering()
+    app = lag_app(autentisering=teller)
+    app.state.sesjonsfabrikk = sesjonsfabrikk
+    with TestClient(app) as klient:
+        assert klient.get("/static/css/app.css").status_code == 200
+    assert teller.kall == 0
 
 
 def test_csrf_avviser_for_sesjonsoppslaget(sesjonsfabrikk) -> None:
@@ -265,6 +277,76 @@ def test_gyldig_post_til_skriverute_lagrer(klient: TestClient, testruter, db: Se
     assert antall_brukere(db) == for_ + 1
 
 
+def test_csrf_cookie_er_secure_i_produksjon(sesjonsfabrikk) -> None:
+    """AD-14: `Secure` på CSRF-cookien bare i produksjon.
+
+    Produksjon godtar ikke SQLite, så URL-en er Postgres. Motoren kobler aldri til,
+    fordi sesjonsfabrikken byttes til test-databasen.
+    """
+    settings = Settings(
+        _env_file=None,
+        app_env="production",
+        secret_key="x" * 32,
+        database_url="postgresql+psycopg://u@localhost/d",
+    )
+    app = lag_app(settings=settings)
+    app.state.sesjonsfabrikk = sesjonsfabrikk
+    with TestClient(app) as klient:
+        svar = klient.get("/logg-inn")
+    assert "Secure" in svar.headers["set-cookie"]
+
+
+def test_for_stor_kropp_uten_content_length_avvises(klient: TestClient, testruter) -> None:
+    """Grensen på 1 MB holder også når kroppen kommer i biter uten Content-Length."""
+    nokkel = hent_csrf(klient)
+
+    def biter():
+        yield f"csrf_token={nokkel}&tekst=".encode()
+        bit = b"x" * 65536
+        for _ in range(MAKS_KROPP // len(bit) + 1):
+            yield bit
+
+    svar = klient.post(
+        "/_test/ekko",
+        content=biter(),
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+    assert svar.status_code == 413
+
+
+def test_frakobling_midt_i_kroppen_kaller_ikke_ruta() -> None:
+    """En avbrutt kropp er ikke et helt skjema: ingen rute kalles, og ingen svar sendes."""
+    kalt = []
+
+    async def rute(scope, receive, send) -> None:
+        kalt.append(scope)
+
+    meldinger = iter(
+        [
+            {"type": "http.request", "body": b"csrf_token=abc&navn=Ka", "more_body": True},
+            {"type": "http.disconnect"},
+        ]
+    )
+    sendt = []
+
+    async def receive():
+        return next(meldinger)
+
+    async def send(melding) -> None:
+        sendt.append(melding)
+
+    mellomvare = CsrfMellomvare(rute, secret_key="test", secure_cookie=False)
+    scope = {
+        "type": "http",
+        "method": "POST",
+        "path": "/",
+        "headers": [(b"content-type", b"application/x-www-form-urlencoded")],
+    }
+    asyncio.run(mellomvare(scope, receive, send))
+    assert kalt == []
+    assert sendt == []
+
+
 def test_for_stor_kropp_avvises(klient: TestClient, testruter) -> None:
     nokkel = hent_csrf(klient)
     svar = klient.post(
@@ -279,7 +361,13 @@ def test_for_stor_kropp_avvises(klient: TestClient, testruter) -> None:
 # ---------- sesjon ----------
 
 
-def _lag_sesjon(db: Session, *, utloper: datetime, slettet: bool = False) -> int:
+def _lag_sesjon(
+    db: Session,
+    *,
+    utloper: datetime,
+    slettet: bool = False,
+    nokkel: str = hash_sesjonsnokkel("testnokkel"),
+) -> int:
     na = datetime(2026, 11, 24, 12, 0, tzinfo=timezone.utc)
     with db.begin():
         bruker = Bruker(
@@ -290,7 +378,7 @@ def _lag_sesjon(db: Session, *, utloper: datetime, slettet: bool = False) -> int
         )
         db.add(bruker)
         db.flush()
-        db.add(Sesjon(nokkel="testnokkel", bruker_id=bruker.id, opprettet=na, utloper=utloper))
+        db.add(Sesjon(nokkel=nokkel, bruker_id=bruker.id, opprettet=na, utloper=utloper))
     return bruker.id
 
 
@@ -313,6 +401,14 @@ def test_utlopt_sesjon_gir_ingen_innlogget(klient, testruter, db, sett_na) -> No
 def test_slettet_bruker_gir_ingen_innlogget(klient, testruter, db, sett_na) -> None:
     sett_na(datetime(2026, 11, 24, 12, 0, tzinfo=timezone.utc))
     _lag_sesjon(db, utloper=datetime(2026, 12, 1, tzinfo=timezone.utc), slettet=True)
+    klient.cookies.set("sesjon", "testnokkel")
+    assert klient.get("/_test/innlogget").json() == {"bruker_id": None}
+
+
+def test_sesjonen_slas_opp_med_hash_av_nokkelen(klient, testruter, db, sett_na) -> None:
+    """Tabellen har bare hashen; en rad med selve nøkkelen gir ingen innlogging."""
+    sett_na(datetime(2026, 11, 24, 12, 0, tzinfo=timezone.utc))
+    _lag_sesjon(db, utloper=datetime(2026, 12, 1, tzinfo=timezone.utc), nokkel="testnokkel")
     klient.cookies.set("sesjon", "testnokkel")
     assert klient.get("/_test/innlogget").json() == {"bruker_id": None}
 

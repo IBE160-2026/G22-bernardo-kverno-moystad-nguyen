@@ -32,7 +32,10 @@ class SesjonMellomvare:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
-        innlogget = await run_in_threadpool(self.autentisering.finn_innlogget, Request(scope))
+        if scope.get("path", "").startswith("/static/"):
+            innlogget = None  # statiske filer trenger ikke databaseoppslag
+        else:
+            innlogget = await run_in_threadpool(self.autentisering.finn_innlogget, Request(scope))
         scope.setdefault("state", {})["innlogget"] = innlogget
         await self.app(scope, receive, send)
 

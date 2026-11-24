@@ -37,6 +37,10 @@ class _ForStorKropp(Exception):
     pass
 
 
+class _Frakoblet(Exception):
+    """Klienten koblet fra før hele kroppen kom. Ingen rute kalles, og ingen svar sendes."""
+
+
 class CsrfMellomvare:
     def __init__(self, app: ASGIApp, *, secret_key: str, secure_cookie: bool) -> None:
         self.app = app
@@ -93,6 +97,8 @@ class CsrfMellomvare:
         except _ForStorKropp:
             await self._avvis(scope, receive, send_med_cookie, 413)
             return
+        except _Frakoblet:
+            return
 
         # En kropp som ikke er et skjema, har heller ingen CSRF-nøkkel og avvises med 403.
         skjema = await self._tolk_skjema(scope, headere, kropp)
@@ -132,7 +138,7 @@ class CsrfMellomvare:
         while mer:
             melding = await receive()
             if melding["type"] == "http.disconnect":
-                break
+                raise _Frakoblet
             del_ = melding.get("body", b"")
             storrelse += len(del_)
             if storrelse > MAKS_KROPP:
