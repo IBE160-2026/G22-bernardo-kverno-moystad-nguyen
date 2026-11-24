@@ -12,6 +12,7 @@
 
 from __future__ import annotations
 
+import atexit
 import os
 import shutil
 import tempfile
@@ -25,6 +26,7 @@ _TEMP_MAPPE: str | None = None
 TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL")
 if not TEST_DATABASE_URL:
     _TEMP_MAPPE = tempfile.mkdtemp(prefix="nabolagshelten-test-")
+    atexit.register(shutil.rmtree, _TEMP_MAPPE, ignore_errors=True)
     TEST_DATABASE_URL = f"sqlite:///{Path(_TEMP_MAPPE, 'test.db').as_posix()}"
 os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 
