@@ -48,4 +48,4 @@
 - [x] 2026-11-24 [story-1-1-skjelett](989-2026-11-24-02-17-20-story-1-1-skjelett.md) — CI har ikke kjørt: første kjøring av Postgres-testene og gitleaks i Docker skjer i PR-en; sett story 1.1 til `done` når CI er grønn og PR-en er merget (løst 2026-11-24: CI grønn i PR #1, alle tre jobbene)
 - [ ] 2026-11-24 [story-1-1-skjelett](989-2026-11-24-02-17-20-story-1-1-skjelett.md) — story 1.3: sjekk de to utsatte funnene i `deferred-work.md` (Origin-sjekk bak Vercels proxy, og om `data/postnumre.tsv` følger med i Vercel-funksjonen)
 - [ ] 2026-11-24 [story-1-1-skjelett](989-2026-11-24-02-17-20-story-1-1-skjelett.md) — story 1.2: lagre `hash_sesjonsnokkel(nokkel)` i `sesjon`, aldri selve nøkkelen fra cookien
-- [ ] 2026-11-24 [story-1-1-skjelett](989-2026-11-24-02-17-20-story-1-1-skjelett.md) — merge PR #1 og sett story 1.1 til `done` i `sprint-status.yaml`
+- [x] 2026-11-24 [story-1-1-skjelett](989-2026-11-24-02-17-20-story-1-1-skjelett.md) — merge PR #1 og sett story 1.1 til `done` i `sprint-status.yaml` (løst 2026-11-24: merget som d9de0ad, story 1.1 er `done`)
