@@ -20,6 +20,8 @@ from app.identity.service import hent_offentlig_bruker
 
 router = APIRouter()
 
+MAKS_ID = 2**31 - 1  # største verdi for en heltallskolonne i Postgres
+
 
 @router.get("/profil", name="profil.min", response_class=HTMLResponse)
 def min_profil(
@@ -42,6 +44,8 @@ def vis_profil(
     db: Session = Depends(hent_db),
 ) -> Response:
     """Andres profil: navn og postnummer med poststed (FR-21). Ukjent eller slettet id gir 404."""
+    if not 1 <= bruker_id <= MAKS_ID:
+        raise FinnesIkke  # før databasekallet, så store tall ikke gir OverflowError
     if bruker_id == innlogget.bruker_id:
         return RedirectResponse(request.app.url_path_for("profil.min"), status_code=303)
     bruker = hent_offentlig_bruker(db, bruker_id)

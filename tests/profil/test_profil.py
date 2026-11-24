@@ -82,20 +82,43 @@ def test_slettet_bruker_gir_404(klient: TestClient, kari, lag_bruker, logg_inn_s
     assert "Borte" not in svar.text
 
 
+@pytest.mark.parametrize("bruker_id", ["0", "2147483648", "99999999999999999999"])
+def test_id_utenfor_gyldig_omrade_gir_404(klient: TestClient, kari, logg_inn_som, bruker_id) -> None:
+    """Store tall gir 404, ikke OverflowError og 500."""
+    logg_inn_som(klient, kari)
+    svar = klient.get(f"/profil/{bruker_id}")
+    assert svar.status_code == 404
+    assert "<h1>Fant ikke siden</h1>" in svar.text
+
+
 def test_id_som_ikke_er_tall_gir_404(klient: TestClient, kari, logg_inn_som) -> None:
     logg_inn_som(klient, kari)
     assert klient.get("/profil/abc").status_code == 404
 
 
+MANEDER = ("januar", "februar", "mars", "april", "mai", "juni", "juli", "august",
+           "september", "oktober", "november", "desember")
+
+
 def personopplysninger(*brukere) -> list[str]:
+    """Telefon, e-post og fødselsdato i de skrivemåtene en mal kunne brukt."""
     funn = []
     for b in brukere:
+        t, d = b.telefon, b.fodselsdato
+        maned = MANEDER[d.month - 1]
         funn += [
             b.epost,
-            b.telefon,
-            f"{b.telefon[:3]} {b.telefon[3:5]} {b.telefon[5:]}",
-            b.fodselsdato.isoformat(),
-            b.fodselsdato.strftime("%d.%m.%Y"),
+            b.epost.split("@")[0] + "&#64;",  # e-post med escapet @
+            t,
+            f"+47{t}",
+            f"+47 {t}",
+            f"{t[:3]} {t[3:5]} {t[5:]}",
+            f"{t[:2]} {t[2:4]} {t[4:6]} {t[6:]}",
+            d.isoformat(),
+            d.strftime("%d.%m.%Y"),
+            f"{d.day}.{d.month}.{d.year}",
+            f"{d.day}. {maned} {d.year}",
+            f"{d.day}. {maned[:3]}. {d.year}",
         ]
     return funn
 
