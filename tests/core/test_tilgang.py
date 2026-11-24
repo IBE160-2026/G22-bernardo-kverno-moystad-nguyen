@@ -14,7 +14,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy import func, select
 
-from app.core.sesjon import alle_ruter, er_offentlig, trygg_neste
+from app.core.sesjon import alle_ruter, er_offentlig, offentlig, trygg_neste
 from app.identity.models import Sesjon
 
 from .test_mellomvare import hent_csrf
@@ -171,6 +171,23 @@ def test_innloggede_sider_har_no_store(klient: TestClient, lag_bruker, logg_inn_
         svar = klient.get(sti)
         assert svar.status_code == 200
         assert svar.headers.get_list("cache-control") == ["no-store"]
+
+
+def test_feilsider_fra_csrf_og_feilhandteringen_har_no_store(app: FastAPI, klient: TestClient) -> None:
+    """FR-2: også 403 fra CSRF-sjekken og 500 fra feilhåndteringen har `no-store`."""
+    svar = klient.post("/logg-inn", data={"csrf_token": "feil"})
+    assert svar.status_code == 403
+    assert svar.headers.get_list("cache-control") == ["no-store"]
+
+    @app.get("/_test/krasj-no-store")
+    @offentlig
+    def krasj() -> None:
+        raise RuntimeError("krasj")
+
+    with TestClient(app, raise_server_exceptions=False) as feilklient:
+        svar = feilklient.get("/_test/krasj-no-store")
+    assert svar.status_code == 500
+    assert svar.headers.get_list("cache-control") == ["no-store"]
 
 
 def test_statiske_filer_har_ikke_no_store(klient: TestClient) -> None:

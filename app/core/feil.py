@@ -137,7 +137,9 @@ class FeilMellomvare:
 async def _send_med_headere(svar: Response, scope: Scope, receive: Receive, send: Send) -> None:
     async def send_med_headere(melding: Message) -> None:
         if melding["type"] == "http.response.start":
-            melding["headers"] = med_sikkerhetsheadere(list(melding.get("headers", [])))
+            melding["headers"] = med_sikkerhetsheadere(
+                list(melding.get("headers", [])), scope.get("path", "")
+            )
         await send(melding)
 
     await svar(scope, receive, send_med_headere)

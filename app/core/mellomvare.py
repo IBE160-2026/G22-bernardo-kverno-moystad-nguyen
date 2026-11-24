@@ -14,7 +14,7 @@ from starlette.middleware import Middleware
 from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response
 from starlette.routing import Match
-from starlette.types import ASGIApp, Message, Receive, Scope, Send
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from app.core.config import Settings
 from app.core.csrf import CsrfMellomvare
@@ -24,7 +24,6 @@ from app.core.render import render, render_fragment
 from app.core.sesjon import Autentisering, alle_ruter, er_offentlig, trygg_neste
 
 LESEMETODER = frozenset({"GET", "HEAD"})
-INGEN_BUFFER = (b"cache-control", b"no-store")
 
 
 class SesjonMellomvare:
@@ -37,8 +36,7 @@ class SesjonMellomvare:
     - Uten innlogging gir GET og HEAD 303 til `/logg-inn?neste=<sti>`. Andre
       metoder, og forespørsler med `X-Fragment`, gir 401 «Du må logge inn igjen.»,
       rendret uten database. Ruta kalles ikke, så ingen data endres.
-    - Alle svar unntatt `/static/` får `Cache-Control: no-store`, så
-      tilbakeknappen ikke viser innhold etter utlogging (FR-2).
+    - `Cache-Control: no-store` settes sammen med sikkerhetsheaderne (`core/headere.py`).
     """
 
     def __init__(self, app: ASGIApp, *, autentisering: Autentisering) -> None:
@@ -55,20 +53,14 @@ class SesjonMellomvare:
             await self.app(scope, receive, send)
             return
 
-        async def send_uten_buffer(melding: Message) -> None:
-            if melding["type"] == "http.response.start":
-                headere = [(n, v) for n, v in melding.get("headers", []) if n.lower() != b"cache-control"]
-                melding["headers"] = [*headere, INGEN_BUFFER]
-            await send(melding)
-
         innlogget = await run_in_threadpool(self.autentisering.finn_innlogget, Request(scope))
         scope.setdefault("state", {})["innlogget"] = innlogget
 
         if innlogget is None and self._krever_innlogging(scope):
             svar = self._avvis(scope)
-            await svar(scope, receive, send_uten_buffer)
+            await svar(scope, receive, send)
             return
-        await self.app(scope, receive, send_uten_buffer)
+        await self.app(scope, receive, send)
 
     @staticmethod
     def _krever_innlogging(scope: Scope) -> bool:
