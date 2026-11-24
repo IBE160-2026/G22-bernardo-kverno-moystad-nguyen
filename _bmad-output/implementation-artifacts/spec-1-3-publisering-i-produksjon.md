@@ -64,7 +64,7 @@ context:
 - [x] `.github/workflows/deploy.yml` -- `push` til `main` med `paths-ignore` og `workflow_dispatch`. `permissions: contents: read`. Migrering med `DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL }}`, så `npx --yes vercel@66.6.0 deploy --prod --yes --token`, så røyktesten -- AR-7, AD-13
 - [x] `.github/workflows/keepalive.yml` -- `cron: '17 5 */3 * *'` og `workflow_dispatch`. `curl` med `sesjon=keepalive` og forventet 303 -- AR-7
 - [x] `README.md` -- produksjonsadressen, hvordan publiseringen virker (navn på hemmelighetene, aldri verdier), at eieren sjekker Supabase før demo og innlevering, og oppdatert statustabell -- AR-10, NFR-3
-- [ ] (bare ved 403) `app/core/csrf.py` + test -- godta den offentlige verten bak proxyen, og før funnet i `deferred-work.md` -- AD-5
+- [x] (bare ved 403) `app/core/csrf.py` + test -- godta den offentlige verten bak proxyen, og før funnet i `deferred-work.md` -- AD-5. Trengtes ikke: røyktesten i produksjon 2026-11-24 fikk 422, ikke 403.
 
 **Manuelle oppgaver for Heidi** (i egen terminal eller nettleser, aldri i chatten): (M1) Hent tilkoblingsstrengene for transaction pooler (6543) og session pooler (5432) i Supabase. (M2) Kjør `npx vercel@66.6.0 login` og `npx vercel@66.6.0 link`, og les id-ene i `.vercel/project.json`. (M3) Legg inn Vercel env (Production): `APP_ENV`, `DATABASE_URL` og `SECRET_KEY`. Lag nøkkelen lokalt med `uv run python -c "import secrets; print(secrets.token_urlsafe(48))"`. (M4) Lag et Vercel-token. (M5) Kjør `gh secret set <NAVN>` for de fire GitHub-hemmelighetene. Verdien limes inn skjult.
 
