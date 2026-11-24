@@ -4,7 +4,7 @@
 
 ## Goal
 
-En person kan registrere seg, logge inn og logge ut, og alt annet i appen krever innlogging (FR-1, FR-2, FR-3). Epicen legger også skjelettet som alle senere stories bygger på (AR-1): en server-rendret FastAPI-app med mellomvare, rendring, sesjon, én Alembic-migrering med postnumre, seed, grønn CI og produksjonspublisering på Vercel mot Supabase. Appen skal starte på en ren maskin uten kontoer eller nøkler (NFR-1), og sikkerhet (CSRF, headere, passordhash), feilhåndtering og universell utforming skal være på plass fra første side. Sjekkpunkt: Epic 1 ferdig fredag 28. nov.; hvis ikke, kuttes story 2.6 og 2.2.
+En person kan registrere seg, logge inn og logge ut, og alt annet i appen krever innlogging (FR-1, FR-2, FR-3). Epicen legger også skjelettet som alle senere stories bygger på (AR-1): en server-rendret FastAPI-app med mellomvare, rendring, sesjon, én Alembic-migrering med postnumre, seed, grønn CI og produksjonspublisering på Vercel mot Supabase. Appen skal starte på en ren maskin uten kontoer eller nøkler (NFR-1), og sikkerhet (CSRF, headere, passordhash), feilhåndtering og universell utforming skal være på plass fra første side. Sjekkpunkt: Epic 1 ferdig lørdag 28. nov.; hvis ikke, kuttes story 2.6 og 2.2.
 
 ## Stories
 
