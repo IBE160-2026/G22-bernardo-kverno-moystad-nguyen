@@ -8,12 +8,16 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta, timezone
 
 import pytest
+from alembic.autogenerate import compare_metadata
+from alembic.runtime.migration import MigrationContext
 from alembic.script import ScriptDirectory
-from sqlalchemy import Connection, inspect, select, text
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import Connection, event, inspect, select, text
+from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session
+from sqlalchemy.pool import NullPool
 
-from app.core.db import UtcDateTime
+import app.identity.models  # noqa: F401  (registrerer tabellene i metadataen)
+from app.core.db import Base, UtcDateTime, lag_motor
 from app.core.postnummer import les_tsv, postnummer_tabell
 from app.identity.models import Bruker
 
@@ -103,3 +107,50 @@ def test_sqlite_har_fremmednokler_pa(tilkobling: Connection) -> None:
     if tilkobling.dialect.name != "sqlite":
         pytest.skip("Gjelder bare SQLite")
     assert tilkobling.execute(text("PRAGMA foreign_keys")).scalar() == 1
+
+
+def test_modellene_og_migreringene_stemmer(tilkobling: Connection) -> None:
+    """AD-13: modellene og migreringene beskriver samme skjema."""
+    forskjeller = compare_metadata(MigrationContext.configure(tilkobling), Base.metadata)
+    assert forskjeller == []
+
+
+def test_sqlite_starter_skrivetransaksjoner_med_begin_immediate(
+    tilkobling: Connection, tmp_path
+) -> None:
+    """AD-2: en transaksjon i SQLite tar skrivelåsen med en gang, også før den skriver."""
+    if tilkobling.dialect.name != "sqlite":
+        pytest.skip("Gjelder bare SQLite")
+    motor = lag_motor(f"sqlite:///{(tmp_path / 'laas.db').as_posix()}?timeout=0.1")
+    try:
+        with motor.connect() as a, motor.connect() as b:
+            transaksjon_a = a.begin()  # skriver ingenting
+            with pytest.raises(OperationalError):
+                b.begin()
+            transaksjon_a.rollback()
+    finally:
+        motor.dispose()
+
+
+class _Stopp(Exception):
+    pass
+
+
+def test_postgres_motor_bruker_nullpool_og_ingen_prepared_statements() -> None:
+    """AD-13: Supabase sin transaction pooler krever NullPool og prepare_threshold=None."""
+    motor = lag_motor("postgresql+psycopg://u@h/d")
+    fanget: dict = {}
+
+    @event.listens_for(motor, "do_connect")
+    def _fang(dialect, conn_rec, cargs, cparams):
+        fanget.update(cparams)
+        raise _Stopp  # ingen ekte tilkobling
+
+    try:
+        assert isinstance(motor.pool, NullPool)
+        with pytest.raises(Exception):
+            motor.connect()
+        assert "prepare_threshold" in fanget
+        assert fanget["prepare_threshold"] is None
+    finally:
+        motor.dispose()

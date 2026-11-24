@@ -5,6 +5,10 @@
 - `bruker` og `sesjon`, som mellomvaren trenger for å slå opp innlogging (AD-4).
   Personfeltene i `bruker` kan være NULL (AD-8, NFR-9).
 
+Merk: migreringen bruker `les_tsv()` slik den er nå, og er derfor ikke frosset.
+Endres TSV-fila, G/B-filteret eller `formater_poststed`, kreves en ny
+datamigrering. Oppførselen til denne migreringen endres aldri.
+
 Revision ID: 0001
 Revises:
 Opprettet: 2026-11-24

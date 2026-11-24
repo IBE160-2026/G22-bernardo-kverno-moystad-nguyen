@@ -5,6 +5,9 @@ UTF-8 med alle rader og kolonner uendret. Bare postnumre for gateadresser
 godtas (Brings kategori G og B). Postboks (P) og service (S) utelates
 (PRD §9.2). Postnummer lagres som tekst med fire sifre.
 
+Migrering 0001 bruker `les_tsv()` direkte. Endres TSV-fila, G/B-filteret eller
+`formater_poststed`, kreves en ny datamigrering. Oppførselen til 0001 endres aldri.
+
 `uv run python -m app.core.postnummer` skriver `app/core/static/postnumre.json`
 fra TSV-fila. Fila sjekkes inn, og en test sammenligner de to.
 """
