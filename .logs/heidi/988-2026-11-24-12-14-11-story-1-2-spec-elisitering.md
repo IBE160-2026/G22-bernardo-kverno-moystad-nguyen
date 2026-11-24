@@ -69,3 +69,21 @@ Kjøre `bmad-build` på story 1.2 (logge inn og ut) etter den elisiterte specen:
 - Manuelle sjekker gjenstår: ingen vannrett rulling ved 320 px, cirka fem minutters tastatursjekk av meny, innlogging og profil, og `app.admin nytt-passord` i en ekte terminal.
 - JS-oppførselen («Vis passord», sendeknappen med `aria-disabled` og `pageshow`) har ingen automatiske tester. Ta den med i T1/Playwright i story 1.5.
 
+
+## 2026-11-24 kl. 14:16 — Heidi
+
+### Oppgave
+Pushe branchen for story 1.2 og åpne PR mot `main`.
+
+### Plan
+- Push `story/1-2-logge-inn-og-ut` og åpne PR med samme oppsett som PR #1.
+- Vente på CI før loggen oppdateres.
+
+### Resultat
+- Branchen er pushet (til `8afddcc`), og [PR #2](https://github.com/IBE160-2026/G22-bernardo-kverno-moystad-nguyen/pull/2) er åpnet mot `main`. Kuttfristen torsdag 26. nov kl. 12 er dermed nådd, og `/profil/{id}` blir i story 1.2.
+- CI er grønn: pytest mot SQLite og `alembic heads` (16 s), pytest mot Postgres 17 (30 s), og gitleaks over hele historikken (7 s). Det er første gang testene for 1.2 har kjørt mot Postgres.
+- Lukket i `issues.md`: push og PR før kuttfristen.
+
+### Åpne punkter
+- Merge PR #2, og sett deretter story 1.2 til `done` i `sprint-status.yaml`.
+- De manuelle sjekkene og JS-testene i 1.5 fra forrige seksjon står fortsatt åpne.
