@@ -9,3 +9,7 @@
   summary: `core/postnummer.finnes()` og `poststed()` leser `data/postnumre.tsv` ved kjøring, mens fremmednøkkelen sjekker tabellen `postnummer` som migreringen lastet.
   evidence: maybe-false, medium hvis sant. De er like så lenge TSV-fila og migrering 0001 er uendret. Avgjøres i story 1.3: sjekk at `data/` følger med i Vercel-funksjonen (ellers `FileNotFoundError`), og vurder å lese fra tabellen eller fra `postnumre.json` i stedet.
   resolution: Løst 2026-11-24 (story 1.3). `lag_app()` laster nå registeret ved oppstart, så en manglende fil stopper appen i stedet for å gi feil senere (testet i `tests/core/test_postnummer.py`). `data/` følger med i Vercel-funksjonen: publiseringen startet og røyktesten var grønn.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-4-registrere-konto.md`
+  summary: `app/core/static/js/poststed.js` (poststed ved postnummerfeltet) kjøres ikke av noen automatisk test. Uten test merkes det ikke om skriptet slutter å fylle inn eller tømme poststedet, eller om sjekken av utdaterte svar forsvinner.
+  evidence: Funnet i reviewen av story 1.4 (V3 og B8). Repoet har ingen JS- eller nettlesertester ennå, og pytest sjekker bare HTML-en og at filene svarer 200. Tas i story 1.5 (Playwright): skriv `5006`, forvent «Bergen», skriv `57`, forvent tomt.

@@ -3,7 +3,7 @@ title: 'Story 1.4: Registrere konto'
 type: 'feature'
 created: '2026-11-24'
 baseline_commit: 'ef1dd338874a013025672242e0d8f44c81a344c2'
-status: 'in-progress'
+status: 'in-review'
 route: 'dispatch'
 review_loop_iteration: 0
 story_key: '1-4-registrere-konto'
@@ -63,17 +63,17 @@ context:
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `pyproject.toml`, `uv.lock` -- `tzdata` som avhengighet (`uv add tzdata`) -- AD-9
-- [ ] `app/core/feil.py` -- `RegelBrudd(feil: list[tuple[str, str]])` med `.feil` -- AR-26, NFR-10
-- [ ] `app/core/tid.py`, `tests/core/test_tid.py` -- `OSLO`, `i_dag()`, `tolk_fodselsdato(tekst, *, i_dag) -> date` (kaster `RegelBrudd` på `fodselsdato` med formatfeil eller «Sjekk fødselsdatoen.»), `fyller_ar(fodselsdato, ar) -> date` (29.02 → 01.03), `er_myndig(fodselsdato, i_dag) -> bool`. Tabelltest for skrivemåter, tosifret år, 29. februar og grensene ved 18 og 120 år -- FR-1, AD-9, AR-19
-- [ ] `app/identity/service.py`, `tests/identity/test_registrering_regler.py` -- `normaliser_telefon`, `sjekk_epostformat`, `opprett_sesjon`, `registrer(db, *, navn, epost, passord, telefon, postnummer, fodselsdato) -> str` (gir sesjonsnøkkelen). Samler feil i feltrekkefølge, slår opp e-posten bare når formatet er gyldig, og setter inn i `with db.begin_nested():`, der `IntegrityError` blir e-postfeilen -- FR-1, AD-2, AD-6, AD-17
-- [ ] `app/identity/routes.py` -- `@offentlig` GET `identity.registrer` og POST `identity.send_registrer` på `/registrer`. Innloggede sendes til `/`. Ved `RegelBrudd` vises skjemaet med 422, `poststed` for gyldig postnummer og fokus på feiloppsummeringen. Ved suksess følger cookien med, og svaret er 303 til `/` -- FR-1, FR-3, NFR-10
-- [ ] `app/identity/templates/identity/registrer.html`, `logg_inn.html`, `app/core/static/css/app.css` -- skjema etter mockupen. Poststedet er `<span id="postnummer-sted">`, knyttet til feltet med `aria-describedby`. Personvernseksjonen har `aria-labelledby`. Høyst ett `autofocus` (navn, eller feiloppsummeringen). Innloggingssiden lenker til registrering -- FR-1, NFR-9, UX-DR12, UX-DR13
-- [ ] `app/core/static/js/poststed.js`, `base.html` -- henter `postnumre.json` første gang et `[data-poststed]`-felt endres, og viser poststedet for gyldige fire sifre. Ellers tømmes teksten. Ingen validering -- UX-DR13
-- [ ] `tests/identity/test_registrering.py` -- HTTP-tester for radene i I/O-matrisen. Sjekker også felttyper, `autocomplete`, personvernteksten, at alle feilene vises samtidig, at passordet er tomt etter feil, sidetittel, fokus, at kontoen kan logge inn og ut etter registrering, og at `bruker` bare har de tillatte kolonnene (NFR-9) -- FR-1, NFR-5, NFR-9, NFR-10
-- [ ] `tests/core/test_tilgang.py`, `tests/identity/test_innlogging.py`, `tests/oppdrag/test_grunnsider.py` -- `/registrer` blir offentlig, og innloggingssiden lenker til den -- FR-3
-- [ ] `scripts/roykttest.py`, `tests/test_roykttest.py` -- GET `/registrer` gir 200 med headerne og «Opprett konto» -- AD-14
-- [ ] `README.md` -- statustabellen, produksjonsavsnittet, og at testkontoen i produksjon har oppdiktede opplysninger og slettes i story 4.5 -- AR-10
+- [x] `pyproject.toml`, `uv.lock` -- `tzdata` som avhengighet (`uv add tzdata`) -- AD-9
+- [x] `app/core/feil.py` -- `RegelBrudd(feil: list[tuple[str, str]])` med `.feil` -- AR-26, NFR-10
+- [x] `app/core/tid.py`, `tests/core/test_tid.py` -- `OSLO`, `i_dag()`, `tolk_fodselsdato(tekst, *, i_dag) -> date` (kaster `RegelBrudd` på `fodselsdato` med formatfeil eller «Sjekk fødselsdatoen.»), `fyller_ar(fodselsdato, ar) -> date` (29.02 → 01.03), `er_myndig(fodselsdato, i_dag) -> bool`. Tabelltest for skrivemåter, tosifret år, 29. februar og grensene ved 18 og 120 år -- FR-1, AD-9, AR-19
+- [x] `app/identity/service.py`, `tests/identity/test_registrering_regler.py` -- `normaliser_telefon`, `sjekk_epostformat`, `opprett_sesjon`, `registrer(db, *, navn, epost, passord, telefon, postnummer, fodselsdato) -> str` (gir sesjonsnøkkelen). Samler feil i feltrekkefølge, slår opp e-posten bare når formatet er gyldig, og setter inn i `with db.begin_nested():`, der `IntegrityError` blir e-postfeilen -- FR-1, AD-2, AD-6, AD-17
+- [x] `app/identity/routes.py` -- `@offentlig` GET `identity.registrer` og POST `identity.send_registrer` på `/registrer`. Innloggede sendes til `/`. Ved `RegelBrudd` vises skjemaet med 422, `poststed` for gyldig postnummer og fokus på feiloppsummeringen. Ved suksess følger cookien med, og svaret er 303 til `/` -- FR-1, FR-3, NFR-10
+- [x] `app/identity/templates/identity/registrer.html`, `logg_inn.html`, `app/core/static/css/app.css` -- skjema etter mockupen. Poststedet er `<span id="postnummer-sted">`, knyttet til feltet med `aria-describedby`. Personvernseksjonen har `aria-labelledby`. Høyst ett `autofocus` (navn, eller feiloppsummeringen). Innloggingssiden lenker til registrering -- FR-1, NFR-9, UX-DR12, UX-DR13
+- [x] `app/core/static/js/poststed.js`, `base.html` -- henter `postnumre.json` første gang et `[data-poststed]`-felt endres, og viser poststedet for gyldige fire sifre. Ellers tømmes teksten. Ingen validering -- UX-DR13
+- [x] `tests/identity/test_registrering.py` -- HTTP-tester for radene i I/O-matrisen. Sjekker også felttyper, `autocomplete`, personvernteksten, at alle feilene vises samtidig, at passordet er tomt etter feil, sidetittel, fokus, at kontoen kan logge inn og ut etter registrering, og at `bruker` bare har de tillatte kolonnene (NFR-9) -- FR-1, NFR-5, NFR-9, NFR-10
+- [x] `tests/core/test_tilgang.py`, `tests/identity/test_innlogging.py`, `tests/oppdrag/test_grunnsider.py` -- `/registrer` blir offentlig, og innloggingssiden lenker til den -- FR-3
+- [x] `scripts/roykttest.py`, `tests/test_roykttest.py` -- GET `/registrer` gir 200 med headerne og «Opprett konto» -- AD-14
+- [x] `README.md` -- statustabellen, produksjonsavsnittet, og at testkontoen i produksjon har oppdiktede opplysninger og slettes i story 4.5 -- AR-10
 
 **Manuell oppgave for Heidi (etter merge og grønn deploy):** registrer en testkonto med oppdiktede opplysninger på https://nabolagshelten.vercel.app/registrer, logg ut og inn igjen, og noter resultatet. Ingen verdier skal stå i chatten eller i repoet.
 
@@ -84,9 +84,41 @@ context:
 
 ## Implementation Notes
 
+- 2026-11-24 (implementasjon): alle oppgavene under Execution er gjort. `uv run pytest` gir 477 grønne mot SQLite. Postgres er ikke kjørt lokalt (Docker kjørte ikke) og sjekkes av CI.
+- Lokal røyktest mot `uvicorn` uten seed: eneste avvik er «cookien csrf mangler Secure», som før story 1.4, fordi `Secure` bare settes når `APP_ENV=production`. `tests/test_roykttest.py` forventer det samme avviket. Registrering, utlogging og innlogging mot den lokale serveren gikk gjennom (303 hver gang).
+- Valg som specen ikke låser: kontrolltegn i navn blir mellomrom (NUL gir ellers `DataError` i Postgres). Fødselsdato krever samme skilletegn begge steder. Lenketeksten på innloggingssiden er «Har du ikke konto?» + «Registrer deg». Ved feil i et annet felt står «Skriv passordet på nytt.» i tillegg til «8–64 tegn».
+- Manuell røyktest i produksjon (registrering, innlogging, utlogging) står igjen til etter merge og deploy.
+
 ## Spec Change Log
 
 ## Review Triage Log
+
+Runde 1 (2026-11-24). B = blind, K = kanttilfeller, V = verifikasjonshull. Patch = rettes i denne runden.
+
+| # | Funn | Verdikt | Begrunnelse | Rute |
+|---|------|---------|-------------|------|
+| B1 | Innlogget bruker kan lage en konto til med POST `/registrer` | low | Stemmer: bare GET sendte til `/`, og en test låste oppførselen. Specen sier «Innloggede sendes til `/`» for ruta. Retting: POST sender også til `/` uten å lage konto | patch (med K3, K6) |
+| B2 | Ingen grense for registreringer, og «e-post i bruk» avslører kontoer | false | Arkitekturen sier «Grense for antall registreringer: Ikke i v1». Feilteksten for e-post i bruk er et krav i FR-1 og EXPERIENCE.md | avvist |
+| B3 | Usynlige tegn (Cf, for eksempel U+200B og U+202E) slipper gjennom i navn | low | Stemmer, men ingen møter det i vanlig bruk. Å fjerne alle Cf-tegn ødelegger ZWJ/ZWNJ i ekte navn, så rettingen krever en ny regel | avvist (med K2) |
+| B4 | Personvernteksten lover sletting av konto og «Få forslag», som ikke finnes ennå | low | Stemmer til story 4.5 og 5.1. Teksten er låst ordrett i intensjonen (FR-1). README advarer nå mot ekte opplysninger i produksjon (B6) | avvist (rettingen ville endret specen) |
+| B5 | Personvernteksten mangler behandlingsansvarlig, formål, lagringssted og lagringstid | low | Teksten er ordrett fra den godkjente mockupen og FR-1. En endring hører hjemme i planleggingsdokumentene | avvist (rettingen ville endret specen) |
+| B6 | README ber folk registrere seg i produksjon uten å si at de skal bruke oppdiktede opplysninger | low | Stemmer, og rettingen er én setning | patch |
+| B7 | Skjermlesere får ikke vite at poststedet vises | medium | Stemmer: `#postnummer-sted` endres uten sidelasting, og EXPERIENCE.md § Fokus og opplesning bruker `aria-live` for slike endringer. Universell utforming sensureres | patch |
+| B8 | `poststed.js` har ingen automatiske tester og lastes på alle sider | medium | Testdelen: samme som V3. At skriptet lastes overalt, koster bare én liten fil og et `querySelectorAll` uten treff (negligible) | defer (med V3) |
+| B9 | Røyktesten sender aldri POST `/registrer` | low | CSRF bak proxyen er vist med innloggingen, og `core/tid.py` importeres ved oppstart, så GET `/registrer` viser at tzdata virker. Ny sjekk er mer enn en direkte retting | avvist |
+| B10 | E-postsjekken godtar `kari@x..no` og `kari@-x.no` | low | Stemmer, men følger regelen som er besluttet i specen (én `@`, tekst før, domene med punktum). Brukeren logger inn med samme skrivemåte | avvist |
+| B11 | `tzdata>=2026.6` uten øvre grense, og diffen manglet `uv.lock` | false | tzdata har kalenderversjoner, og nyere tidssonedata er alltid ønsket. `uv.lock` er committet på branchen og ble bare holdt utenfor reviewdiffen | avvist |
+| B12 | Testen for logging tar ikke med navn og fødselsdato | low | Stemmer, og rettingen er to ekstra sjekker og en docstring | patch |
+| B13 | Slettede kontoer teller som «e-post i bruk» | false | AD-8: en slettet bruker blir en gravstein der alle personfelt er NULL, også `epost`. Unik-constrainten ville uansett stoppet en ny rad med samme e-post | avvist |
+| K1 | Alle `IntegrityError` vises som «e-post i bruk» | false | Den eneste andre constrainten som kan slå til, er fremmednøkkelen på `postnummer`, og den er sjekket før med `finnes()` mot de samme dataene som migrering 0001 lastet | avvist |
+| K2 | Navn med bare Cf-tegn | low | Samme som B3 | avvist (med B3) |
+| K3 | Innlogget POST med feil viser skjemaet med menyen | low | Samme rot som B1 | patch (med B1) |
+| K4 | Doble mellomrom eller NBSP i fødselsdato gir formatfeil | low | Stemmer, men sjelden, og brukeren får eksemplet og skriver på nytt. Rettingen er ny normalisering | avvist |
+| K5 | `poststed.js` oppdaterer ikke etter autofyll eller gjenoppretting uten `input`-hendelse | low | Nettlesere sender `input` ved autofyll. Sidene har `no-store`, så gjenoppretting fra bfcache er lite sannsynlig. Etter innsending viser serveren poststedet | avvist |
+| K6 | Påstand: «Innloggede sendes til `/`» gjelder bare GET | low | Samme som B1 | patch (med B1) |
+| V1 | Ingen test for `Secure` på sesjonscookien fra registreringen i produksjon | gap | Arkivert evidens: bare innloggingen testes i produksjon (`test_innlogging.py:84`) | patch |
+| V2 | Ingen test viser at Europe/Oslo finnes uten tidssonedata fra systemet | gap | Arkivert evidens: CI på Ubuntu har tidssonedata, så en fjernet tzdata ville først blitt oppdaget på Vercel | patch |
+| V3 | `poststed.js` kjøres aldri i en test | gap | Arkivert evidens: repoet har ingen JS- eller nettlesertester ennå. Playwright kommer i story 1.5 | defer (med B8) |
 
 ## Design Notes
 
@@ -98,7 +130,7 @@ context:
 
 **Commands:**
 - `uv run pytest` -- expected: grønn
-- `uv run python scripts/roykttest.py http://127.0.0.1:8000` mot lokal server uten seed -- expected: «Røyktest OK»
+- `uv run python scripts/roykttest.py http://127.0.0.1:8000` mot lokal server uten seed -- expected: bare avviket «cookien csrf mangler Secure» (Secure settes bare i produksjon, som siden story 1.3)
 
 **Manual checks (if no CLI):**
 - 320 px uten vannrett rulling, cirka fem minutters tastatursjekk av registreringen, og poststed og «Vis passord» med og uten JS.
