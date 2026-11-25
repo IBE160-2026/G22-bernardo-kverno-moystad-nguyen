@@ -6,13 +6,16 @@ røyktesten feiler etter publisering.
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 
 import httpx
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 
+from app import lag_app
+from app.core.config import Settings, hent_settings
 from app.identity.models import Bruker
 from scripts import roykttest
 
@@ -20,6 +23,22 @@ TESTAPP_URL = "http://testserver"
 MANGLER_SECURE = (
     "GET /logg-inn: cookien csrf mangler Secure. APP_ENV er trolig ikke production"
 )
+
+
+@pytest.fixture
+def klient(sesjonsfabrikk: sessionmaker[Session]) -> Iterator[TestClient]:
+    """Appen med APP_ENV=local mot test-databasen (AD-14).
+
+    Testappen (APP_ENV=test) har `/_test/tilstand`, og der gir GET 405. Røyktesten
+    sjekker at stien gir 404, slik den skal utenfor test.
+    """
+    settings = Settings(
+        _env_file=None, app_env="local", database_url=hent_settings().database_url
+    )
+    app = lag_app(settings=settings)
+    app.state.sesjonsfabrikk = sesjonsfabrikk
+    with TestClient(app) as klient:
+        yield klient
 
 
 def test_roykttesten_mot_testappen_uten_seed(klient: TestClient) -> None:

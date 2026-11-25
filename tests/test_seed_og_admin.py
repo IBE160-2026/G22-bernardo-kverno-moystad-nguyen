@@ -144,3 +144,22 @@ def test_admin_ukjent_eller_slettet_bruker(db, sesjonsfabrikk, lag_bruker, capsy
         )
         assert kode == 1
     assert "Fant ingen aktiv bruker" in capsys.readouterr().err
+
+
+def test_last_eksempeldata_gir_bare_testbrukerne(db, lag_bruker) -> None:
+    """AR-29: `last_eksempeldata` tømmer sesjoner, forsøk og brukere og legger inn de seks på nytt."""
+    lag_bruker(epost="annen@eksempel.no")
+    logg_inn(db, "annen@eksempel.no", STANDARD_PASSORD)
+    logg_inn(db, "annen@eksempel.no", "feil")
+    db.commit()
+    assert db.scalar(select(func.count()).select_from(Sesjon)) == 1
+    assert db.scalar(select(func.count()).select_from(Innloggingsforsok)) == 1
+
+    seed.last_eksempeldata(db)
+    seed.last_eksempeldata(db)  # to ganger gir samme resultat
+    db.commit()
+
+    assert db.scalar(select(func.count()).select_from(Sesjon)) == 0
+    assert db.scalar(select(func.count()).select_from(Innloggingsforsok)) == 0
+    eposter = set(db.scalars(select(Bruker.epost)).all())
+    assert eposter == {t.epost for t in seed.TESTBRUKERE}

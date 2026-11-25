@@ -19,12 +19,15 @@ from app.identity.models import Sesjon
 
 from .test_mellomvare import hent_csrf
 
-# Story 1.4 la til `/registrer` (FR-1). Ingen andre ruter er offentlige (FR-3).
+# Story 1.4 la til `/registrer` (FR-1). Story 1.5 la til `/_test/tilstand`, som
+# bare finnes når APP_ENV=test, slik testappen kjører (AD-14). Ingen andre ruter
+# er offentlige (FR-3).
 OFFENTLIGE = {
     ("GET", "/logg-inn"),
     ("POST", "/logg-inn"),
     ("GET", "/registrer"),
     ("POST", "/registrer"),
+    ("POST", "/_test/tilstand"),
 }
 
 
@@ -67,7 +70,7 @@ def test_fr3_alle_ruter_krever_innlogging(app: FastAPI, klient: TestClient) -> N
 
 
 def test_offentlige_ruter_er_bare_innlogging_og_registrering(app: FastAPI) -> None:
-    """FR-3: bare innlogging og registrering er merket offentlige på selve ruta."""
+    """FR-3: bare innlogging, registrering og testruta (bare i test) er merket offentlige."""
     offentlige = set()
     for rute in alle_ruter(app.routes):
         if getattr(rute, "methods", None) and er_offentlig(rute.endpoint):

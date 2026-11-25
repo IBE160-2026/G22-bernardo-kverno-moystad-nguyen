@@ -18,13 +18,13 @@ from pathlib import Path
 
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.core import klokke
 from app.core.config import hent_settings
 from app.core.db import lag_motor, lag_sesjonsfabrikk, url_uten_passord
-from app.identity.models import Bruker
+from app.identity.models import Bruker, Innloggingsforsok, Sesjon
 from app.identity.service import hash_passord, normaliser_epost
 
 ROT = Path(__file__).resolve().parents[1]
@@ -83,6 +83,20 @@ def legg_inn_testbrukere(db: Session) -> int:
         nye += 1
     db.flush()
     return nye
+
+
+def last_eksempeldata(db: Session) -> None:
+    """Nullstiller databasen til testbrukerne og ingenting annet (AR-29, AD-14).
+
+    Brukes av `POST /_test/tilstand` med `seed=1` i T1, gjennom
+    `app.state.last_eksempeldata`. Sletter `sesjon`, `innloggingsforsok` og
+    `bruker` i den rekkefølgen (fremmednøklene) og legger inn testbrukerne på
+    nytt. Senere stories legger til egne tabeller her. Committer ikke.
+    """
+    db.execute(delete(Sesjon))
+    db.execute(delete(Innloggingsforsok))
+    db.execute(delete(Bruker))
+    legg_inn_testbrukere(db)
 
 
 def main() -> int:
