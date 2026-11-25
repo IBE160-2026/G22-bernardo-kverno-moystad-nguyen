@@ -3,7 +3,7 @@ title: 'Story 1.5: Automatisk test av universell utforming'
 type: 'feature'
 created: '2026-11-25'
 baseline_commit: 'cdc16337b2bf3095ffcab26fa65f488e811040b1'
-status: 'in-review'
+status: 'done'
 route: 'dispatch'
 review_loop_iteration: 0
 story_key: '1-5-automatisk-test-av-universell-utforming'
