@@ -13,3 +13,4 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-4-registrere-konto.md`
   summary: `app/core/static/js/poststed.js` (poststed ved postnummerfeltet) kjøres ikke av noen automatisk test. Uten test merkes det ikke om skriptet slutter å fylle inn eller tømme poststedet, eller om sjekken av utdaterte svar forsvinner.
   evidence: Funnet i reviewen av story 1.4 (V3 og B8). Repoet har ingen JS- eller nettlesertester ennå, og pytest sjekker bare HTML-en og at filene svarer 200. Tas i story 1.5 (Playwright): skriv `5006`, forvent «Bergen», skriv `57`, forvent tomt.
+  resolution: Delvis løst 2026-11-25 (story 1.5). `tests/e2e/test_klientatferd.py::test_poststed_vises_ved_gyldig_postnummer` skriver `5006` og forventer «Bergen», og så `57` og forventer tomt. Sjekken av utdaterte svar (feltet endres mens `postnumre.json` hentes) har fortsatt ingen test.

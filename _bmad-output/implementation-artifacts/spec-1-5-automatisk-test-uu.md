@@ -71,16 +71,16 @@ context:
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `pyproject.toml`, `uv.lock` -- dev-avhengighetene, markøren `e2e` og `-m "not e2e"` i `addopts` -- AR-29, NFR-1
-- [ ] `app/seed.py`, `tests/test_seed_og_admin.py` -- `last_eksempeldata(db)` med test -- AR-29
-- [ ] `app/core/testtilstand.py`, `app/__init__.py`, `tests/core/test_testtilstand.py` -- `POST /_test/tilstand` (`core.test_tilstand`, `@offentlig`) med 204 eller 400, bare i `test`, og tester for radene om tilstand i I/O-matrisen -- AD-14, AR-29
-- [ ] `tests/core/test_tilgang.py`, `tests/core/test_arkitektur.py`, `tests/test_roykttest.py` -- oppdatert etter Code Map -- FR-3, AD-14
-- [ ] `tests/e2e/conftest.py` -- server i tråd på ledig port med egen SQLite-fil i temp-mappen, migrert med Alembic. Fixturer `server_url`, `tilstand(page, **felt)` (henter CSRF fra `/logg-inn`) og `logg_inn_som_kari(page)`. Klokka nullstilles etter økta -- AR-29
-- [ ] `tests/e2e/test_t1.py` -- parametrisert over sidene × 360/1280 med axe, og × 320 for rulling. Kjører `seed=1` og fast klokke før hver test -- SM-5, NFR-6, NFR-7, UX-DR5, UX-DR31
-- [ ] `tests/e2e/test_klientatferd.py` -- Vis passord, sending og poststed etter matrisen -- UX-DR13, UX-DR28
-- [ ] maler og `app/core/static/css/app.css` -- rett det axe og 320 px-sjekken finner, og før hvert funn i Implementation Notes -- NFR-6, NFR-7
-- [ ] `.github/workflows/ci.yml` -- jobben «T1 (Playwright og axe)»: `uv sync --locked`, `uv run playwright install --with-deps chromium`, `uv run pytest -m e2e` -- AR-7, SM-5
-- [ ] `README.md` -- hvordan T1 kjøres lokalt, at vanlig `pytest` hopper over den, og at senere stories legger nye sider inn i T1 -- AR-10, SM-5
+- [x] `pyproject.toml`, `uv.lock` -- dev-avhengighetene, markøren `e2e` og `-m "not e2e"` i `addopts` -- AR-29, NFR-1
+- [x] `app/seed.py`, `tests/test_seed_og_admin.py` -- `last_eksempeldata(db)` med test -- AR-29
+- [x] `app/core/testtilstand.py`, `app/__init__.py`, `tests/core/test_testtilstand.py` -- `POST /_test/tilstand` (`core.test_tilstand`, `@offentlig`) med 204 eller 400, bare i `test`, og tester for radene om tilstand i I/O-matrisen -- AD-14, AR-29
+- [x] `tests/core/test_tilgang.py`, `tests/core/test_arkitektur.py`, `tests/test_roykttest.py` -- oppdatert etter Code Map -- FR-3, AD-14
+- [x] `tests/e2e/conftest.py` -- server i tråd på ledig port med egen SQLite-fil i temp-mappen, migrert med Alembic. Fixturer `server_url`, `tilstand(page, **felt)` (henter CSRF fra `/logg-inn`) og `logg_inn_som_kari(page)`. Klokka nullstilles etter økta -- AR-29
+- [x] `tests/e2e/test_t1.py` -- parametrisert over sidene × 360/1280 med axe, og × 320 for rulling. Kjører `seed=1` og fast klokke før hver test -- SM-5, NFR-6, NFR-7, UX-DR5, UX-DR31
+- [x] `tests/e2e/test_klientatferd.py` -- Vis passord, sending og poststed etter matrisen -- UX-DR13, UX-DR28
+- [x] maler og `app/core/static/css/app.css` -- rett det axe og 320 px-sjekken finner, og før hvert funn i Implementation Notes -- NFR-6, NFR-7
+- [x] `.github/workflows/ci.yml` -- jobben «T1 (Playwright og axe)»: `uv sync --locked`, `uv run playwright install --with-deps chromium`, `uv run pytest -m e2e` -- AR-7, SM-5
+- [x] `README.md` -- hvordan T1 kjøres lokalt, at vanlig `pytest` hopper over den, og at senere stories legger nye sider inn i T1 -- AR-10, SM-5
 
 **Acceptance Criteria:**
 - Gitt `uv run pytest` på en maskin uten Playwright-nettlesere, så er alt grønt, og E2E-testene er valgt bort (ikke feilet).
@@ -88,6 +88,15 @@ context:
 - Gitt en side med et bevisst brudd (for eksempel et `<input>` uten etikett), så feiler T1 med regel-id og selektor. Prøves lokalt én gang, og resultatet føres i Implementation Notes.
 
 ## Implementation Notes
+
+- **Funn fra axe og 320 px-sjekken:** ingen. Første kjøring av T1 var grønn på alle 11 sider og tilstander ved 360, 1280 og 320 px, så maler og `app.css` er ikke endret. For å se at axe faktisk kjører, ble T1 kjørt én gang med alle alvorlighetsgrader (også «moderate» og «minor»): heller ingen brudd. Kravet i testen er fortsatt bare «serious» og «critical».
+- **Bevisst brudd (akseptansekriterium 3), prøvd lokalt 2026-11-25:** et `<input type="text">` uten etikett og en `<div style="width: 400px">` ble lagt midlertidig i `logg_inn.html`. T1 feilet på «logg-inn» med `label (critical): input[type="text"] – Form elements must have labels` ved 360 og 1280 px, og med `Vannrett rulling på «logg-inn» ved 320 px: scrollWidth 416 > clientWidth 320`. Malen ble satt tilbake etterpå.
+- **Sider i T1:** lista i Code Map pluss «logg-inn-logget-ut» (innloggingssiden med kvitteringen «Du er logget ut.»), som også er en tilstand fra Epic 1.
+- **`/_test/tilstand`:** ukjent feltnavn gir også 400, ikke bare ukjent verdi. Klokka settes før seed, så testbrukerne får `opprettet` fra den faste klokka. Alle verdier sjekkes før noe endres.
+- **Klokka** nullstilles etter hver E2E-test og etter økta, så `uv run pytest -m "e2e or not e2e"` (alt i én kjøring) også er grønn.
+- **Advarsel fra pytest-playwright 0.10** (`base_url`-fixturen er en metode i en klasse) er filtrert bort i `pyproject.toml`; den gjelder pluginen, ikke testene.
+- **axe.min.js** lastes med `Axe.from_file(AXE_FILE_PATH)`, fordi biblioteket ellers leser fila med systemets tegnsett på Windows.
+- **Sendeknappen:** andre innsending gjøres med Enter i e-postfeltet, fordi Playwright regner `aria-disabled="true"` som deaktivert og ikke vil klikke. Det er også slik en bruker kan sende på nytt.
 
 ## Spec Change Log
 
