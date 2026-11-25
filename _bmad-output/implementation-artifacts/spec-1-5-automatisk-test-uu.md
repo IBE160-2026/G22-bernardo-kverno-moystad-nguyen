@@ -3,7 +3,7 @@ title: 'Story 1.5: Automatisk test av universell utforming'
 type: 'feature'
 created: '2026-11-25'
 baseline_commit: 'cdc16337b2bf3095ffcab26fa65f488e811040b1'
-status: 'in-progress'
+status: 'in-review'
 route: 'dispatch'
 review_loop_iteration: 0
 story_key: '1-5-automatisk-test-av-universell-utforming'
@@ -101,6 +101,37 @@ context:
 ## Spec Change Log
 
 ## Review Triage Log
+
+Runde 1 (2026-11-25). B = blind, K = kanttilfeller, V = verifikasjonshull. Patch = rettes i denne runden.
+
+| # | Funn | Verdikt | Begrunnelse | Rute |
+|---|------|---------|-------------|------|
+| B1 | `ki_utgave` nullstilles ikke mellom E2E-testene | low | Stemmer: `nullstill` sender bare `seed` og `klokke`, og serveren deles i hele økta. Ingen test setter `feil` ennå, men story 5.1 kommer til å gjøre det. Rettingen er ett felt til | patch (med K4) |
+| B2 | `SIDER` mangler feil passord, sperre, registrering med serverfeil, 403, 500, nødsiden og 401-fragmentet | low | Feil passord, sperre og serverfeil bruker samme mal og markup som tom innsending. 403 og 500 bruker `core/feil.html`, som 404 dekker. Nødsiden og fragmentet er ikke sider en bruker navigerer til | avvist |
+| B3 | At klokka settes før seed, er ikke testet | low | Stemmer, og rettingen er én ekstra sjekk av `opprettet` i en test som finnes | patch |
+| B4 | En feil i seed etter at klokka er satt gir 500 med endret klokke | low | Bare i `test`, og krever en databasefeil. Docstringen lover «ingenting endret» bare ved 400, og det holder | avvist (med K1) |
+| B5 | Bare `APP_ENV` hindrer at `/_test/tilstand` og standardnøkkelen kommer i produksjon | medium | Stemmer. Feilkonfigureringen fantes fra før (`APP_ENV=local` på Vercel gir også standardnøkkelen), men skaden blir større nå. Røyktesten oppdager det etter publisering (V2). Rettingen er en ny vakt i `Settings` | defer |
+| B6 | CI lagrer ikke spor eller skjermbilder når T1 feiler, og Chromium caches ikke | low | Gjelder bare feilsøking. Nye steg er mer enn en direkte retting | avvist |
+| B7 | Poststed-testen prøver ikke et firesifret nummer som ikke finnes | low | Stemmer. `aria-live` er allerede testet i `test_registrering.py` | patch (med K8) |
+| B8 | `pageshow` testes med en syntetisk hendelse og ikke med ekte tilbakeknapp | low | Sidene har `no-store`, så bfcache er lite forutsigbart i nettleseren. Den syntetiske hendelsen tester lytteren | avvist |
+| B9 | axe sine `incomplete`-resultater ignoreres | low | Kontrast som axe ikke kan avgjøre, dekkes av T5 (manuell, UX-DR32). Varsler ville vært ny logikk | avvist (med K6) |
+| B10 | Ingen test av tastatur, tvungne farger eller redusert bevegelse | false | T1 er axe og 320 px (UX-DR31). Tastatur og tvungne farger er T2 og T5, manuelle protokoller i story 6.1 (UX-DR32) | avvist |
+| B11 | `test_roykttest.py` kaller den lokale appen «testappen» | low | Stemmer, og rettingen er tekst | patch |
+| K1 | Seed feiler etter at klokka er satt | low | Samme som B4 | avvist (med B4) |
+| K2 | `klokke` nær `datetime.min` eller `max` gir `OverflowError` og 500 | low | Bare testene sender verdier hit. Rettingen er en ny vakt | avvist (med K12) |
+| K3 | Samme felt sendt to ganger: den siste verdien vinner | low | Bare testene sender skjemaet. Ingen kaller sender felt to ganger | avvist |
+| K4 | `ki` lekker mellom testene | low | Samme som B1 | patch (med B1) |
+| K5 | `tilstand()` feiler når nettleseren er innlogget, fordi `/logg-inn` gir 303 | low | Stemmer, og story 5.1 trenger det (KI-feil etter innlogging). Rettingen er en reserve på `/profil` | patch |
+| K6 | `incomplete` fra axe ignoreres | low | Samme som B9 | avvist (med B9) |
+| K7 | `overflow-x: hidden` kan skjule innhold, så 320 px-sjekken passerer | false | `app.css` har ingen `overflow`-regler, bare `overflow-wrap` | avvist |
+| K8 | Firesifret nummer som ikke finnes | low | Samme som B7 | patch (med B7) |
+| K9 | `pytest tests/e2e/test_t1.py` uten `-m e2e` velger bort alt og gir kode 5 | low | README sier `uv run pytest -m e2e`. En hook ville vært ny logikk | avvist |
+| K10 | Motoren til appen i røyktest-testene lukkes ikke | low | SQLite-filen ryddes med `ignore_errors`, og det har ingen merkbar virkning | avvist (med K11) |
+| K11 | Motorer fra parametriserte `lag_app()` lukkes ikke | low | Samme som K10 | avvist (med K10) |
+| K12 | Påstand: «ukjent verdi gir 400» holder ikke for ekstreme `klokke` | low | Samme som K2 | avvist (med K2) |
+| V1 | Ingen test viser at `alvorlige_brudd` og 320 px-uttrykket kan feile | gap | Arkivert evidens: kriterium 3 ble bare prøvd for hånd. Et filter som slipper alt, ville gitt grønn T1 for alltid | patch |
+| V2 | Sjekken av 404 for `/_test/tilstand` i røyktesten er aldri kjørt mot en app som har ruta | gap | Arkivert evidens: alle røyktest-testene bruker nå appen med `local` | patch |
+| V3 | Sendeknappen sendes ikke på nytt etter `pageshow` | low | Stemmer: en `pageshow` som glemte `data-sender` på skjemaet, ville passert testen. Rettingen er én innsending til i testen | patch |
 
 ## Design Notes
 
