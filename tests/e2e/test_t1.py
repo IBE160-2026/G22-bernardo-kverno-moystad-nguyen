@@ -131,6 +131,23 @@ def alvorlige_brudd(page: Page) -> list[str]:
     return linjer
 
 
+RULLING = "() => [document.documentElement.scrollWidth, document.documentElement.clientWidth]"
+
+
+def test_axe_og_rulling_fanger_bevisst_brudd(page: Page) -> None:
+    """Kanari for akseptansekriterium 3: sjekkene i T1 kan faktisk feile."""
+    page.set_viewport_size({"width": 320, "height": 640})
+    page.set_content(
+        '<!doctype html><html lang="nb"><head><title>Kanari</title></head><body><main>'
+        '<h1>Kanari</h1><input type="text"><div style="width: 400px">bred</div>'
+        "</main></body></html>"
+    )
+    brudd = alvorlige_brudd(page)
+    assert any(linje.startswith("label (critical)") for linje in brudd), brudd
+    scroll, klient = page.evaluate(RULLING)
+    assert scroll > klient, (scroll, klient)
+
+
 @pytest.mark.parametrize("bredde", BREDDER_AXE, ids=lambda b: f"{b}px")
 @pytest.mark.parametrize("side", list(SIDER))
 def test_axe_ingen_alvorlige_brudd(page: Page, hjelpere: dict, side: str, bredde: int) -> None:
@@ -146,9 +163,7 @@ def test_ingen_vannrett_rulling_ved_320(page: Page, hjelpere: dict, side: str) -
     """NFR-7, UX-DR31: ingen vannrett rulling ved 320 px."""
     page.set_viewport_size({"width": 320, "height": 640})
     SIDER[side](page, hjelpere)
-    scroll, klient = page.evaluate(
-        "() => [document.documentElement.scrollWidth, document.documentElement.clientWidth]"
-    )
+    scroll, klient = page.evaluate(RULLING)
     assert scroll <= klient, (
         f"Vannrett rulling på «{side}» ved 320 px: scrollWidth {scroll} > clientWidth {klient}"
     )

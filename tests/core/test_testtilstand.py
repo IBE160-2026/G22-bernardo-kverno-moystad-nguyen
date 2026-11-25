@@ -53,6 +53,10 @@ def test_tilstand_setter_klokke_ki_og_seed(
     assert app.state.ki_utgave == "feil"
     db.expire_all()
     assert set(db.scalars(select(Bruker.epost)).all()) == {t.epost for t in TESTBRUKERE}
+    # Klokka settes før seed, så testbrukerne får `opprettet` fra den faste klokka.
+    assert set(db.scalars(select(Bruker.opprettet)).all()) == {
+        datetime(2026, 11, 24, 12, 0, tzinfo=timezone.utc)
+    }
     assert antall(db, Sesjon) == 0
 
 

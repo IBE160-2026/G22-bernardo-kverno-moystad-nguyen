@@ -99,12 +99,16 @@ def tilstand(server_url: str) -> Callable[..., None]:
     """`tilstand(page, seed="1", klokke=..., ki=...)` poster til `/_test/tilstand` (AD-14).
 
     Bruker nettleserens egne cookies, så CSRF-cookien og skjemanøkkelen hører sammen.
+    Som innlogget sender `/logg-inn` videre, og da hentes nøkkelen fra `/profil`.
     """
 
     def _sett(page: Page, **felt: str) -> None:
         side = page.request.get(f"{server_url}/logg-inn", max_redirects=0)
         treff = CSRF_FELT.search(side.text())
-        assert treff, f"Fant ingen csrf_token på /logg-inn (status {side.status})"
+        if treff is None:
+            side = page.request.get(f"{server_url}/profil", max_redirects=0)
+            treff = CSRF_FELT.search(side.text())
+        assert treff, f"Fant ingen csrf_token på /logg-inn eller /profil (status {side.status})"
         svar = page.request.post(
             f"{server_url}/_test/tilstand",
             form={"csrf_token": treff.group(1), **felt},
@@ -122,7 +126,7 @@ def nullstill(page: Page, tilstand: Callable[..., None]) -> Iterator[None]:
     Etter testen får klokka vanlig tid igjen, så andre tester i samme kjøring
     (`uv run pytest -m "e2e or not e2e"`) ikke arver den faste klokka.
     """
-    tilstand(page, seed="1", klokke=FAST_KLOKKE)
+    tilstand(page, seed="1", klokke=FAST_KLOKKE, ki="mock")
     yield
     klokke.sett_na(None)
 

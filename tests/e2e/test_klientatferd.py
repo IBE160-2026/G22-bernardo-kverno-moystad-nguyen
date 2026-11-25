@@ -73,12 +73,24 @@ def test_sendeknappen_far_aria_disabled_og_stopper_ny_innsending(page: Page) -> 
     expect(send).not_to_have_attribute("aria-disabled", "true")
     expect(send).not_to_have_attribute("data-sender", "")
 
+    # Skjemaet er ikke låst: en ny innsending går gjennom og gir aria-disabled igjen.
+    page.locator("#epost").press("Enter")
+    assert page.evaluate("() => window.innsendinger.map((i) => i.stoppet)") == [False, True, False]
+    expect(send).to_have_attribute("aria-disabled", "true")
+
 
 def test_poststed_vises_ved_gyldig_postnummer(page: Page) -> None:
     """UX-DR13: poststedet vises ved fire siffer som finnes, ellers ingenting."""
     page.goto("/registrer")
     postnummer = page.get_by_label("Postnummer")
     sted = page.locator("#postnummer-sted")
+    expect(sted).to_have_text("")
+
+    postnummer.fill("5006")
+    expect(sted).to_have_text("Bergen")
+
+    # Fire siffer som ikke finnes i registeret.
+    postnummer.fill("0000")
     expect(sted).to_have_text("")
 
     postnummer.fill("5006")
