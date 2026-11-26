@@ -8,10 +8,14 @@ Sjekkene (radene i I/O-matrisen i spec-1-3):
   appen startet, altså at `data/postnumre.tsv` fulgte med i funksjonen.
 - CSRF-cookien har `Secure`. Den settes bare når `APP_ENV=production`; uten den
   kjører appen som `local` med den kjente standardnøkkelen.
-- POST `/logg-inn` med CSRF-nøkkel, `Origin` og Karis seed-passord gir 422 med
+- POST `/logg-inn` med CSRF-nøkkel, `Origin` og `ROYKTTEST_EPOST` gir 422 med
   «Feil e-post eller passord.» (eller sperremeldingen). Det viser at CSRF- og
   Origin-sjekken slipper gjennom bak Vercels proxy, at kroppen spilles av for
-  ruta, at Supabase svarer, og at det ikke finnes demokontoer i produksjon.
+  ruta, og at Supabase svarer. E-posten mangler punktum i domenet, så
+  registreringen avviser den (`sjekk_epostformat`), og ingen kan lage kontoen
+  og gjøre røyktesten rød (R1 i retro Epic 1). At det ikke finnes demokontoer i
+  produksjon (NFR-2), hviler på at seed nekter å kjøre der (AD-14,
+  `test_seed_nekter_i_produksjon`), ikke på røyktesten.
 - GET `/registrer` gir 200, sikkerhetsheaderne og knappen «Opprett konto»
   (spec-1-4). Røyktesten registrerer aldri kontoer; testkontoen i produksjon
   lages for hånd.
@@ -21,8 +25,11 @@ Sjekkene (radene i I/O-matrisen i spec-1-3):
 Avslutter med kode 0 og «Røyktest OK», ellers kode 1 og én kort linje per avvik.
 Skriver aldri ut cookies eller CSRF-nøkler. Tekstene og headerne hentes fra
 appen selv, så de ikke kan skli fra hverandre. `tests/test_roykttest.py` kjører
-`kjor()` i CI mot en lokal app (APP_ENV=local) på test-databasen, og mot testappen
-for å vise at `/_test/tilstand` oppdages.
+`kjor()` i CI mot en app med APP_ENV=production over https (grønn sti, ingen
+avvik), mot en lokal app (APP_ENV=local) på test-databasen, og mot testappen for
+å vise at `/_test/tilstand` oppdages. Fordi røyktesten ikke bruker seed-kontoene,
+kan den også kjøres mot en lokal server med seed; da er eneste avvik at
+`Secure` mangler.
 """
 
 from __future__ import annotations
@@ -47,9 +54,10 @@ STANDARD_URL = "https://nabolagshelten.vercel.app"
 
 FORVENTEDE_HEADERE = {navn.decode(): verdi.decode() for navn, verdi in SIKKERHETSHEADERE}
 
-# Seed-brukeren fra README (bare for lokal testing). Finnes aldri i produksjon.
-SEED_EPOST = "kari@eksempel.no"
-SEED_PASSORD = "kari-lokal-1"
+# En e-post som ikke kan registreres: domenet mangler punktum, så
+# `sjekk_epostformat` avviser den. `tests/test_roykttest.py` binder dette (R1).
+ROYKTTEST_EPOST = "roykttest@nabolagshelten"
+ROYKTTEST_PASSORD = "roykttest-ingen-konto"
 
 OPPRETT_KONTO = "Opprett konto"
 
@@ -102,7 +110,7 @@ def _sjekk(url: str, klient: httpx.Client) -> list[str]:
     avvik += sjekk_secure_cookie(svar)
 
     # 2. Registreringssiden svarer (FR-1). Ingen konto opprettes. Sjekkes før
-    #    innloggingen, så en eventuell demokonto ikke gir 303 her.
+    #    innloggingen, så en innlogget sesjon aldri kan gi 303 her.
     svar = klient.get("/registrer", follow_redirects=False)
     if svar.status_code != 200:
         avvik.append(f"GET /registrer: status {svar.status_code}, forventet 200")
@@ -111,7 +119,7 @@ def _sjekk(url: str, klient: httpx.Client) -> list[str]:
         if OPPRETT_KONTO not in svar.text:
             avvik.append(f"GET /registrer: fant ikke «{OPPRETT_KONTO}»")
 
-    # 3. Innlogging med seed-passordet: skal avvises med 422
+    # 3. Innlogging med en e-post som ikke kan registreres: skal avvises med 422
     treff = CSRF_FELT.search(innloggingsside.text)
     if treff is None:
         avvik.append("GET /logg-inn: fant ikke det skjulte feltet csrf_token")
@@ -121,8 +129,8 @@ def _sjekk(url: str, klient: httpx.Client) -> list[str]:
             data={
                 "csrf_token": treff.group(1),
                 "neste": "/",
-                "epost": SEED_EPOST,
-                "passord": SEED_PASSORD,
+                "epost": ROYKTTEST_EPOST,
+                "passord": ROYKTTEST_PASSORD,
             },
             headers={"Origin": opphav},
             follow_redirects=False,
@@ -133,7 +141,11 @@ def _sjekk(url: str, klient: httpx.Client) -> list[str]:
                 "(se app/core/csrf.py:_samme_opphav)"
             )
         elif svar.status_code in (302, 303):
-            avvik.append("POST /logg-inn: innloggingen lyktes. Det finnes en demokonto i produksjon")
+            # Skal være umulig: e-posten kan ikke registreres.
+            avvik.append(
+                f"POST /logg-inn: innloggingen med {ROYKTTEST_EPOST} lyktes. "
+                "Kontoen skal ikke kunne finnes"
+            )
         elif svar.status_code != 422:
             avvik.append(f"POST /logg-inn: status {svar.status_code}, forventet 422")
         elif FEIL_INNLOGGING not in svar.text and FOR_MANGE_FORSOK not in svar.text:

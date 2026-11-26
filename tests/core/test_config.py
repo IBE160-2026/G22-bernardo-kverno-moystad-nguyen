@@ -19,10 +19,13 @@ def lag(**verdier) -> Settings:
 
 def test_standardverdier_gir_lokal_kjoring_uten_env(monkeypatch: pytest.MonkeyPatch) -> None:
     """NFR-1: appen starter uten `.env`, mot en SQLite-fil."""
-    for navn in ("APP_ENV", "DATABASE_URL", "SECRET_KEY", "OPENROUTER_API_KEY", "OPENROUTER_MODEL"):
+    for navn in (
+        "APP_ENV", "DATABASE_URL", "SECRET_KEY", "OPENROUTER_API_KEY", "OPENROUTER_MODEL", "VERCEL"
+    ):
         monkeypatch.delenv(navn, raising=False)
     settings = lag()
     assert settings.app_env == "local"
+    assert settings.vercel == ""
     assert settings.database_url == "sqlite:///./nabolagshelten.db"
     assert settings.secret_key == STANDARD_NOKKEL
     assert settings.openrouter_api_key == ""
@@ -60,6 +63,30 @@ def test_ugyldig_miljo_stopper(monkeypatch: pytest.MonkeyPatch, verdier: dict) -
 def test_produksjon_med_ekte_nokkel_godtas() -> None:
     settings = lag(app_env="production", secret_key=EKTE_NOKKEL, database_url=POSTGRES_URL)
     assert settings.produksjon
+
+
+@pytest.mark.parametrize("miljo", ["local", "test"])
+def test_vercel_uten_produksjon_stopper(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, miljo: str
+) -> None:
+    """AD-14, B5: på Vercel (VERCEL=1) stopper oppstarten med tydelig melding når
+    APP_ENV er local eller test, i stedet for å kjøre med standardnøkkelen."""
+    monkeypatch.setenv("VERCEL", "1")
+    monkeypatch.setenv("APP_ENV", miljo)
+    monkeypatch.delenv("SECRET_KEY", raising=False)
+    caplog.set_level(logging.CRITICAL, logger="app.core.config")
+    with pytest.raises(KonfigFeil, match="VERCEL"):
+        les_settings()
+    assert "APP_ENV" in caplog.text
+    assert "VERCEL" in caplog.text
+
+
+def test_vercel_i_produksjon_godtas(monkeypatch: pytest.MonkeyPatch) -> None:
+    """AD-14, B5: VERCEL=1 med APP_ENV=production, ekte nøkkel og Postgres godtas."""
+    monkeypatch.setenv("VERCEL", "1")
+    settings = lag(app_env="production", secret_key=EKTE_NOKKEL, database_url=POSTGRES_URL)
+    assert settings.produksjon
+    assert settings.vercel == "1"
 
 
 @pytest.mark.parametrize(

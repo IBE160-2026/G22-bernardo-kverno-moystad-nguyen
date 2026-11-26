@@ -1,10 +1,13 @@
-"""JavaScript-oppførselen i ekte nettleser (UX-DR13, UX-DR28).
+"""Oppførsel som bare kan sjekkes i ekte nettleser (UX-DR3, UX-DR13, UX-DR28, NFR-11).
 
 Testene som var utsatt til T1: «Vis passord» og sendeknappen fra story 1.2, og
-`poststed.js` fra story 1.4 (`deferred-work.md`).
+`poststed.js` fra story 1.4 (`deferred-work.md`). Menyen ved 360 og 1280 px
+kom med T-1 (V3 i retro Epic 1): axe ser ikke en skjult `nav`.
 """
 
 from __future__ import annotations
+
+from collections.abc import Callable
 
 import pytest
 from playwright.sync_api import Page, expect
@@ -98,3 +101,33 @@ def test_poststed_vises_ved_gyldig_postnummer(page: Page) -> None:
 
     postnummer.fill("57")
     expect(sted).to_have_text("")
+
+
+@pytest.mark.parametrize(
+    ("bredde", "synlig", "skjult"),
+    [
+        (360, ".meny--bunn", ".meny--topp"),
+        (767, ".meny--bunn", ".meny--topp"),
+        (768, ".meny--topp", ".meny--bunn"),
+        (1280, ".meny--topp", ".meny--bunn"),
+    ],
+    ids=["360px-bunnmeny", "767px-bunnmeny", "768px-topplinje", "1280px-topplinje"],
+)
+def test_riktig_meny_ved_bredden(
+    page: Page,
+    logg_inn_som_kari: Callable[[Page], None],
+    bredde: int,
+    synlig: str,
+    skjult: str,
+) -> None:
+    """NFR-11, UX-DR3: bare bunnmenyen under 768 px, bare topplinjemenyen fra 768 px.
+
+    Skjermlesere finner én «Hovedmeny», med de tre valgene.
+    """
+    page.set_viewport_size({"width": bredde, "height": 800})
+    logg_inn_som_kari(page)
+    expect(page.locator(synlig)).to_be_visible()
+    expect(page.locator(skjult)).to_be_hidden()
+    hovedmeny = page.get_by_role("navigation", name="Hovedmeny")
+    expect(hovedmeny).to_have_count(1)
+    expect(hovedmeny.get_by_role("link")).to_have_text(["Oppdrag", "Mine oppdrag", "Profil"])
