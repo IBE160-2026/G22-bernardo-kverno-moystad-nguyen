@@ -2,7 +2,9 @@
 
 Ingen annen kode leser `os.environ`. Appen starter uten `.env`: standardverdiene
 gir lokal kjøring mot en SQLite-fil. I produksjon stopper oppstarten hvis
-`SECRET_KEY` mangler, er standardverdien eller er kortere enn 32 tegn.
+`SECRET_KEY` mangler, er standardverdien eller er kortere enn 32 tegn. På Vercel
+(miljøvariabelen `VERCEL` er satt) stopper oppstarten hvis `APP_ENV` ikke er
+`production`, så appen aldri kjører der med standardnøkkelen eller testruta.
 """
 
 from __future__ import annotations
@@ -37,6 +39,8 @@ class Settings(BaseSettings):
     secret_key: str = STANDARD_NOKKEL
     openrouter_api_key: str = ""
     openrouter_model: str = ""
+    # Settes av Vercel («1») både ved bygging og kjøring. Tom ellers.
+    vercel: str = ""
 
     @field_validator("database_url")
     @classmethod
@@ -53,6 +57,11 @@ class Settings(BaseSettings):
         if self.app_env not in MILJOER:
             raise ValueError(
                 f"APP_ENV={self.app_env!r} er ukjent. Gyldige verdier: {', '.join(MILJOER)}."
+            )
+        if self.vercel and self.app_env != "production":
+            raise ValueError(
+                f"APP_ENV={self.app_env!r} på Vercel (VERCEL er satt). "
+                "Sett APP_ENV=production i Vercel."
             )
         if self.app_env == "production":
             if self.secret_key == STANDARD_NOKKEL:
