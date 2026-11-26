@@ -14,6 +14,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.feil import RegelBrudd
+from app.core.sesjon import Innloggingsutfall
 from app.core.tid import FODSELSDATO_FORMAT, SJEKK_FODSELSDATO, SKRIV_FODSELSDATO
 from app.identity import service
 from app.identity.models import Bruker, Sesjon
@@ -31,6 +32,8 @@ from app.identity.service import (
     TELEFON_FORMAT,
     UNDER_18,
     hash_sesjonsnokkel,
+    logg_inn,
+    logg_ut,
     normaliser_telefon,
     opprett_sesjon,
     registrer,
@@ -389,3 +392,31 @@ def test_opprett_sesjon_sletter_gammel_og_utlopte(db: Session, lag_bruker, sett_
     assert nokler == {hash_sesjonsnokkel(ny)}
     assert hash_sesjonsnokkel(utlopt) not in nokler
     assert ny not in nokler
+
+
+# ---------- sperren etter registrering (R2 i retro Epic 1) ----------
+
+
+def test_registrering_sletter_mislykkede_innloggingsforsok(db: Session) -> None:
+    """FR-2, R2: 4 mislykkede forsøk før registreringen teller ikke med i sperren etterpå.
+
+    Etter registrering og utlogging gir ett feil passord `FEIL`, ikke `SPERRET`.
+    """
+    for _ in range(service.MAKS_MISLYKKEDE - 1):
+        assert logg_inn(db, "kari@x.no", "feil-passord").utfall is Innloggingsutfall.FEIL
+    assert service.antall_mislykkede(db, "kari@x.no") == service.MAKS_MISLYKKEDE - 1
+
+    nokkel = registrer_med(db)
+    assert service.antall_mislykkede(db, "kari@x.no") == 0
+
+    logg_ut(db, nokkel)
+    assert logg_inn(db, "kari@x.no", "feil-passord").utfall is Innloggingsutfall.FEIL
+    assert logg_inn(db, "kari@x.no", GYLDIG["passord"]).utfall is Innloggingsutfall.VELLYKKET
+
+
+def test_registrering_med_feil_rorer_ikke_forsokene(db: Session) -> None:
+    """FR-2, R2: et ugyldig skjema gir `RegelBrudd` som før, og forsøkene står igjen."""
+    for _ in range(service.MAKS_MISLYKKEDE - 1):
+        logg_inn(db, "kari@x.no", "feil-passord")
+    assert feil_ved(db, telefon="123") == [("telefon", TELEFON_FORMAT)]
+    assert service.antall_mislykkede(db, "kari@x.no") == service.MAKS_MISLYKKEDE - 1

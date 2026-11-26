@@ -298,7 +298,9 @@ def registrer(
     passord, telefon, postnummer, fødselsdato (NFR-10). E-posten slås bare opp
     når formatet er gyldig. Unik-constrainten på `bruker.epost` fanger to
     samtidige registreringer: innsettingen kjører i `begin_nested()`, og
-    `IntegrityError` blir samme feil som forhåndssjekken gir.
+    `IntegrityError` blir samme feil som forhåndssjekken gir. Vellykket
+    registrering sletter de mislykkede innloggingsforsøkene for e-posten, slik
+    innloggingen gjør. Ved feil røres de ikke.
     """
     feil: list[tuple[str, str]] = []
 
@@ -364,6 +366,9 @@ def registrer(
     except IntegrityError:
         # En annen registrering med samme e-post kom først (AD-17).
         raise RegelBrudd([("epost", EPOST_I_BRUK)]) from None
+    # Som ved vellykket innlogging: mislykkede forsøk med e-posten før
+    # registreringen skal ikke telle med i sperren etterpå (FR-2, R2).
+    db.execute(delete(Innloggingsforsok).where(Innloggingsforsok.epost == epost_))
     return opprett_sesjon(db, bruker.id, gammel_nokkel=gammel_nokkel)
 
 
