@@ -54,3 +54,22 @@ Heidi ba om push og PR for story 1.5.
 
 ### Åpne punkter
 - Ingen nye. Punktene fra forrige seksjon gjelder fortsatt: T1 grønn i CI og story 1.5 til `done` etter merge, og vakten mot `APP_ENV=test` på Vercel.
+
+## 2026-11-26 kl. 21:37 — Heidi
+
+### Oppgave
+Heidi ba om merge av PR #5 når alle CI-jobbene var grønne.
+
+### Plan
+- Ventet på CI for siste commit i PR-en, merget med merge-commit (som #4) og fulgte `Deploy`.
+- Sjekket `/_test/tilstand` i produksjon.
+
+### Resultat
+- CI var grønn på `171d9ef`: gitleaks, pytest (SQLite) og alembic heads, pytest (Postgres), og T1 (Playwright og axe) på 58 s. Det var første kjøring av T1 på GitHub.
+- PR #5 er merget som `8290941`.
+- `Deploy` (kjøring 45892049950) er grønn: CI med T1, migrering, deploy og røyktest.
+- I produksjon gir `GET /_test/tilstand` 404. `POST` uten token gir 403, fordi CSRF-sjekken avviser forespørselen før rutingen. Ruta finnes altså ikke.
+
+### Åpne punkter
+- Story 1.5 er ikke satt til `done` ennå (står som `review`). Det fullfører Epic 1.
+- Vakten mot `APP_ENV=test` på Vercel står fortsatt åpen.
