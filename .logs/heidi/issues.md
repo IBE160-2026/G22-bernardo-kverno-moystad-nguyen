@@ -73,5 +73,5 @@
 - [ ] 2026-11-26 [retrospektiv-epic-1](984-2026-11-26-22-05-08-retrospektiv-epic-1.md) — T-6 specer for stories som endrer en flyt en tidligere story eide, lister den storyens invarianter i I/O-matrisen
 - [ ] 2026-11-26 [retrospektiv-epic-1](984-2026-11-26-22-05-08-retrospektiv-epic-1.md) — T-7 sjekk i Vercel-byggloggen at dev-gruppen (Playwright, axe) ikke kommer med i funksjonen
 - [ ] 2026-11-26 [retrospektiv-epic-1](984-2026-11-26-22-05-08-retrospektiv-epic-1.md) — avgjør om reviewen for små stories skal begrenses (bare medium og høyere, eller færre linser) når 21 stories gjenstår
-- [ ] 2026-11-26 [t-1-herding](983-2026-11-26-22-28-43-t-1-herding.md) — etter merge av T-1: sjekk at Deploy på `main` er grønn med den nye røyktesten, og sett `epic-1-retro-T1-herding` til `done` i sprint-status
+- [x] 2026-11-26 [t-1-herding](983-2026-11-26-22-28-43-t-1-herding.md) — etter merge av T-1: sjekk at Deploy på `main` er grønn med den nye røyktesten, og sett `epic-1-retro-T1-herding` til `done` i sprint-status (løst 2026-11-26, Deploy 45899388775 grønn)
 - [ ] 2026-11-26 [t-1-herding](983-2026-11-26-22-28-43-t-1-herding.md) — GitHub Environment `production` (bare `main`, med hemmelighetene) som ekte vern for deploy; krever admin (`deferred-work.md`)
