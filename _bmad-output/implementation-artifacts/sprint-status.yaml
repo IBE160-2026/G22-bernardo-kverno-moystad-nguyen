@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 11-24-2026 00:00
-last_updated: 11-26-2026 21:38
+last_updated: 11-26-2026 22:04
 project: G22-bernardo-kverno-moystad-nguyen
 project_key: NOKEY
 tracking_system: file-system
@@ -41,7 +41,7 @@ development_status:
   1-3-skjelett-appen-publiseres-i-produksjon: done
   1-4-registrere-konto: done
   1-5-automatisk-test-av-universell-utforming: done
-  epic-1-retrospective: optional
+  epic-1-retrospective: done
 
   epic-2: backlog
   2-1-legge-ut-oppdrag: backlog
@@ -78,3 +78,55 @@ development_status:
   6-2-brukertest-med-personer-utenfor-gruppen-t6: backlog
   6-3-readme-og-repo-klare-for-sensor: backlog
   epic-6-retrospective: optional
+action_items:
+  - id: "epic-1-retro-T1-herding"
+    epic: 1
+    action: "Herding før story 2.1 (én bmad-build): røyktesten tåler åpen registrering
+      + test av grønn sti; registrer sletter innloggingsforsok; deploy-jobben bare
+      fra main; test som importerer main.py; E2E-sjekk av bunnmeny 360 px og topplinje
+      1280 px; Settings-vakt mot test/local på Vercel (B5); README-status Epic 1 ferdig"
+    owner: "Heidi"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-1-retro-2026-11-26.md"
+  - id: "epic-1-retro-T2-neste-registrering"
+    epic: 1
+    action: "Story 2.3: akseptansekriterium om at neste bæres gjennom «Registrer deg»
+      og registreringen (trygg_neste)"
+    owner: "Heidi"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-1-retro-2026-11-26.md"
+  - id: "epic-1-retro-T3-seed-alle-tabeller"
+    epic: 1
+    action: "Story 2.1: last_eksempeldata tømmer alle tabeller unntatt postnummer
+      (omvendt sorted_tables), med test"
+    owner: "Heidi"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-1-retro-2026-11-26.md"
+  - id: "epic-1-retro-T4-ki-utgave"
+    epic: 1
+    action: "Story 5.1: app.state.ki_utgave settes alltid i lag_app(); bare /_test/tilstand
+      overstyrer"
+    owner: "Heidi"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-1-retro-2026-11-26.md"
+  - id: "epic-1-retro-T5-tastatursjekk"
+    epic: 1
+    action: "DoD: ta tastatursjekken for 1.2 og 1.4 nå; senere stories settes ikke
+      done før sjekken er gjort eller eksplisitt utsatt til 6.1"
+    owner: "Heidi"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-1-retro-2026-11-26.md"
+  - id: "epic-1-retro-T6-sommer-i-spec"
+    epic: 1
+    action: "Spec for story som endrer en flyt en tidligere story eide, lister den
+      tidligere storyens invarianter i I/O-matrisen"
+    owner: "Heidi"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-1-retro-2026-11-26.md"
+  - id: "epic-1-retro-T7-vercel-bunt"
+    epic: 1
+    action: "Sjekk i Vercel-byggloggen at dev-gruppen (Playwright, axe) ikke er med
+      i funksjonen"
+    owner: "Heidi"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-1-retro-2026-11-26.md"
