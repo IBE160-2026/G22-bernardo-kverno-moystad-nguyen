@@ -1,6 +1,6 @@
 # CI for Nabolagshelten (AR-7, NFR-3, AD-13).
 # Kjører på hver PR og på push til main: pytest mot SQLite og Postgres,
-# ett Alembic-hode og gitleaks over hele historikken. deploy.yml kaller den
+# ett Alembic-hode, T1 (Playwright og axe, SM-5) og gitleaks over hele historikken. deploy.yml kaller den
 # også (workflow_call) før publisering, så bare testet kode når produksjon.
 # Bruker aldri pull_request_target, og jobbene trenger ingen hemmeligheter.
 name: CI
@@ -67,6 +67,25 @@ jobs:
         run: uv sync --locked
       - name: Kjør testene mot Postgres
         run: uv run pytest
+
+  t1:
+    # T1: universell utforming og JavaScript i ekte nettleser (SM-5, NFR-6, NFR-7).
+    # Mot SQLite; serveren og databasen lages av tests/e2e/conftest.py.
+    name: T1 (Playwright og axe)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          version: "0.12.13"
+          enable-cache: true
+      - name: Installer avhengigheter
+        run: uv sync --locked
+      - name: Installer Chromium
+        run: uv run playwright install --with-deps chromium
+      - name: Kjør T1
+        run: uv run pytest -m e2e
 
   gitleaks:
     name: gitleaks (hele historikken)

@@ -4,6 +4,7 @@ Her kobles slicene til `core`: `Autentisering` fra identity (AD-4).
 Menykroken blir påkrevd fra story 2.4. Mangler en kobling, starter ikke appen.
 Postnummerregisteret lastes her, så en manglende `data/postnumre.tsv` stopper
 oppstarten og ikke den første forespørselen som trenger et postnummer (AR-1).
+Bare når `APP_ENV=test` kobles `/_test/tilstand` og seed inn (AD-14).
 """
 
 from __future__ import annotations
@@ -79,4 +80,14 @@ def lag_app(
     app.include_router(identity_router)
     app.include_router(oppdrag_router)
     app.include_router(profil_router)
+
+    if settings.test:
+        # Bare i test: E2E setter tilstanden gjennom `/_test/tilstand` (AD-14).
+        # `core` når seed bare gjennom `app.state`, som `Autentisering` (AD-1).
+        from app import seed
+        from app.core.testtilstand import router as testtilstand_router
+
+        app.state.last_eksempeldata = seed.last_eksempeldata
+        app.state.ki_utgave = "mock"
+        app.include_router(testtilstand_router)
     return app

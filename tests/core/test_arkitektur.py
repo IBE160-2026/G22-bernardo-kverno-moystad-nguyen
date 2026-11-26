@@ -16,6 +16,7 @@ from pathlib import Path
 import pytest
 
 from app import lag_app
+from app.core.config import Settings
 from app.core.sesjon import alle_ruter
 
 ROT = Path(__file__).resolve().parents[2]
@@ -154,10 +155,29 @@ def test_rutenavn_er_unike_og_folger_monsteret() -> None:
         assert slice_ in LOVLIGE_IMPORTER and handling, n
 
 
-def test_ingen_testruter_i_lag_app() -> None:
-    app = lag_app()
-    stier = [getattr(r, "path", "") for r in alle_ruter(app.routes)]
-    assert not any(s.startswith("/_test") for s in stier)
+def _testruter(app_env: str) -> dict[str, str]:
+    # Produksjon nekter SQLite i `Settings`, så miljøet byttes etter valideringen.
+    # Om ruta finnes, avgjøres bare av APP_ENV.
+    settings = Settings(
+        _env_file=None, app_env="local", secret_key="x" * 32, database_url="sqlite:///:memory:"
+    ).model_copy(update={"app_env": app_env})
+    app = lag_app(settings=settings)
+    return {
+        getattr(r, "path", ""): getattr(r, "name", "")
+        for r in alle_ruter(app.routes)
+        if getattr(r, "path", "").startswith("/_test")
+    }
+
+
+@pytest.mark.parametrize("app_env", ["local", "production"])
+def test_ingen_testruter_utenfor_test(app_env: str) -> None:
+    """AD-14: `/_test`-ruter finnes aldri i `local` eller `production`."""
+    assert _testruter(app_env) == {}
+
+
+def test_test_har_bare_test_tilstand() -> None:
+    """AD-14: i `test` finnes akkurat `/_test/tilstand`, med navnet `core.test_tilstand`."""
+    assert _testruter("test") == {"/_test/tilstand": "core.test_tilstand"}
 
 
 def test_workflows_bruker_aldri_pull_request_target() -> None:

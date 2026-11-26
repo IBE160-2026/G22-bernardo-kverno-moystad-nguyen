@@ -21,7 +21,8 @@ Sjekkene (radene i I/O-matrisen i spec-1-3):
 Avslutter med kode 0 og «Røyktest OK», ellers kode 1 og én kort linje per avvik.
 Skriver aldri ut cookies eller CSRF-nøkler. Tekstene og headerne hentes fra
 appen selv, så de ikke kan skli fra hverandre. `tests/test_roykttest.py` kjører
-`kjor()` mot testappen i CI.
+`kjor()` i CI mot en lokal app (APP_ENV=local) på test-databasen, og mot testappen
+for å vise at `/_test/tilstand` oppdages.
 """
 
 from __future__ import annotations

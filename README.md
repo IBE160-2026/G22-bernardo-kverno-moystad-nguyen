@@ -21,7 +21,7 @@ Prosjektet er i implementasjonsfasen (Epic 1). Frist for innlevering er 15. dese
 | UX-design | Ferdig: designsystem, atferd, mockups og tilgjengelighetsgjennomgang |
 | Arkitektur | Ferdig: FastAPI + Jinja, SQLite lokalt og Supabase Postgres på Vercel (AD-1–AD-17) |
 | Epics og stories | Ferdig: [epics.md](_bmad-output/planning-artifacts/epics.md) og [sprint-status.yaml](_bmad-output/implementation-artifacts/sprint-status.yaml) |
-| Implementasjon og testing | Pågår: story 1.1–1.3 ferdig (skjelett, innlogging, publisering i produksjon), story 1.4 (registrering) under arbeid |
+| Implementasjon og testing | Pågår: story 1.1–1.4 ferdig (skjelett, innlogging, publisering i produksjon, registrering), story 1.5 (automatisk test av universell utforming) under arbeid |
 
 ## Kom i gang
 
@@ -84,11 +84,29 @@ uv run pytest
 
 Testene bruker en midlertidig SQLite-fil som slettes etterpå. Med miljøvariabelen `TEST_DATABASE_URL` kjører de mot Postgres i stedet, slik CI gjør.
 
+Vanlig `uv run pytest` hopper over T1 (testene er valgt bort, ikke feilet), så kommandoen virker uten nettleser.
+
+#### T1: universell utforming i nettleser
+
+T1 åpner sidene i en ekte nettleser (Chromium) med Playwright og sjekker dem med axe (SM-5, NFR-6, NFR-7). Alt installeres med uv, uten npm:
+
+```bash
+uv run playwright install chromium   # én gang, laster ned nettleseren
+uv run pytest -m e2e
+```
+
+- Hver side og tilstand sjekkes med axe ved 360 og 1280 px. Brudd med alvorlighet «serious» eller «critical» stopper testen, og feilmeldingen viser regel, alvorlighet og selektor.
+- Hver side sjekkes for vannrett rulling ved 320 px.
+- I tillegg testes JavaScript-oppførselen: «Vis passord», sendeknappen (`aria-disabled`) og poststed ved postnummerfeltet.
+- Testene starter en egen server på en ledig port med en egen SQLite-fil i temp-mappen, og setter tilstanden (testbrukere og klokke) gjennom `POST /_test/tilstand`. Den ruta finnes bare når `APP_ENV=test`.
+- Lista over sider står i `SIDER` i [`tests/e2e/test_t1.py`](tests/e2e/test_t1.py). Hver story som lager en ny side eller tilstand, legger den inn der (Definition of Done).
+- På Linux trenger nettleseren systembiblioteker: `uv run playwright install --with-deps chromium`.
+
 ### Arbeidsflyt og CI
 
 - All kode går via pull request mot `main`, og en PR merges bare når CI er grønn. Logger (`.logs/`) og `sprint-status.yaml` kan pushes direkte til `main`.
 - Regelen er skrevet her fordi ingen i gruppen har admin-rettighet på repoet, så GitHub sin beskyttelse av `main` kan ikke slås på (avvik ført i PRD §9.2).
-- CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) kjører på hver PR og ved push til `main`: pytest mot SQLite og mot Postgres 17, sjekk av at Alembic har nøyaktig ett hode, og gitleaks over hele historikken (NFR-3).
+- CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) kjører på hver PR og ved push til `main`: pytest mot SQLite og mot Postgres 17, sjekk av at Alembic har nøyaktig ett hode, T1 med Playwright og axe (SM-5), og gitleaks over hele historikken (NFR-3).
 - Etter merge til `main` publiseres appen automatisk, se under.
 
 ### Publisering i produksjon
@@ -155,6 +173,7 @@ app/admin.py        Manuell hjelp: nytt passord (uv run python -m app.admin nytt
 data/postnumre.tsv  Brings postnummerregister i UTF-8
 migrations/         Alembic-migreringer (skjema og postnumre)
 tests/              pytest-tester per slice; tests/core/ har arkitektur, mellomvare, tilgang, feil og migrering
+tests/e2e/          T1: Playwright og axe i ekte nettleser (uv run pytest -m e2e)
 scripts/roykttest.py  Røyktest mot en publisert versjon (brukes av deploy.yml)
 .github/workflows/  CI (ci.yml), publisering (deploy.yml) og keepalive (keepalive.yml)
 vercel.json         Vercel-oppsett: region, maks kjøretid, Git-publisering av; .vercelignore utelater dokumenter og tester

@@ -24,6 +24,9 @@ dependencies = [
 dev = [
     "pytest~=9.2.0",
     "httpx~=0.28.1",
+    "playwright~=1.65.2",
+    "pytest-playwright~=0.10.0",
+    "axe-playwright-python~=0.1.9",
 ]
 
 [tool.uv]
@@ -32,8 +35,17 @@ package = false
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
-addopts = "-ra"
+# T1 (Playwright og axe) har markøren e2e og trenger en nettleser. Vanlig
+# `uv run pytest` hopper over den, så README-kommandoen virker på en ren maskin
+# (NFR-1). T1 kjøres med `uv run pytest -m e2e` (SM-5).
+addopts = "-ra -m \"not e2e\""
+markers = [
+    "e2e: T1, ende-til-ende i ekte nettleser med Playwright og axe (SM-5, NFR-6, NFR-7)",
+]
 filterwarnings = [
     # Starlette 1.10 anbefaler httpx2 for TestClient. Arkitekturen bruker httpx 0.28 (AR-2).
     "ignore:Using `httpx` with `starlette.testclient` is deprecated",
+    # pytest-playwright 0.10 definerer sin `base_url`-fixtur som metode i en klasse.
+    # Advarselen gjelder pluginen, ikke testene våre (AR-29).
+    "ignore:Session-scoped fixtures defined as instance methods are deprecated",
 ]

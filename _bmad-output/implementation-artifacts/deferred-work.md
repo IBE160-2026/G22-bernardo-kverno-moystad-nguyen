@@ -13,3 +13,8 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-4-registrere-konto.md`
   summary: `app/core/static/js/poststed.js` (poststed ved postnummerfeltet) kjøres ikke av noen automatisk test. Uten test merkes det ikke om skriptet slutter å fylle inn eller tømme poststedet, eller om sjekken av utdaterte svar forsvinner.
   evidence: Funnet i reviewen av story 1.4 (V3 og B8). Repoet har ingen JS- eller nettlesertester ennå, og pytest sjekker bare HTML-en og at filene svarer 200. Tas i story 1.5 (Playwright): skriv `5006`, forvent «Bergen», skriv `57`, forvent tomt.
+  resolution: Delvis løst 2026-11-25 (story 1.5). `tests/e2e/test_klientatferd.py::test_poststed_vises_ved_gyldig_postnummer` skriver `5006` og forventer «Bergen», og så `57` og forventer tomt. Sjekken av utdaterte svar (feltet endres mens `postnumre.json` hentes) har fortsatt ingen test.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-5-automatisk-test-uu.md`
+  summary: Bare `APP_ENV` hindrer at den offentlige ruta `POST /_test/tilstand` (som tømmer `bruker` med `seed=1`) og standardnøkkelen kommer i produksjon. Settes `APP_ENV=test` ved en feil i Vercel, starter appen med ruta mot Supabase.
+  evidence: Funnet i reviewen av story 1.5 (B5). Feilkonfigureringen fantes fra før: med `APP_ENV=local` starter appen også med standardnøkkelen. Story 1.5 gjør skaden større. Røyktesten oppdager det etter publisering (GET gir 405, ikke 404, og nå testet), men ruta er åpen til noen ruller tilbake. Mulig retting: `Settings` nekter `test` og `local` når `VERCEL` er satt, med en test. Severity medium.
