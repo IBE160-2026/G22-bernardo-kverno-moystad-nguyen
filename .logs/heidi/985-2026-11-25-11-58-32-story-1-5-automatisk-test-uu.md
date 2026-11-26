@@ -38,3 +38,19 @@ Bygge story 1.5 (T1: automatisk test av universell utforming med Playwright og a
 ### Åpne punkter
 - **Etter push og merge av story 1.5:** T1-jobben skal være grønn i CI (første kjøring på GitHub), og story 1.5 skal settes til `done`. Da er Epic 1 ferdig før sjekkpunktet 28. november.
 - **Vakt i `Settings`:** nekt `APP_ENV=test` og `local` når `VERCEL` er satt (B5 i triage-loggen, `deferred-work.md`).
+
+## 2026-11-26 kl. 21:28 — Heidi
+
+### Oppgave
+Heidi ba om push og PR for story 1.5.
+
+### Plan
+- Pushet branchen og åpnet PR mot `main`, med samme oppsett som PR #4.
+
+### Resultat
+- `story/1-5-automatisk-test-uu` er pushet til origin.
+- PR #5: https://github.com/IBE160-2026/G22-bernardo-kverno-moystad-nguyen/pull/5 (sjekkliste for etter merge i PR-beskrivelsen).
+- CI startet med fire jobber, blant dem den nye «T1 (Playwright og axe)». De var ikke ferdige da loggen ble skrevet.
+
+### Åpne punkter
+- Ingen nye. Punktene fra forrige seksjon gjelder fortsatt: T1 grønn i CI og story 1.5 til `done` etter merge, og vakten mot `APP_ENV=test` på Vercel.
