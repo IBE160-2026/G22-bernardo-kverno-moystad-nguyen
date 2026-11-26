@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 11-24-2026 00:00
-last_updated: 11-26-2026 22:04
+last_updated: 11-26-2026 22:45
 project: G22-bernardo-kverno-moystad-nguyen
 project_key: NOKEY
 tracking_system: file-system
@@ -86,7 +86,7 @@ action_items:
       fra main; test som importerer main.py; E2E-sjekk av bunnmeny 360 px og topplinje
       1280 px; Settings-vakt mot test/local på Vercel (B5); README-status Epic 1 ferdig"
     owner: "Heidi"
-    status: in-progress
+    status: done
     ref: "_bmad-output/implementation-artifacts/epic-1-retro-2026-11-26.md"
   - id: "epic-1-retro-T2-neste-registrering"
     epic: 1
