@@ -12,7 +12,7 @@ Appen har én kjerneflyt: legge ut et oppdrag → melde interesse → velge hjel
 
 ## Status
 
-Prosjektet er i implementasjonsfasen (Epic 1). Frist for innlevering er 15. desember 2026.
+Prosjektet er i implementasjonsfasen: Epic 1 (konto og innlogging) er ferdig, Epic 2 (legge ut og finne oppdrag) er neste. Frist for innlevering er 15. desember 2026.
 
 | Steg | Status |
 |---|---|
@@ -21,7 +21,7 @@ Prosjektet er i implementasjonsfasen (Epic 1). Frist for innlevering er 15. dese
 | UX-design | Ferdig: designsystem, atferd, mockups og tilgjengelighetsgjennomgang |
 | Arkitektur | Ferdig: FastAPI + Jinja, SQLite lokalt og Supabase Postgres på Vercel (AD-1–AD-17) |
 | Epics og stories | Ferdig: [epics.md](_bmad-output/planning-artifacts/epics.md) og [sprint-status.yaml](_bmad-output/implementation-artifacts/sprint-status.yaml) |
-| Implementasjon og testing | Pågår: story 1.1–1.4 ferdig (skjelett, innlogging, publisering i produksjon, registrering), story 1.5 (automatisk test av universell utforming) under arbeid |
+| Implementasjon og testing | Pågår: Epic 1 ferdig (story 1.1–1.5: skjelett, innlogging, publisering i produksjon, registrering og automatisk test av universell utforming), med retrospektiv og herding. Epic 2 er neste |
 
 ## Kom i gang
 
@@ -113,9 +113,9 @@ uv run pytest -m e2e
 
 Appen kjører på Vercel (region `dub1`, Irland) med database hos Supabase (`eu-west-1`): <https://nabolagshelten.vercel.app/> (AR-1, AR-7).
 
-- **Når:** hver push til `main` som endrer kode, kjører [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml). Endringer som bare gjelder `.logs/`, `_bmad-output/`, `docs/` eller `.md`-filer, publiseres ikke. Workflowen kan også startes for hånd (Actions → Deploy → Run workflow).
+- **Når:** hver push til `main` som endrer kode, kjører [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml). Endringer som bare gjelder `.logs/`, `_bmad-output/`, `docs/` eller `.md`-filer, publiseres ikke. Workflowen kan også startes for hånd (Actions → Deploy → Run workflow), men publiseringen kjører bare fra `main`. Startes den fra en annen branch, kjører bare CI.
 - **Hva:** først kjører hele CI ([`ci.yml`](.github/workflows/ci.yml)) på samme commit (`needs: ci`), så bare testet kode publiseres. Deretter `alembic upgrade head` mot Supabase gjennom session pooler (port 5432). Feiler migreringen, publiseres ingenting. Så `vercel deploy --prod` med Vercel CLI (`vercel@66.6.0`), og til slutt en røyktest mot produksjonsadressen. Vercels GitHub-app og preview-miljøer brukes ikke (`vercel.json`). En publisering avbrytes aldri midt i; neste venter i kø.
-- **Røyktest:** `uv run python scripts/roykttest.py [url]` sjekker at innloggingssiden og registreringssiden svarer med sikkerhetsheaderne, at et innloggingsforsøk med Karis lokale testpassord avvises med «Feil e-post eller passord.» (det viser at CSRF-sjekken virker bak Vercels proxy, at databasen svarer, og at det ikke finnes testbrukere i produksjon), at testruta `/_test/tilstand` gir 404, og at CSS-fila lastes. Røyktesten registrerer aldri kontoer. Den kan også kjøres mot en lokal server, men bare uten seed: seed lager Kari, og da rapporterer røyktesten en demokonto. `tests/test_roykttest.py` kjører den mot testappen i CI.
+- **Røyktest:** `uv run python scripts/roykttest.py [url]` sjekker at innloggingssiden og registreringssiden svarer med sikkerhetsheaderne, at et innloggingsforsøk med e-posten `roykttest@nabolagshelten` avvises med «Feil e-post eller passord.» (det viser at CSRF-sjekken virker bak Vercels proxy og at databasen svarer), at testruta `/_test/tilstand` gir 404, og at CSS-fila lastes. E-posten kan ikke registreres (domenet mangler punktum), så ingen kan lage kontoen og gjøre publiseringen rød. At det ikke finnes testbrukere fra seed i produksjon, sikres av at seed nekter å kjøre der. Hvem som helst kan likevel registrere en adresse som `kari@eksempel.no` som en vanlig konto (den er da ikke en seed-konto), og derfor ser røyktesten ikke lenger etter den. Røyktesten registrerer aldri kontoer. Den kan også kjøres mot en lokal server, også med seed; da er eneste avvik at CSRF-cookien mangler `Secure`, fordi den bare settes i produksjon. `tests/test_roykttest.py` kjører den i CI mot en app med `APP_ENV=production` (ingen avvik), mot en lokal app og mot testappen.
 - **Feiler røyktesten etter publisering:** eieren ruller tilbake i Vercel (Deployments → forrige versjon → Instant Rollback) og retter feilen i en ny PR.
 - **Keepalive:** [`.github/workflows/keepalive.yml`](.github/workflows/keepalive.yml) besøker forsiden hver tredje dag med en falsk sesjonscookie. Appen slår opp sesjonen i databasen og svarer 303, så Supabase-prosjektet ikke settes på pause. Feiler jobben, sender GitHub e-post.
 - **Ingen seed i produksjon:** seed nekter å kjøre der, og migreringer legger bare til etter første publisering.
@@ -125,7 +125,7 @@ Hemmelighetene ligger bare hos Vercel og GitHub, aldri i repoet, i logger eller 
 
 | Hvor | Navn | Innhold |
 |---|---|---|
-| Vercel env (Production) | `APP_ENV` | `production` |
+| Vercel env (Production) | `APP_ENV` | `production` (appen nekter å starte på Vercel med `local` eller `test`) |
 | Vercel env (Production) | `DATABASE_URL` | Supabase transaction pooler (port 6543), brukt av appen |
 | Vercel env (Production) | `SECRET_KEY` | tilfeldig nøkkel på minst 32 tegn |
 | GitHub Secrets | `MIGRATION_DATABASE_URL` | Supabase session pooler (port 5432), brukt av migreringen |
