@@ -97,6 +97,7 @@ context:
 - **Advarsel fra pytest-playwright 0.10** (`base_url`-fixturen er en metode i en klasse) er filtrert bort i `pyproject.toml`; den gjelder pluginen, ikke testene.
 - **axe.min.js** lastes med `Axe.from_file(AXE_FILE_PATH)`, fordi biblioteket ellers leser fila med systemets tegnsett på Windows.
 - **Sendeknappen:** andre innsending gjøres med Enter i e-postfeltet, fordi Playwright regner `aria-disabled="true"` som deaktivert og ikke vil klikke. Det er også slik en bruker kan sende på nytt.
+- **CI og produksjon, 2026-11-26:** første kjøring av T1 på GitHub var grønn (58 s) i PR #5. Etter merge (`8290941`) var `Deploy` grønn med CI, migrering, deploy og røyktest. I produksjon gir `GET /_test/tilstand` 404.
 
 ## Spec Change Log
 
