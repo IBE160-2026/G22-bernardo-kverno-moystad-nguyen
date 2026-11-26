@@ -69,7 +69,8 @@ Heidi ba om merge av PR #5 når alle CI-jobbene var grønne.
 - PR #5 er merget som `8290941`.
 - `Deploy` (kjøring 45892049950) er grønn: CI med T1, migrering, deploy og røyktest.
 - I produksjon gir `GET /_test/tilstand` 404. `POST` uten token gir 403, fordi CSRF-sjekken avviser forespørselen før rutingen. Ruta finnes altså ikke.
+- Etter at Heidi ba om det, ble story 1.5 og Epic 1 satt til `done` i `sprint-status.yaml`, og resultatet fra CI og produksjon ble ført i Implementation Notes i specen (`167cc5d`). Epic 1 ble altså ferdig før sjekkpunktet 28. november.
+- Lukket i `issues.md`: punktet om T1 i CI og `done`, og sjekkpunktet 28. november.
 
 ### Åpne punkter
-- Story 1.5 er ikke satt til `done` ennå (står som `review`). Det fullfører Epic 1.
-- Vakten mot `APP_ENV=test` på Vercel står fortsatt åpen.
+- Vakten mot `APP_ENV=test` på Vercel står fortsatt åpen (`deferred-work.md`).
