@@ -86,7 +86,7 @@ action_items:
       fra main; test som importerer main.py; E2E-sjekk av bunnmeny 360 px og topplinje
       1280 px; Settings-vakt mot test/local på Vercel (B5); README-status Epic 1 ferdig"
     owner: "Heidi"
-    status: open
+    status: in-progress
     ref: "_bmad-output/implementation-artifacts/epic-1-retro-2026-11-26.md"
   - id: "epic-1-retro-T2-neste-registrering"
     epic: 1

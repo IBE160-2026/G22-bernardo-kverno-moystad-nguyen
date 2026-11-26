@@ -2,7 +2,7 @@
 title: 'T-1: Herding etter Epic 1, før story 2.1'
 type: 'bugfix'
 created: '2026-11-26'
-status: 'in-progress'
+status: 'done'
 route: 'dispatch'
 review_loop_iteration: 0
 baseline_commit: '76ea67c1e404e7d9756bee56b1359af072e741be'
@@ -63,15 +63,15 @@ context:
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `scripts/roykttest.py` -- logg inn med `ROYKTTEST_EPOST` i stedet for Kari, og oppdater docstring -- R1
-- [ ] `tests/test_roykttest.py` -- grønn sti mot en produksjonsapp (`== []`), Kari-finnes-test, test av at e-posten ikke kan registreres -- R1, V2, AD-14
-- [ ] `app/identity/service.py` + test -- `registrer` sletter forsøkene for e-posten. Test: 4 mislykkede forsøk, registrering, utlogging, 1 feil passord gir `FEIL`, ikke `SPERRET` -- R2, FR-2
-- [ ] `.github/workflows/deploy.yml` -- ref-vakt på `deploy`, og en kommentar -- R4, AR-7
-- [ ] `tests/test_main.py` -- importer `main` og sjekk at `main.app` er en `FastAPI` med ruta `identity.logg_inn` -- V1, AD-1
-- [ ] `app/core/config.py` + `tests/core/test_config.py` -- Vercel-vakt med test for local, test og production -- B5, AD-14
-- [ ] `tests/e2e/test_klientatferd.py` -- menysynlighet ved 360 og 1280 px -- V3, NFR-11, UX-DR3
-- [ ] `README.md` -- Epic 1 ferdig, Epic 2 neste. Røyktekst oppdatert -- S5
-- [ ] `deferred-work.md` -- resolution på B5
+- [x] `scripts/roykttest.py` -- logg inn med `ROYKTTEST_EPOST` i stedet for Kari, og oppdater docstring -- R1
+- [x] `tests/test_roykttest.py` -- grønn sti mot en produksjonsapp (`== []`), Kari-finnes-test, test av at e-posten ikke kan registreres -- R1, V2, AD-14
+- [x] `app/identity/service.py` + test -- `registrer` sletter forsøkene for e-posten. Test: 4 mislykkede forsøk, registrering, utlogging, 1 feil passord gir `FEIL`, ikke `SPERRET` -- R2, FR-2
+- [x] `.github/workflows/deploy.yml` -- ref-vakt på `deploy`, og en kommentar -- R4, AR-7
+- [x] `tests/test_main.py` -- importer `main` og sjekk at `main.app` er en `FastAPI` med ruta `identity.logg_inn` -- V1, AD-1
+- [x] `app/core/config.py` + `tests/core/test_config.py` -- Vercel-vakt med test for local, test og production -- B5, AD-14
+- [x] `tests/e2e/test_klientatferd.py` -- menysynlighet ved 360 og 1280 px -- V3, NFR-11, UX-DR3
+- [x] `README.md` -- Epic 1 ferdig, Epic 2 neste. Røyktekst oppdatert -- S5
+- [x] `deferred-work.md` -- resolution på B5
 
 **Acceptance Criteria:**
 - Given en kode-PR, when CI kjører, then `uv run pytest` og `uv run pytest -m e2e` er grønne, og ingen test kobler til en ekte Postgres utenfor Postgres-jobben.
@@ -80,6 +80,23 @@ context:
 ## Spec Change Log
 
 ## Review Triage Log
+
+Pass 1 (2026-11-26). Lag: Blind Hunter (BH), Edge Case Hunter (EC), Verification Gap (VG: ingen hull funnet).
+
+| # | Lag | Funn | Verdict | Begrunnelse | Rute |
+|---|---|---|---|---|---|
+| 1 | BH, EC | `concurrency` på workflownivå: en dispatch fra en annen branch (nå bare CI) går inn i gruppen `deploy-production` og kan avbryte en ventende publisering fra main | medium | Bekreftet i `deploy.yml` l. 24–27: gruppen er felles for alle refs, og GitHub beholder bare én ventende kjøring per gruppe | patch: `concurrency` flyttes til jobben `deploy` |
+| 2 | BH | Ref-vakten kan omgås ved å endre workflowen på egen branch før dispatch, og kommentaren lover for mye | medium | Riktig: `workflow_dispatch` kjører branchens egen `deploy.yml`, og hemmelighetene er tilgjengelige. Risikoen fantes før T-1. Ekte vern krever et GitHub Environment, og det er en innstilling utenfor specen | patch (kommentaren) + defer (Environment `production`) |
+| 3 | BH, EC | Grensen på 768 px står i docstringen, men bare 360 og 1280 testes | low | Riktig. Retten er bare to ekstra parametre | patch |
+| 4 | BH | README-setningen om NFR-2 leses som en garanti for at ingen konto som kari@eksempel.no kan finnes | low | Riktig etter R1-beslutningen: kontoen kan registreres som en vanlig konto | patch (formulering) |
+| 5 | BH | Importene i `tests/test_roykttest.py` står ikke i rekkefølge | low | Kosmetisk, en direkte retting | patch |
+| 6 | BH | Vakten virker ikke hvis Vercel ikke gir funksjonen `VERCEL` | maybe-false | Avhenger av innstillingen «Automatically expose System Environment Variables» (standard på). Er den av, er tilstanden som før T-1. Kan bare avgjøres i Vercel. Ville i så fall vært low | avvist |
+| 7 | BH | `VERCEL=0`/`false` tolkes som Vercel | low | Ingen i prosjektet setter dette. Retten ville lagt til en tolkningsregel | avvist |
+| 8 | EC | `vercel env pull .env` eller `vercel dev` med `VERCEL=1` stopper den lokale appen | low | `vercel env pull` skriver til `.env.local` som standard, og `Settings` leser bare `.env`. `vercel dev` brukes ikke i prosjektet. Feilmeldingen sier hva som er galt | avvist |
+| 9 | BH | `test_main` kjører med `APP_ENV=test`, kan få en bufret modul, og `finally` kan skjule feilen | low | Ingen annen test importerer `main` (grep), så modulen er ikke bufret. Produksjonsstien til `Settings` dekkes i `test_config.py`. En manglende `main.app` feiler testen uansett | avvist |
+| 10 | BH | Arkitekturtesten vokter én jobb ved navn, ikke alle jobber med hemmeligheter | low | Gjelder en tenkt framtidig deling av jobben. Retten ville gjort testen mer kompleks | avvist |
+| 11 | BH | R2-testene binder ikke normaliseringen av e-post, og det finnes ingen HTTP-test | false | `logg_inn` lagrer forsøk med `normaliser_epost`, og `registrer` sletter med `epost_ = normaliser_epost(epost)`, samme funksjon. Specen lot plasseringen av testen være åpen | avvist |
+| 12 | BH | README sier «med retrospektiv og herding» mens herdingen er `in-review`, og T1 står `open` i sprint-status | low | README-teksten blir riktig ved merge. Tiltaket settes til `in-progress` nå og `done` etter merge, slik specen sier | avvist (ingen kodeendring) |
 
 ## Design Notes
 
