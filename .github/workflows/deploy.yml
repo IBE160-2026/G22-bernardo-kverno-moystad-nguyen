@@ -1,5 +1,6 @@
 # Publisering til produksjon (AR-1, AR-7, AD-13, NFR-3).
-# Kjører ved push til main som endrer kode, og manuelt (workflow_dispatch).
+# Kjører ved push til main som endrer kode, og manuelt (workflow_dispatch, men
+# jobben deploy bare når ref er main).
 # Rekkefølge: CI (ci.yml) på samme commit → alembic upgrade head mot Supabase (session pooler, port 5432)
 # → vercel deploy --prod → røyktest mot produksjonsadressen.
 # Feiler migreringen, publiseres ingenting. Vercels GitHub-app brukes ikke.
@@ -20,11 +21,6 @@ on:
 permissions:
   contents: read
 
-# En publisering avbrytes aldri midt i; neste venter i kø.
-concurrency:
-  group: deploy-production
-  cancel-in-progress: false
-
 env:
   # Rettes hvis Vercel ga prosjektet et suffiks (se README § Publisering).
   PRODUKSJON_URL: https://nabolagshelten.vercel.app
@@ -37,6 +33,16 @@ jobs:
   deploy:
     name: Migrering, deploy og røyktest
     needs: ci
+    # Bare fra main (AR-7, R4 i retro Epic 1): workflow_dispatch kan startes fra
+    # hvilken som helst branch. Vakten hindrer at kode eller migreringer som ikke
+    # er merget, publiseres ved en feiltakelse. Den er ingen sikkerhetsgrense: den
+    # som kan pushe, kan endre workflowen på sin branch. CI-jobben over kjører uansett.
+    if: github.ref == 'refs/heads/main'
+    # En publisering avbrytes aldri midt i; neste venter i kø. Står på jobben, så
+    # en manuell kjøring fra en annen branch (bare CI) ikke havner i køen.
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

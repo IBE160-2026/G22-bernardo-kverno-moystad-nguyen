@@ -187,3 +187,16 @@ def test_workflows_bruker_aldri_pull_request_target() -> None:
     for fil in workflows:
         tekst = fil.read_text(encoding="utf-8")
         assert not re.search(r"(?m)^[^#\n]*\bpull_request_target\b", tekst), fil
+
+
+def test_deploy_jobben_kjorer_bare_fra_main() -> None:
+    """AR-7, R4: `workflow_dispatch` fra en annen branch skal ikke publisere.
+
+    Jobben `deploy` i `deploy.yml` har ref-vakten på main. Kommentarlinjer telles ikke.
+    """
+    tekst = (ROT / ".github" / "workflows" / "deploy.yml").read_text(encoding="utf-8")
+    jobb = re.search(r"(?ms)^  deploy:\n(.*?)(?=^  \S|\Z)", tekst)
+    assert jobb, "fant ikke jobben deploy"
+    assert re.search(
+        r"(?m)^    if: github\.ref == 'refs/heads/main'\s*$", jobb.group(1)
+    ), "jobben deploy mangler if: github.ref == 'refs/heads/main'"
