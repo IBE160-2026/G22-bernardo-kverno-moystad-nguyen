@@ -656,6 +656,10 @@ slik at jeg raskt finner noe jeg kan hjelpe med.
 **Når** testen søker etter testbrukernes telefonnummer, e-post og fødselsdato
 **Så** finnes ingen av dem (FR-16, AD-16).
 
+**Gitt** en utlogget bruker som åpner en delt lenke til `/oppdrag/{id}`
+**Når** hen trykker «Registrer deg» på innloggingssiden og registrerer seg
+**Så** havner hen på `/oppdrag/{id}`: `neste` bæres som skjult felt gjennom «Registrer deg» og registreringen, også ved 422, og registreringen sender til `trygg_neste(neste)` (FR-1, FR-2, AD-4, retro T-2).
+
 ### Story 2.4: Se egne oppdrag under «Mine oppdrag»
 
 Som oppdragsgiver
