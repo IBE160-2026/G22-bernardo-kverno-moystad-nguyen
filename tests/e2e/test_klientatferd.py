@@ -16,6 +16,8 @@ FR-8, NFR-7, NFR-8, AR-28, UX-DR18, §4.0).
 Bildet (`bilde.js`): skalering før innsending, forhåndsvisningen, «Hva viser bildet?» som
 vises når en fil er valgt, innsending mens skaleringen pågår, og bilde uten JS kom med
 story 2.7 (FR-27, AR-28, AD-18, SM-5, NFR-7, UX-DR33).
+Utløpt innlogging mens «Nytt oppdrag» er utfylt, med og uten JS, kom med story 2.6
+(FR-2, FR-3, AD-7, SM-5, NFR-6, NFR-7).
 """
 
 from __future__ import annotations
@@ -1207,3 +1209,47 @@ def test_bilde_uten_js(browser, browser_context_args: dict) -> None:
         assert _detaljbildet(side) == (900, 900)
     finally:
         kontekst.close()
+
+
+# ---------- utløpt innlogging (story 2.6, AD-7) ----------
+
+TITTEL_UTLOPT = "Måke snø før helgen"
+
+
+def _utlopt_og_logg_inn_igjen(side: Page) -> None:
+    """Kari fyller ut «Nytt oppdrag», sesjonen forsvinner, hun trykker «Publiser» og logger inn
+    på 401-siden. Hun havner i detaljene med kvitteringen og alt hun skrev."""
+    _logg_inn(side, KARI)
+    fyll_ut_nytt_oppdrag(side, tittel=TITTEL_UTLOPT)
+    side.context.clear_cookies(name="sesjon")
+    side.get_by_role("button", name="Publiser").click()
+    expect(side.get_by_role("heading", level=1)).to_have_text("Du må logge inn igjen.")
+    expect(side.get_by_label("E-post")).to_be_focused()
+    expect(side.locator("nav")).to_have_count(0)
+    side.get_by_label("E-post").fill(KARI.epost)
+    side.locator("#innlogging-passord").fill(KARI.passord)
+    side.get_by_role("button", name="Logg inn").click()
+    expect(side.locator("#kvittering")).to_contain_text("Oppdraget er lagt ut.")
+    expect(side.get_by_role("heading", level=1)).to_have_text(TITTEL_UTLOPT)
+    expect(side.get_by_text("Trenger noen som kan måke snø i innkjørselen min i morgen.")).to_be_visible()
+    expect(side.locator(".pris")).to_have_text("200 kr")
+    expect(side.locator(".merkelinje")).to_contain_text("Snømåking")
+    expect(side.locator(".fakta__sted")).to_have_text("0571 Oslo")
+    expect(side.locator(".fakta__tid")).to_have_text("I morgen kl. 07:00")
+
+
+def test_utlopt_innlogging_beholder_skjemaet(page: Page, antall_oppdrag) -> None:
+    """AC 1, AD-7: på mobil (360 px) med JS gir innlogging på 401-siden det publiserte oppdraget."""
+    page.set_viewport_size(MOBIL)
+    _utlopt_og_logg_inn_igjen(page)
+    assert antall_oppdrag(TITTEL_UTLOPT) == 1
+
+
+def test_utlopt_innlogging_uten_js(browser, browser_context_args: dict, antall_oppdrag) -> None:
+    """AC 2, AD-7: samme flyt uten JS gir samme resultat."""
+    kontekst = browser.new_context(**browser_context_args, java_script_enabled=False, viewport=MOBIL)
+    try:
+        _utlopt_og_logg_inn_igjen(kontekst.new_page())
+    finally:
+        kontekst.close()
+    assert antall_oppdrag(TITTEL_UTLOPT) == 1
