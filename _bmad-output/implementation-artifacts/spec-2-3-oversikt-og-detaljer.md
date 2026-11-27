@@ -2,7 +2,7 @@
 title: 'Story 2.3: Finne oppdrag i oversikten og se detaljene'
 type: 'feature'
 created: '2026-11-27'
-status: 'in-progress'
+status: 'done'
 baseline_commit: '5c8a4e88cf0b5623b78c0ce588572a4a67f7b411'
 route: 'dispatch'
 review_loop_iteration: 0
@@ -122,6 +122,25 @@ Klokka står fast på tirsdag 24.11.2026 kl. 13:00 norsk tid (`FAST_KLOKKE`). «
 ## Spec Change Log
 
 ## Review Triage Log
+
+Pass 1 (2026-11-27). Lag: Blind Hunter (BH), Edge Case Hunter (EC), Verification Gap (VG). VG fant ingen hull.
+
+| # | Lag | Funn | Verdict | Begrunnelse | Rute |
+|---|---|---|---|---|---|
+| 1 | BH, EC | `_filterlenke` kopierer alle parametre fra adressen, også ukjente og søppelverdier, inn i alle filterlenkene | low | Bekreftet. Retten er direkte: behold bare `kategori` og `postnummer` | patch |
+| 2 | BH, EC | `vurdering_tekst` runder midtpunkter ulikt (4,25 gir «4,2», 4,45 gir «4,5»), og testen låser feilen | low | Bekreftet: binær flyttallsavrunding. Brukes i Epic 4. Retten er direkte (`Decimal`, `ROUND_HALF_UP`) | patch |
+| 3 | BH | README lover «fire oppdrag» for Ola, men antallet avhenger av når seed ble kjørt | low | Sensor kan lese README en annen dag enn seed ble kjørt. Retten er én setning | patch |
+| 4 | BH, EC | En innlogget bruker uten postnummer gir «Ledige oppdrag i » | false | Registreringen krever et gyldig postnummer, og sletting av konto (4.5) avslutter alle sesjoner (AD-8). Ingen innlogget bruker kan ha NULL | reject |
+| 5 | BH | «Postnummer med poststed» står tre steder (`_sted`, `OppdragKort.sted`, `OffentligBruker.sted`) | low | Samme `" ".join` i alle tre, og ingen avviker. Retten er refaktorering | reject |
+| 6 | BH | Seed setter `valgt_hjelper_id` utenom `endre_status`, så `versjon` øker ikke | low | Bare eksempeldata. Valg av hjelper kommer i Epic 3 (`velg_hjelper`), og da byttes seed over | reject |
+| 7 | BH | Code Map sier «definerer ikke passert som `tidspunkt > klokke.na()`» | low | Retten ville endre denne buildens spec | reject |
+| 8 | BH | Status og sporing er ikke oppdatert ved fullføring | false | Gjøres i steg 5. Tastatursjekken føres i `issues.md` | reject |
+| 9 | BH | To rader i I/O-matrisen er upresise (FR-3 «eller tilsvarende», «Tom, «Alle»») | low | Retten ville endre den frosne specen. Testene bruker eksakte verdier | reject |
+| 10 | BH | Reservegrenen i `fokus.js` (`[autofocus]` når `<body>` har fokus) testes ikke i Chromium | low | Gjelder bare nettlesere uten `autofocus` på lenker. Retten krever en egen testrigg | reject |
+| 11 | BH | Ingen HTTP-test for «Vis» mot et postnummer uten treff (`aria-describedby` til `tom-forste` på feltet) | low | Samme variabel `beskrevet_av` styrer feltet og lenken, og den er testet for lenken | reject |
+| 12 | BH | Hover på kortet syns ikke i forced-colors | low | Hover er et tillegg. Fokus er dekket med `Highlight` | reject |
+| 13 | BH | `feil_i_tittel`, `utgatt` og `filterlenke` står ikke i spine eller EXPERIENCE | false | EXPERIENCE § Filtrene sier at bare feltfeilen vises. AD-3 krever én funksjon per avledet tilstand, og AR-27 én hjelper for filterlenkene | reject |
+| 14 | EC | Et eksempeloppdrag med både `avbrutt=True` og `utfort_av` gir `Konflikt` i seed | low | Ingen slik rad finnes. Feilen er høylytt og bare for utviklere | reject |
 
 ## Design Notes
 
