@@ -401,10 +401,17 @@ def _skjemakontekst(
 
 
 def _bildevalg(request: Request) -> Bildevalg:
-    """Filfeltet `bilde`, `bilde_beholdt` og `fjern_bilde` fra mellomvaren (AD-5, AD-18)."""
+    """Filfeltet `bilde`, `bilde_beholdt` og `fjern_bilde` fra mellomvaren (AD-5, AD-18).
+
+    `request.state.tapte_filer` har `bilde` når fila gikk tapt fordi innloggingen
+    var utløpt (AD-7, story 2.6).
+    """
     skjema: dict[str, str] = request.state.skjema
     filer: dict[str, bytes] = getattr(request.state, "filer", {})
-    return tolk_bildevalg(filer.get("bilde"), skjema.get("bilde_beholdt"), skjema.get("fjern_bilde"))
+    tapt = "bilde" in getattr(request.state, "tapte_filer", frozenset())
+    return tolk_bildevalg(
+        filer.get("bilde"), skjema.get("bilde_beholdt"), skjema.get("fjern_bilde"), tapt=tapt
+    )
 
 
 @router.get("/oppdrag/ny", name="oppdrag.ny", response_class=HTMLResponse)
