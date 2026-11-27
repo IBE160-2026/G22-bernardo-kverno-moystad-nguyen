@@ -100,7 +100,7 @@ Pilene betyr «kan importere fra». Bare direkte piler gjelder.
 - **Prevents:** at en ny rute glemmer tilgangskontroll, at det finnes to innlogginger, og at sesjoner eller tellere ligger i minnet (Vercel har ikke minne mellom kall).
 - **Rule:**
   - **Grensesnittet:** `core/sesjon.py` definerer `Autentisering` med `finn_innlogget`, `logg_inn` og `logg_ut`, og dataklassen `Innlogget` (`bruker_id`, `visningsnavn`, `postnummer`; postnummeret hentes i samme spørring, så sider som trenger det ikke slår opp brukeren på nytt, story 2.3). `identity/service.py` er implementasjonen. Mellomvaren og FR-2-ruta kaller bare dette grensesnittet. `core` leser og skriver aldri `sesjon`, `bruker` eller `innloggingsforsok`.
-  - **Tilgang:** Mellomvaren setter `request.state.innlogget`, og ruter får brukeren bare gjennom avhengigheten `core.innlogget_bruker`. Alle ruter krever innlogging, unntatt dem som er merket offentlige på selve ruta (`/logg-inn`, `/registrer`, `/static`). FR-3-testen leser merkingen.
+  - **Tilgang:** Mellomvaren setter `request.state.innlogget`, og ruter får brukeren bare gjennom avhengigheten `core.innlogget_bruker`. Alle ruter krever innlogging, unntatt dem som er merket offentlige på selve ruta (`/logg-inn`, `/registrer`, `/logg-ut`, `/static`). FR-3-testen leser merkingen. `/logg-ut` er offentlig fra story 2.6: uten gyldig sesjon sletter den bare cookien og gir «Du er logget ut.», uten passord. CSRF gjelder fortsatt.
   - **Uten gyldig sesjon:**
     - GET gir 303 til `/logg-inn?neste=<sti>`. `neste` godtas bare når den begynner med `/` og ikke med `//`.
     - POST følger AD-7.
@@ -137,14 +137,14 @@ Pilene betyr «kan importere fra». Bare direkte piler gjelder.
 - **Prevents:** at noen ruter sender til innlogging og mister skjemaet mens andre beholder det, og at innhold fra databasen vises uten innlogging.
 - **Rule:**
   - **Svaret:** POST uten gyldig sesjon endrer ingen data. `core` svarer 401 med én generisk side, «Du må logge inn igjen.». Siden har:
-    - alle innsendte felt som skjulte felt, unntatt passord, CSRF og filfelt
-    - en ny CSRF-nøkkel
+    - alle innsendte tekstfelt som skjulte felt, unntatt `passord`, `csrf_token` og felt som begynner med `_` (filfelt kan ikke bli skjulte felt)
+    - CSRF-nøkkelen fra `request.state.csrf`, skrevet av siden selv (den byttes ikke, AD-5)
     - feltene `_innlogging_epost` og `_innlogging_passord`
-    - en knapp som sender til samme URL
+    - en knapp som sender til samme URL, alltid som `multipart/form-data`, fordi et stort skjult felt ville gitt 413 som urlencoded
 
     Siden viser ikke noe innhold fra databasen.
-  - **Filfelt:** en fil kan ikke bli et skjult felt. Hadde innsendingen et nytt bilde, sier 401-siden «Velg bildet på nytt etter innlogging.». `bilde_beholdt` følger med som et vanlig skjult felt (AD-18).
-  - **Innsending:** Mellomvaren logger inn gjennom `Autentisering`, fjerner `_innlogging_*`-feltene og slipper forespørselen videre. Ruta behandler den som den nye innloggede brukeren, og tilgangsreglene i servicen gjelder som vanlig.
+  - **Filfelt:** en fil kan ikke bli et skjult felt. Hadde innsendingen et nytt bilde, sier 401-siden «Velg bildet på nytt etter innlogging.». Det skjulte merket `_innlogging_fil` har navnene på filfeltene, så teksten står også etter feil passord, og mellomvaren gjør det om til `request.state.tapte_filer`. Etter innlogging gir et tapt bilde 422 med «Velg bildet på nytt.» ved bildefeltet, og ingenting lagres. `bilde_beholdt` følger med som et vanlig skjult felt (AD-18).
+  - **Innsending:** Mellomvaren logger inn gjennom `Autentisering` med `prov_innlogging` i `core/sesjon.py`, den samme funksjonen som `/logg-inn` bruker, så tekstene, sperren og oppryddingen er like. Den fjerner `_innlogging_*`-feltene fra `request.state.skjema` og fra kroppen (som spilles av på nytt uten dem), legger den nye sesjonen i `cookie`-headeren til forespørselen og `Set-Cookie` foran rutas headere i svaret, og slipper forespørselen videre. Ruta behandler den som den nye innloggede brukeren, og tilgangsreglene i servicen gjelder som vanlig. Har forespørselen allerede en gyldig sesjon, fjernes feltene uten innlogging.
   - **Feltnavn:** Ingen andre skjema bruker feltnavn som begynner med `_`.
   - **Kan kuttes:** Står AD-7 i veien for fristen, kan den erstattes av en 401-side med «Du må logge inn igjen.» og en lenke til innlogging. Endringen føres i memlog og i PRD §9.2.
 
@@ -273,7 +273,9 @@ Pilene betyr «kan importere fra». Bare direkte piler gjelder.
   - **Sesjon:** `core/db.py` har avhengigheten `hent_db()`, som gir én `Session` per forespørsel. Ingen service oppretter egne sesjoner.
   - **Transaksjonen:** En POST-rute kjører alle service-kall inne i `with db.begin():` og bygger svaret etter blokken. Services kaller aldri `commit()` eller `rollback()`, men kan kalle `flush()`. En service som kaller en annen service, deler `db` og transaksjonen.
   - **Fange databasefeil:** En service som må fange `IntegrityError`, gjør det rundt én setning med `with db.begin_nested():` (SAVEPOINT). `core/db.py` setter opp SAVEPOINT for pysqlite.
-  - **Unntak:** KI-kvoten (AD-12) er det eneste stedet der én forespørsel har to transaksjoner.
+  - **Unntak:** én forespørsel har to transaksjoner bare to steder:
+    - KI-kvoten (AD-12).
+    - Innloggingen på 401-siden (AD-7, story 2.6). Mellomvaren logger inn i sin egen sesjon og transaksjon, som committes og lukkes før ruta åpner sin. Feiler ruta etterpå (422, `Konflikt`, 404), er brukeren fortsatt innlogget. Ved en uventet 500 før svaret starter, mistes cookien, men sesjonsraden står, og brukeren må logge inn på nytt.
 
 ### AD-18 — Bilder behandles ett sted og lagres i databasen [ADOPTED]
 
@@ -297,7 +299,7 @@ Pilene betyr «kan importere fra». Bare direkte piler gjelder.
 | Concern | Convention |
 | --- | --- |
 | Navn | Domeneordene fra PRD §3 brukes i kode, tabeller og URL-er. Identifikatorer er ASCII: æ → ae, ø → o, å → a. Tabellnavn i entall. |
-| URL-er og rutenavn | `/` (oversikt) · `/logg-inn` · `/logg-ut` (POST) · `/registrer` · `/oppdrag/ny` · `/oppdrag/{oppdrag_id:int}` · `/oppdrag/{oppdrag_id:int}/rediger` · `/oppdrag/{oppdrag_id:int}/<handling>` (GET viser bekreftelsessiden, POST utfører handlingen) · `/oppdrag/{oppdrag_id:int}/bilde` og `/oppdrag/{oppdrag_id:int}/bilde/liten` (GET-ruter som gir bildet, AD-18; unntak fra mønsteret `<handling>` med bekreftelsesside) · `/oppdrag/forslag` · `/mine-oppdrag` · `/profil` · `/profil/{bruker_id:int}` · `/profil/rediger` · `/profil/slett`. Stiparametre bruker alltid `:int`. Rutenavn er `<slice>.<handling>`, maler lenker bare med `url_for`, og en test sjekker at rutenavnene er unike. |
+| URL-er og rutenavn | `/` (oversikt) · `/logg-inn` · `/logg-ut` (POST, offentlig) · `/registrer` · `/oppdrag/ny` · `/oppdrag/{oppdrag_id:int}` · `/oppdrag/{oppdrag_id:int}/rediger` · `/oppdrag/{oppdrag_id:int}/<handling>` (GET viser bekreftelsessiden, POST utfører handlingen) · `/oppdrag/{oppdrag_id:int}/bilde` og `/oppdrag/{oppdrag_id:int}/bilde/liten` (GET-ruter som gir bildet, AD-18; unntak fra mønsteret `<handling>` med bekreftelsesside) · `/oppdrag/forslag` · `/mine-oppdrag` · `/profil` · `/profil/{bruker_id:int}` · `/profil/rediger` · `/profil/slett`. Stiparametre bruker alltid `:int`. Rutenavn er `<slice>.<handling>`, maler lenker bare med `url_for`, og en test sjekker at rutenavnene er unike. |
 | Id-er og data | Heltall som primærnøkkel. Penger som heltall i kroner, og «uten betaling» som NULL. Kategori som kode (AD-10). Status etter AD-2. Tid etter AD-9. |
 | Validering | Skjemamodellene har bare felt av typen `str \| None = None`, uten Pydantic-begrensninger. All tolkning og alle regler ligger i service og `core/tid.py`. En egen handler for `RequestValidationError` viser den vennlige feilsiden og logger. |
 | Feil | Typene ligger i `core/feil.py`, og hver av dem har én handler i `core`. Rutene fanger dem ikke selv. <br>• `RegelBrudd(feil: list[(felt, melding)])` gjelder skjema med felt. Skjemaet vises på nytt med 422, alle feilene samtidig, og verdiene beholdes (ikke passord). <br>• `Konflikt(melding, til_url)` gjelder AD-2 og avvisning av handlinger uten felt. Den gir POST → redirect → GET til `til_url`, med meldingen i cookien. <br>• `Duplikat(til_url)` gir POST → redirect → GET til det som allerede finnes. <br>• `IngenTilgang` og `FinnesIkke` gir begge 404 og samme side, med teksten fra FR-4 for slettet bruker. <br>• Uventede feil gir en vennlig side, aldri en stack trace (NFR-10). Feilhandlerne ruller tilbake og rendrer uten databasekall. |

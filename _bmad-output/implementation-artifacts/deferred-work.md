@@ -39,3 +39,7 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-6-utlopt-innlogging.md`
   summary: CSRF-cookien har ingen `Max-Age`, så etter at nettleseren har vært lukket, gir en innsending 403 før AD-7 slår inn, og det utfylte innholdet går tapt.
   evidence: Funnet ved planleggingen av 2.6. AD-7 beskytter bare mot utløpt sesjon, ikke mot manglende CSRF-cookie. Retten er en `Max-Age` på CSRF-cookien som er lengre enn sesjonen (7 dager, FR-2). Det er utenfor 2.6.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-6-utlopt-innlogging.md`
+  summary: 401-siden og den gjenoppbygde kroppen i `SesjonMellomvare` beholder bare siste verdi per feltnavn og ingen filer, så et skjema med gjentatte feltnavn (avkrysningsgruppe, flervalg) mister verdier etter innlogging på 401-siden.
+  evidence: Funnet i reviewen av 2.6. Ingen skjema i dag har gjentatte navn, og 401-siden har aldri filfelt, så ingenting går tapt nå. Skjemaene i Epic 4 (profil) og Epic 5 (KI) må enten unngå gjentatte navn eller få mellomvaren over på `form.multi_items()`.

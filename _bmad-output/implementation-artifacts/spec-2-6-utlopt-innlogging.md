@@ -2,7 +2,7 @@
 title: 'Story 2.6: Utfylt skjema går ikke tapt når innloggingen utløper'
 type: 'feature'
 created: '2026-11-27'
-status: 'in-progress'
+status: 'done'
 baseline_commit: 'e25abaca3f91b1692aa87ec6b17f24eb5ca5ab0d'
 route: 'dispatch'
 review_loop_iteration: 0
@@ -73,16 +73,16 @@ Klokka står fast (`FAST_KLOKKE`). «Utløpt» betyr `sett_na` 7 dager fram, ell
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `app/core/sesjon.py` -- `FEIL_INNLOGGING` og `FOR_MANGE_FORSOK` flyttes hit, og `identity` importerer dem. `Autentisering` får `sjekk_innloggingsskjema(epost, passord) -> list[(felt, melding)]`. Ny `prov_innlogging(autentisering, db, epost, passord, *, gammel_nokkel) -> (nokkel | None, feil)` gjør sjekken, kaller `logg_inn` i `with db.begin():` og velger meldingen. `INNLOGGING_PREFIKS = "_innlogging_"` og en hjelper som gir `Set-Cookie` med attributtene fra `sett_sesjonscookie` -- FR-2, AD-4, T-6
-- [ ] `app/identity/service.py`, `app/identity/routes.py` -- `IdentityAutentisering.sjekk_innloggingsskjema` delegerer. `/logg-inn` bruker `prov_innlogging`, med samme svar som før. `logg_ut` merkes `@offentlig` -- FR-2, AD-4
-- [ ] `app/core/mellomvare.py` -- Se Design Notes. `lag_mellomvare` gir `secure_cookie=settings.produksjon`. Docstringen beskriver AD-7 -- FR-3, AD-4, AD-5, AD-7
-- [ ] `app/core/templates/core/logg_inn_igjen.html` -- Skjemaet etter matrisen: `skjemabredde`, `h1`, `meldinger(lenker={"epost": "innlogging-epost", "passord": "innlogging-passord"})`, `csrf_felt()`, skjulte felt i innsendt rekkefølge, merket `_innlogging_fil`, feltene med id `innlogging-epost` og `innlogging-passord`, «Velg bildet på nytt etter innlogging.» som `<p>` rett over knappen, og «Logg inn» -- AD-7, UX-DR12, UX-DR27
-- [ ] `app/oppdrag/service.py`, `app/oppdrag/routes.py`, `EXPERIENCE.md` -- `tolk_bildevalg(..., tapt=False)` og `_bildevalg` leser `request.state.tapte_filer`. Den nye teksten føres i § Feiltekster ved felt -- FR-27, NFR-10
-- [ ] `ARCHITECTURE-SPINE.md`, `.memlog.md` -- AD-17: innloggingen i mellomvaren er et unntak med egen transaksjon, committet før ruta. AD-7: skjemaet er multipart, og merket `_innlogging_fil` finnes. AD-4: `/logg-ut` er offentlig. Én memlog-linje per endring
-- [ ] `tests/core/test_utlopt_innlogging.py` (ny) -- én test per rad i matrisen, med testruter som ikke er offentlige (`innlogget_bruker`, `Form()`, `request.form()`, `request.cookies`). -- FR-2, FR-3, NFR-5, NFR-12, AD-7
-- [ ] `tests/core/test_tilgang.py`, `tests/core/test_mellomvare.py`, `tests/identity/` -- 401-testene forventer skjemaet i stedet for lenken. Innloggingstestene er grønne uendret -- FR-3, T-6
-- [ ] `tests/core/test_arkitektur.py` -- ingen `name="_` i maler, ingen `"_`-nøkler i `FormData`/`append` i `core/static/js/` og ingen `skjema.get("_` i `app/`, unntatt 401-malen og `core/mellomvare.py` (AC 4). `test_to_steg.py:135` beholdes -- AD-7
-- [ ] `tests/e2e/test_t1.py`, `tests/e2e/test_klientatferd.py` -- nye sider i `SIDER`: `401-nytt-oppdrag` («Publiser» etter at `sesjon`-cookien er fjernet), `401-feil-passord` og `401-nytt-bilde`. «401» får en ny utløser, fordi `/logg-ut` er offentlig. Klienttest: Kari fyller ut «Nytt oppdrag», cookien fjernes, «Publiser», hun logger inn på 401-siden, og detaljene viser oppdraget med kvitteringen -- SM-5, NFR-6, NFR-7
+- [x] `app/core/sesjon.py` -- `FEIL_INNLOGGING` og `FOR_MANGE_FORSOK` flyttes hit, og `identity` importerer dem. `Autentisering` får `sjekk_innloggingsskjema(epost, passord) -> list[(felt, melding)]`. Ny `prov_innlogging(autentisering, db, epost, passord, *, gammel_nokkel) -> (nokkel | None, feil)` gjør sjekken, kaller `logg_inn` i `with db.begin():` og velger meldingen. `INNLOGGING_PREFIKS = "_innlogging_"` og en hjelper som gir `Set-Cookie` med attributtene fra `sett_sesjonscookie` -- FR-2, AD-4, T-6
+- [x] `app/identity/service.py`, `app/identity/routes.py` -- `IdentityAutentisering.sjekk_innloggingsskjema` delegerer. `/logg-inn` bruker `prov_innlogging`, med samme svar som før. `logg_ut` merkes `@offentlig` -- FR-2, AD-4
+- [x] `app/core/mellomvare.py` -- Se Design Notes. `lag_mellomvare` gir `secure_cookie=settings.produksjon`. Docstringen beskriver AD-7 -- FR-3, AD-4, AD-5, AD-7
+- [x] `app/core/templates/core/logg_inn_igjen.html` -- Skjemaet etter matrisen: `skjemabredde`, `h1`, `meldinger(lenker={"epost": "innlogging-epost", "passord": "innlogging-passord"})`, `csrf_felt()`, skjulte felt i innsendt rekkefølge, merket `_innlogging_fil`, feltene med id `innlogging-epost` og `innlogging-passord`, «Velg bildet på nytt etter innlogging.» som `<p>` rett over knappen, og «Logg inn» -- AD-7, UX-DR12, UX-DR27
+- [x] `app/oppdrag/service.py`, `app/oppdrag/routes.py`, `EXPERIENCE.md` -- `tolk_bildevalg(..., tapt=False)` og `_bildevalg` leser `request.state.tapte_filer`. Den nye teksten føres i § Feiltekster ved felt -- FR-27, NFR-10
+- [x] `ARCHITECTURE-SPINE.md`, `.memlog.md` -- AD-17: innloggingen i mellomvaren er et unntak med egen transaksjon, committet før ruta. AD-7: skjemaet er multipart, og merket `_innlogging_fil` finnes. AD-4: `/logg-ut` er offentlig. Én memlog-linje per endring
+- [x] `tests/core/test_utlopt_innlogging.py` (ny) -- én test per rad i matrisen, med testruter som ikke er offentlige (`innlogget_bruker`, `Form()`, `request.form()`, `request.cookies`). -- FR-2, FR-3, NFR-5, NFR-12, AD-7
+- [x] `tests/core/test_tilgang.py`, `tests/core/test_mellomvare.py`, `tests/identity/` -- 401-testene forventer skjemaet i stedet for lenken. Innloggingstestene er grønne uendret -- FR-3, T-6
+- [x] `tests/core/test_arkitektur.py` -- ingen `name="_` i maler, ingen `"_`-nøkler i `FormData`/`append` i `core/static/js/` og ingen `skjema.get("_` i `app/`, unntatt 401-malen og `core/mellomvare.py` (AC 4). `test_to_steg.py:135` beholdes -- AD-7
+- [x] `tests/e2e/test_t1.py`, `tests/e2e/test_klientatferd.py` -- nye sider i `SIDER`: `401-nytt-oppdrag` («Publiser» etter at `sesjon`-cookien er fjernet), `401-feil-passord` og `401-nytt-bilde`. «401» får en ny utløser, fordi `/logg-ut` er offentlig. Klienttest: Kari fyller ut «Nytt oppdrag», cookien fjernes, «Publiser», hun logger inn på 401-siden, og detaljene viser oppdraget med kvitteringen -- SM-5, NFR-6, NFR-7
 
 **Acceptance Criteria:**
 - Gitt Kari på mobil (360 px) med JS, når sesjonen utløper mens hun skriver og hun trykker «Publiser» og logger inn på 401-siden, så havner hun i detaljene med «Oppdraget er lagt ut.» og alt hun skrev.
@@ -91,9 +91,39 @@ Klokka står fast (`FAST_KLOKKE`). «Utløpt» betyr `sett_na` 7 dager fram, ell
 
 ## Implementation Notes
 
+- `prov_innlogging` gir `Innloggingsprov(nokkel, feil)`, en `NamedTuple` som pakkes ut som `(nokkel, feil)`. Egenskapen `feltfeil` skiller feltfeil (tomme felt) fra «Feil e-post eller passord.» og sperren, som bare står i oppsummeringen. Slik får `/logg-inn` samme svar som før uten egen meldingslogikk.
+- Mellomvaren gir aldri skjulte felt som begynner med `_` (ikke bare `_innlogging_*`), så «Bare `_innlogging_`-feltene på 401-siden begynner med `_`» gjelder også når noen sender et annet `_`-felt.
+- Kroppen bygges på nytt hver gang `_innlogging_*`-felt finnes (også ved gyldig sesjon og på offentlige ruter), så passordet aldri kan leses av ruta. Den gamle kroppen leses fra avspillingen først. `request.state.filer` er uendret.
+- Innlogging på 401-siden prøves ikke for `X-Fragment`-forespørsler, så 401-fragmentet er uendret.
+- `action` på 401-siden har alltid én `/` foran, så den aldri kan peke til en annen vert.
+- «401» i T1 utløses nå av «Ja, avbryt oppdraget» på bekreftelsessiden etter at sesjonscookien er fjernet.
+
 ## Spec Change Log
 
 ## Review Triage Log
+
+Pass 1 (2026-11-28). Lag: Blind Hunter (BH), Edge Case Hunter (EC), Verification Gap (VG).
+
+| # | Lag | Funn | Verdict | Begrunnelse | Rute |
+|---|---|---|---|---|---|
+| 1 | VG, BH | `Secure` på sesjonscookien etter innlogging på 401-siden er ikke testet i produksjon | medium | Forhåndsverifisert av VG. Å fjerne `secure_cookie=settings.produksjon` ville ikke blitt fanget | patch |
+| 2 | EC | En feil i `_prov_innlogging` (databasefeil eller lås) gir 500, og det utfylte innholdet går tapt | medium | Nettopp det AD-7 skal hindre | patch |
+| 3 | BH, EC | `prov.nokkel` satt, men `finn_innlogget` gir `None`: 401-siden kommer igjen uten feilmelding | low | Kappløp eller slettet bruker. Retten er logg og feiltekst | patch |
+| 4 | BH, EC | `action` bygges fra den dekodede stien uten ny koding (`/\host`) | low | Trygt i dag fordi alle beskyttede ruter har `:int`. Direkte retting med `quote` | patch |
+| 5 | BH | Ingen test sikrer at passord og e-post aldri logges | low | Sikkerhetsregel i Always uten test. Liten `caplog`-test | patch |
+| 6 | BH | Redigering av eget oppdrag via 401-siden og tapt bilde ved redigering er ikke testet | medium | Problem-teksten nevner redigering, men bare 404 for Ola er testet | patch |
+| 7 | BH | E2E-testen av AC 1 sjekker ikke kategori, postnummer og tidspunkt | low | Det er feltene som mest sannsynlig forsvinner hvis skjulte felt mistes | patch |
+| 8 | BH | AD-7 «Svaret» sier fortsatt «unntatt passord, CSRF og filfelt» | low | Koden utelater alle felt med `_`. Planleggingsdokumentene skal stemme | patch |
+| 9 | BH | EXPERIENCE «Innlogging utløpt» har gamle merker og gammel oppførsel | low | Planleggingsdokumentene skal stemme | patch |
+| 10 | BH | En ekstra tom linje på slutten av `mellomvare.py` | low | Direkte retting | patch |
+| 11 | BH, EC | Den gjenoppbygde kroppen og 401-siden beholder bare siste verdi per navn og ingen filer | medium | Gjelder ingen skjema i dag (ingen gjentatte navn, 401-siden har aldri filer). Gjelder Epic 4 og 5 | defer |
+| 12 | BH | `/logg-inn` sletter ikke en utløpt sesjonsrad, mens mellomvaren gjør det | low | Fantes før 2.6. Utløpte rader er ufarlige | reject |
+| 13 | BH | `Innloggingsprov.feltfeil` sorterer etter meldingstekst | low | Tekstene er konstanter i samme modul. Retten er omstrukturering | reject |
+| 14 | BH | Rekkefølgen på `Set-Cookie` (ruta vinner) er ikke testet | low | Ingen rute setter sesjonscookien etter 401 i dag. Testes når FR-4 kommer | reject |
+| 15 | BH, EC | Arkitekturtesten for `_`-navn fanger ikke alle skrivemåter | low | Testen er en vakt for de vanlige mønstrene. Retten er en parser | reject |
+| 16 | BH | Re-eksporten av tekstene i `identity/service.py` for røyktesten | low | Kosmetisk | reject |
+| 17 | EC | En kvittering i køen brukes opp på 401-siden og flytter fokus | low | Krever at sesjonen utløper mellom en handling og neste side. Sjeldent | reject |
+| 18 | EC | GET `/logg-ut` uten sesjon gir 405 i stedet for 303 | low | Ingen lenke bruker GET mot `/logg-ut`. Bare en skrevet URL | reject |
 
 ## Design Notes
 

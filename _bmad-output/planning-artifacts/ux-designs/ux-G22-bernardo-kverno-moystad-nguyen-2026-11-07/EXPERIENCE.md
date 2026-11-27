@@ -197,7 +197,7 @@ Hver feil sier hva som er galt og hvordan det rettes, med et eksempel der format
 | Postnummer | Finnes i lista | «Skriv postnummeret.» / «Finner ikke postnummeret. Sjekk at det har fire siffer.» | FR-1, FR-5, FR-10 |
 | Fødselsdato | Format, ikke fram i tid, høyst 120 år tilbake, minst 18 år | «Skriv fødselsdatoen din.» / «Skriv fødselsdatoen som dd.mm.åååå, for eksempel 03.05.1954.» / «Sjekk fødselsdatoen.» / «Du må være minst 18 år for å bruke Nabolagshelten.» | FR-1 |
 | Beskrivelse | 10–1000 tegn, ikke bare mellomrom | «Skriv hva du trenger hjelp til.» / «Skriv minst 10 tegn.» / «Beskrivelsen kan ha høyst 1000 tegn. Nå har den 1046.» | FR-5 |
-| Bilde | JPEG, PNG eller WebP (etter innholdet i fila), høyst 4 MB og 40 megapiksler | «Velg et bilde i JPEG, PNG eller WebP.» / «Bildet er for stort. Velg et bilde på høyst 4 MB.» / «Bildet har for mange piksler. Velg et mindre bilde.» | FR-27 |
+| Bilde | JPEG, PNG eller WebP (etter innholdet i fila), høyst 4 MB og 40 megapiksler | «Velg et bilde i JPEG, PNG eller WebP.» / «Bildet er for stort. Velg et bilde på høyst 4 MB.» / «Bildet har for mange piksler. Velg et mindre bilde.» / «Velg bildet på nytt.» (lagt til i story 2.6: et nytt bilde gikk tapt fordi innloggingen var utløpt, og skjemaet vises igjen etter innlogging) | FR-27, FR-2, FR-3 |
 | Hva viser bildet? | Påkrevd når et bilde er valgt, 3–120 tegn | «Skriv hva bildet viser.» / «Teksten må ha minst 3 tegn.» / «Teksten kan ha høyst 120 tegn.» | FR-27 |
 | Tittel | 3–80 tegn | «Skriv en tittel.» / «Tittelen må ha minst 3 tegn.» / «Tittelen kan ha høyst 80 tegn.» | FR-5 |
 | Kategori | Ett valg | «Velg en kategori.» | FR-5 |
@@ -353,7 +353,7 @@ Like tidspunkt sorteres som i FR-10 (eldste utlagte først). En gruppe uten oppd
 | Valideringsfeil | Alle skjema | Feil ved hvert felt, og feiloppsummeringen «Skjemaet har 2 feil» rett etter `h1`. Atferden, også i to steg, står i Component Patterns § Meldinger. | §4.0, NFR-7, NFR-10 |
 | Samtidighetskonflikt | Detaljer, dialoger | «Oppdraget er endret. Last siden på nytt.» + knappen «Last siden på nytt». Dialogen lukkes. | §4.0, FR-15 |
 | Ingen tilgang / finnes ikke | Detaljer, profil | Feilside med tekst og lenke til oversikten. | FR-9, FR-4 |
-| Innlogging utløpt | Alle | Til innlogging med «Du må logge inn igjen.»; etter innlogging tilbake til siden brukeren ville til [ASSUMPTION]. Utløper innloggingen mens et skjema er utfylt (f.eks. ved «Publiser»), beholdes innholdet og vises igjen etter ny innlogging, eller brukeren får beskjed før det går tapt. [NOTE FOR ARCHITECTURE] | FR-2, FR-3 |
+| Innlogging utløpt | Alle | Lenke eller side (GET): til innlogging, og etter innlogging tilbake til siden brukeren ville til. Skjema (POST, f.eks. «Publiser»): 401-siden «Du må logge inn igjen.» på samme adresse beholder alt utfylt som skjulte felt, og brukeren logger inn på siden; da behandles innsendingen. Et nytt bilde kan ikke beholdes: siden sier «Velg bildet på nytt etter innlogging.» (story 2.6, AD-7). | FR-2, FR-3, FR-27 |
 | Uventet feil / nettverk | Alle | «Noe gikk galt. Prøv igjen om litt.» Utfylt innhold beholdes. | NFR-10 |
 
 ## Interaction Primitives
