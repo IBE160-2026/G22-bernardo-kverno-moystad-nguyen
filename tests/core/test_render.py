@@ -1,4 +1,7 @@
-"""Sideramme, filtre, menyvalg på undersider og stilark (UX-DR1, UX-DR2, UX-DR4, AR-27, AD-9, AD-10)."""
+"""Sideramme, filtre, menyvalg på undersider, menykroken og stilark.
+
+UX-DR1, UX-DR2, UX-DR3, UX-DR4, AR-27, AD-3, AD-9, AD-10, NFR-11.
+"""
 
 from __future__ import annotations
 
@@ -11,8 +14,10 @@ import pytest
 from fastapi.testclient import TestClient
 from starlette.requests import Request
 
+from app import lag_app
 from app.core import domene
-from app.core.render import miljo, render, sidetittel
+from app.core.render import miljo, render, render_fragment, sidetittel
+from app.core.sesjon import Innlogget
 
 ROT = Path(__file__).resolve().parents[2]
 CSS = ROT / "app" / "core" / "static" / "css" / "app.css"
@@ -236,10 +241,13 @@ def test_filteret_fullforte(antall: int, forventet: str) -> None:
     assert miljo.from_string("{{ n|fullforte }}").render(n=antall) == forventet
 
 
+INNLOGGET = Innlogget(bruker_id=1, visningsnavn="Test", postnummer="0571")
+
+
 def test_feil_i_tittel_uten_feiloppsummering(app) -> None:
     """UX-DR2: `feil_i_tittel=True` gir «Feil: » i tittelen, men ingen feiloppsummering."""
     request = Request({"type": "http", "method": "GET", "path": "/x", "headers": [], "app": app,
-                       "query_string": b"", "state": {"innlogget": object(), "csrf": "n"}})
+                       "query_string": b"", "state": {"innlogget": INNLOGGET, "csrf": "n"}})
     html = render(request, "core/feil.html", tittel="T", aktiv_meny=None, feil_i_tittel=True,
                   overskrift="O").body.decode()
     assert "<title>Feil: T – Nabolagshelten</title>" in html
@@ -249,13 +257,101 @@ def test_feil_i_tittel_uten_feiloppsummering(app) -> None:
 def test_underside_gir_aria_current_true(app) -> None:
     """UX-DR3: på en underside får menyvalget `aria-current="true"`, og ingen har `"page"`."""
     request = Request({"type": "http", "method": "GET", "path": "/x", "headers": [], "app": app,
-                       "query_string": b"", "state": {"innlogget": object(), "csrf": "n"}})
+                       "query_string": b"", "state": {"innlogget": INNLOGGET, "csrf": "n"}})
     html = render(request, "core/feil.html", tittel="T", aktiv_meny="profil", underside=True,
                   overskrift="O").body.decode()
     assert 'href="/profil" aria-current="true"' in html
     assert 'aria-current="page"' not in html
     html = render(request, "core/feil.html", tittel="T", aktiv_meny="profil", overskrift="O").body.decode()
     assert 'href="/profil" aria-current="page"' in html
+
+
+# ---------- menykroken (NFR-11, AD-3, spinen § Rendring) ----------
+
+
+class Kroken:
+    """Spion for menykroken: gir `antall` og noterer hvert kall."""
+
+    def __init__(self, antall: int) -> None:
+        self.antall = antall
+        self.kall: list[tuple[object, int]] = []
+
+    def __call__(self, db, bruker_id: int) -> int:
+        self.kall.append((db, bruker_id))
+        return self.antall
+
+
+@pytest.fixture
+def spion_app(sesjonsfabrikk):
+    kroken = Kroken(2)
+    app = lag_app(menykrok=kroken)
+    app.state.sesjonsfabrikk = sesjonsfabrikk
+    return app, kroken
+
+
+def _side(app, state: dict, **kw) -> str:
+    request = Request({"type": "http", "method": "GET", "path": "/x", "headers": [], "app": app,
+                       "query_string": b"", "state": state})
+    return render(request, "core/feil.html", tittel="T", aktiv_meny=None, overskrift="O", **kw).body.decode()
+
+
+def test_kroken_gir_tallet_i_begge_menyene(spion_app) -> None:
+    """NFR-11, UX-DR3: tallet (aria-hidden) og den skjulte teksten ved «Mine oppdrag»."""
+    app, kroken = spion_app
+    html = _side(app, {"innlogget": INNLOGGET, "csrf": "n"})
+    assert html.count('<span class="menytall" aria-hidden="true">2</span>') == 2
+    assert html.count('<span class="skjult-tekst">, 2 trenger handling</span>') == 2
+    assert [bruker_id for _, bruker_id in kroken.kall] == [1]  # én telling per side
+
+
+def test_kroken_bruker_foresporselens_sesjon(spion_app) -> None:
+    """AD-3: med `request.state.db` (fra `hent_db`) får kroken den sesjonen, ikke en ny."""
+    app, kroken = spion_app
+    sesjon = object()
+    _side(app, {"innlogget": INNLOGGET, "csrf": "n", "db": sesjon})
+    assert kroken.kall == [(sesjon, 1)]
+
+
+def test_kroken_far_egen_sesjon_uten_rutesesjon(spion_app) -> None:
+    """Uten `request.state.db` åpner `render` en kort sesjon fra `sesjonsfabrikk`."""
+    from sqlalchemy.orm import Session
+
+    app, kroken = spion_app
+    _side(app, {"innlogget": INNLOGGET, "csrf": "n"})
+    assert isinstance(kroken.kall[0][0], Session)
+
+
+def test_kroken_kalles_ikke_uten_innlogging_feilside_eller_fragment(spion_app) -> None:
+    """Spinen § Rendring: bare når noen er innlogget, aldri med `med_menytall=False` eller i fragmenter."""
+    app, kroken = spion_app
+    html = _side(app, {"csrf": "n"})
+    assert "menytall" not in html
+    html = _side(app, {"innlogget": INNLOGGET, "csrf": "n"}, med_menytall=False)
+    assert "menytall" not in html and "trenger handling" not in html
+    request = Request({"type": "http", "method": "GET", "path": "/x", "headers": [], "app": app,
+                       "query_string": b"", "state": {"innlogget": INNLOGGET, "csrf": "n"}})
+    render_fragment(request, "core/logg_inn_igjen_fragment.html", innlogging_url="/logg-inn")
+    assert kroken.kall == []
+
+
+def test_tallet_0_gir_verken_tall_eller_skjult_tekst(sesjonsfabrikk) -> None:
+    app = lag_app(menykrok=lambda db, bruker_id: 0)
+    app.state.sesjonsfabrikk = sesjonsfabrikk
+    html = _side(app, {"innlogget": INNLOGGET, "csrf": "n"})
+    assert "menytall" not in html and "trenger handling" not in html
+
+
+def test_handlingsmerke_har_skjult_tekst_og_pilikon() -> None:
+    """UX-DR10: «Må gjøres: » foran og «.» etter, skjult for øyet; ikonet er dekorativt."""
+    html = miljo.from_string(
+        '{% import "core/makroer.html" as m %}{{ m.handlingsmerke("Tidspunktet er passert") }}'
+    ).render()
+    assert (
+        '<span><span class="skjult-tekst">Må gjøres: </span>Tidspunktet er passert'
+        '<span class="skjult-tekst">.</span></span>'
+    ) in html
+    assert '<span class="handlingsmerke">' in html
+    assert 'aria-hidden="true" focusable="false"' in html
 
 
 def test_feiloppsummeringen_lenker_gruppefeil_til_forste_felt() -> None:
@@ -316,6 +412,21 @@ def test_stilarket_har_lyst_tema_systemskrifter_og_fokusring() -> None:
     assert "outline: none" not in css and "outline:none" not in css
     for forbudt in ("#fff;", "#ffffff", "#000;", "#000000"):
         assert forbudt not in css.lower()
+
+
+def test_stilarket_har_listerad_handlingsmerke_og_menytall() -> None:
+    """UX-DR9, UX-DR10, NFR-7: lenkeraden, merket og tallet etter DESIGN.md.
+
+    Merket brytes uten line-clamp og ellipse, og i forced-colors får merket og tallet kant.
+    `.oppdragsliste` fra 2.1 er fjernet.
+    """
+    css = CSS.read_text(encoding="utf-8")
+    assert ".oppdragsliste" not in css
+    for klasse in (".listerad__hoved {", ".listerad__lenke::after {", ".handlingsmerke {", ".menytall {"):
+        assert klasse in css, klasse
+    assert not re.search(r"line-clamp\s*:", css) and "text-overflow: ellipsis" not in css
+    tvungne = re.findall(r"@media \(forced-colors: active\) \{(.*?)\n\}", css, re.S)
+    assert any(".handlingsmerke" in blokk and ".menytall" in blokk and "border:" in blokk for blokk in tvungne)
 
 
 def test_stilarket_bruker_rem_for_tekst() -> None:

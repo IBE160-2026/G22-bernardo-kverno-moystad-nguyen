@@ -1,7 +1,8 @@
 """Nabolagshelten. `lag_app()` setter sammen appen (AD-1, AD-5, AD-14).
 
-Her kobles slicene til `core`: `Autentisering` fra identity (AD-4).
-Menykroken blir påkrevd fra story 2.4. Mangler en kobling, starter ikke appen.
+Her kobles slicene til `core`: `Autentisering` fra identity (AD-4) og
+menykroken `(db, bruker_id) -> int` fra oppdrag, som gir tallet ved «Mine
+oppdrag» i menyen (NFR-11, AD-3). Mangler en kobling, starter ikke appen.
 Postnummerregisteret lastes her, så en manglende `data/postnumre.tsv` stopper
 oppstarten og ikke den første forespørselen som trenger et postnummer (AR-1).
 Bare når `APP_ENV=test` kobles `/_test/tilstand` og seed inn (AD-14).
@@ -10,6 +11,7 @@ Bare når `APP_ENV=test` kobles `/_test/tilstand` og seed inn (AD-14).
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -36,15 +38,24 @@ def _standard_autentisering() -> Autentisering:
     return IdentityAutentisering()
 
 
+def _standard_menykrok() -> Callable[..., int]:
+    from app.oppdrag.service import antall_trenger_handling
+
+    return antall_trenger_handling
+
+
 def lag_app(
     *,
     autentisering: Autentisering | None = _STANDARD,
+    menykrok: Callable[..., int] | None = _STANDARD,
     settings: Settings | None = None,
 ) -> FastAPI:
     """Lager appen med mellomvare, feilhandlere, statiske filer og rutene.
 
-    Uten argumenter kobles identity sin `Autentisering` inn. Gis `None` eller et
-    objekt som ikke er en `Autentisering`, nekter appen å starte (AD-1).
+    Uten argumenter kobles identity sin `Autentisering` og oppdrag sin menykrok
+    (`antall_trenger_handling`) inn. Gis `None` eller et objekt som ikke er en
+    `Autentisering`, eller en menykrok som er `None` eller ikke kan kalles,
+    nekter appen å starte (AD-1). Kroken lagres i `app.state.menykrok`.
     """
     settings = settings or hent_settings()
 
@@ -52,6 +63,16 @@ def lag_app(
         autentisering = _standard_autentisering()
     if autentisering is None or not isinstance(autentisering, Autentisering):
         melding = "Oppstarten stopper: lag_app() mangler kobling til Autentisering (AD-1, AD-4)."
+        logger.critical(melding)
+        raise KonfigFeil(melding)
+
+    if menykrok is _STANDARD:
+        menykrok = _standard_menykrok()
+    if menykrok is None or not callable(menykrok):
+        melding = (
+            "Oppstarten stopper: lag_app() mangler menykroken (db, bruker_id) -> int "
+            "til tallet ved «Mine oppdrag» (AD-1, AD-3)."
+        )
         logger.critical(melding)
         raise KonfigFeil(melding)
 
@@ -67,6 +88,7 @@ def lag_app(
     motor = lag_motor(settings.database_url)
     app.state.settings = settings
     app.state.autentisering = autentisering
+    app.state.menykrok = menykrok
     app.state.motor = motor
     app.state.sesjonsfabrikk = lag_sesjonsfabrikk(motor)
 
