@@ -101,3 +101,33 @@
   <span><span class="skjult-tekst">Status: </span>{{ status|status_tekst }}</span>
 </span>
 {% endmacro %}
+
+{# Oppdragskortet (DESIGN.md § card, EXPERIENCE.md § card og Forhåndsvisning, UX-DR15).
+   Kategorimerke, tittel, fakta med klokke- og stedikon, og pris. Verdiene kommer ferdig
+   formatert fra ruta. `kategori` er en kode fra KATEGORIER, eller tom, og da står «–».
+   Med `forhandsvisning=True` (steg 2 i «Nytt oppdrag») er tittelen en `p` med samme stil
+   som `h2`, så den ikke forveksles med sidens overskrifter, og hver verdi har `data-felt`,
+   som skjema.js oppdaterer. Kortet har da ingen lenke. Oversikten (2.3) bruker `h2`. #}
+{% macro oppdragskort(kategori, tittel, tid, sted, pris, forhandsvisning=False) %}
+<div class="kort{% if forhandsvisning %} kort--forhandsvisning{% endif %}"{% if forhandsvisning %} data-forhandsvisning{% endif %}>
+  <span class="kategorimerke"{% if forhandsvisning %} data-felt="kategori"{% endif %}>
+    {%- if kategori %}{{ kategoriikon(kategori, 18) }}<span>{{ kategori|kategori_tekst }}</span>{% else %}<span>–</span>{% endif -%}
+  </span>
+  {% if forhandsvisning %}
+  <p class="kort__tittel" data-felt="tittel">{{ tittel }}</p>
+  {% else %}
+  <h2 class="kort__tittel">{{ tittel }}</h2>
+  {% endif %}
+  <ul class="fakta">
+    <li class="fakta__tid">
+      <svg class="ikon" aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      <span{% if forhandsvisning %} data-felt="tid"{% endif %}>{{ tid }}</span>
+    </li>
+    <li class="fakta__sted">
+      <svg class="ikon" aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.5-6.1-6.5-11a6.5 6.5 0 0 1 13 0c0 4.9-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></svg>
+      <span{% if forhandsvisning %} data-felt="sted"{% endif %}>{{ sted }}</span>
+    </li>
+  </ul>
+  <p class="pris"{% if forhandsvisning %} data-felt="pris"{% endif %}>{{ pris }}</p>
+</div>
+{% endmacro %}
