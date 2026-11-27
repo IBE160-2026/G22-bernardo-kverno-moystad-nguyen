@@ -6,7 +6,8 @@ kom med T-1 (V3 i retro Epic 1): axe ser ikke en skjult `nav`. Telleren i
 `skjema.js` og dobbeltklikk på «Publiser» kom med story 2.1 (NFR-5, UX-DR13, UX-DR28).
 «Nytt oppdrag» i to steg under 768 px (`steg.js`), forhåndsvisningen i `skjema.js`
 og «Beløp i kr» med CSS `:has` kom med story 2.2 (FR-5, NFR-7, UX-DR13, UX-DR15,
-UX-DR16, UX-DR27, UX-DR28).
+UX-DR16, UX-DR27, UX-DR28). Fokus i oversikten (`fokus.js`), klikk på kortflaten og
+kolonnene ved 360, 768 og 1280 px kom med story 2.3 (FR-10, FR-11, UX-DR5, UX-DR21, UX-DR24).
 """
 
 from __future__ import annotations
@@ -18,7 +19,7 @@ import pytest
 from playwright.sync_api import Page, expect
 
 from ..oppdrag.test_to_steg import kort as kort_fra_serveren
-from .conftest import KARI, _logg_inn, fyll_ut_nytt_oppdrag, fyll_ut_steg_1
+from .conftest import AMIR, KARI, OLA, _logg_inn, fyll_ut_nytt_oppdrag, fyll_ut_steg_1
 
 pytestmark = pytest.mark.e2e
 
@@ -588,3 +589,124 @@ def test_en_skjerm_uten_js(browser, browser_context_args: dict) -> None:
         expect(belop).to_be_hidden()
     finally:
         kontekst.close()
+
+
+# ---------- oversikten (story 2.3) ----------
+
+
+def beskrevet_av(locator) -> list[str]:
+    return (locator.get_attribute("aria-describedby") or "").split()
+
+
+def test_fokus_etter_kategori_og_postnummer_pa_mobil(page: Page) -> None:
+    """FR-11, UX-DR24: Amir velger «Hage», skriver 5006 og trykker Enter.
+
+    Fokus står først på «Hage» og så i postnummerfeltet. Antallslinja (ved 0 treff
+    tomtilstandens første setning) er knyttet til begge, og Hage er fortsatt valgt.
+    """
+    page.set_viewport_size(MOBIL)
+    _logg_inn(page, AMIR)
+    page.get_by_role("link", name="Hage", exact=True).click()
+    hage = page.get_by_role("link", name="Hage", exact=True)
+    expect(hage).to_be_focused()
+    expect(hage).to_have_attribute("aria-current", "true")
+    assert beskrevet_av(hage) == ["tom-forste"]  # ingen hageoppdrag i 0572
+    expect(page.locator("#tom-forste")).to_have_text("Ingen ledige oppdrag i 0572 Oslo akkurat nå.")
+
+    felt = page.get_by_label("Postnummer")
+    felt.fill("5006")
+    felt.press("Enter")
+    expect(page.get_by_role("heading", level=1)).to_have_text("Ledige oppdrag i 5006 Bergen")
+    felt = page.get_by_label("Postnummer")
+    expect(felt).to_be_focused()
+    expect(page.locator("#antallslinje")).to_have_text("1 ledig oppdrag i Hage i 5006 Bergen")
+    assert "antallslinje" in beskrevet_av(felt)
+    hage = page.get_by_role("link", name="Hage", exact=True)
+    expect(hage).to_have_attribute("aria-current", "true")
+    assert beskrevet_av(hage) == ["antallslinje"]
+    assert "vist_postnummer=" in page.url and "kategori=hage" in page.url
+
+
+def test_vis_gir_fokus_i_feltet(page: Page) -> None:
+    """FR-11: også «Vis» gir fokus i feltet og knytter antallslinja til det."""
+    _logg_inn(page, OLA)
+    page.get_by_label("Postnummer").fill("5006")
+    page.get_by_role("button", name="Vis").click()
+    expect(page.get_by_role("heading", level=1)).to_have_text("Ledige oppdrag i 5006 Bergen")
+    expect(page.get_by_label("Postnummer")).to_be_focused()
+    assert "antallslinje" in beskrevet_av(page.get_by_label("Postnummer"))
+
+
+def test_ukjent_postnummer_gir_fokus_i_feltet_med_feilen(page: Page) -> None:
+    _logg_inn(page, OLA)
+    page.get_by_label("Postnummer").fill("9999")
+    page.get_by_label("Postnummer").press("Enter")
+    felt = page.get_by_label("Postnummer")
+    expect(felt).to_be_focused()
+    expect(felt).to_have_value("9999")
+    expect(felt).to_have_attribute("aria-invalid", "true")
+    expect(page).to_have_title("Feil: Ledige oppdrag i 0571 Oslo – Nabolagshelten")
+    expect(page.locator("#antallslinje")).to_have_text("4 ledige oppdrag i 0571 Oslo")
+
+
+def test_velg_et_annet_postnummer_markerer_innholdet(page: Page) -> None:
+    """FR-10, UX-DR21: lenken gir fokus i postnummerfeltet med innholdet markert."""
+    _logg_inn(page, OLA)
+    page.goto("/?postnummer=0150")
+    page.get_by_role("link", name="Velg et annet postnummer").click()
+    felt = page.get_by_label("Postnummer")
+    expect(felt).to_be_focused()
+    assert page.evaluate(
+        "() => [document.activeElement.selectionStart, document.activeElement.selectionEnd]"
+    ) == [0, 4]
+    page.keyboard.type("5006")
+    expect(felt).to_have_value("5006")
+
+
+def test_velg_et_annet_postnummer_uten_js_hopper_til_feltet(browser, browser_context_args: dict) -> None:
+    """UX-DR21: uten JS er lenken et hopp til `#postnummer`."""
+    kontekst = browser.new_context(**browser_context_args, java_script_enabled=False)
+    try:
+        side = kontekst.new_page()
+        _logg_inn(side, OLA)
+        side.goto("/?postnummer=0150")
+        side.get_by_role("link", name="Velg et annet postnummer").click()
+        assert side.url.endswith("#postnummer")
+    finally:
+        kontekst.close()
+
+
+def test_vis_alle_kategorier_gir_fokus_pa_alle(page: Page) -> None:
+    """FR-11: «Vis alle kategorier» i tomtilstanden velger «Alle» og gir den fokus."""
+    _logg_inn(page, KARI)
+    page.goto("/?kategori=hage")
+    page.get_by_role("link", name="Vis alle kategorier").click()
+    alle = page.get_by_role("link", name="Alle", exact=True)
+    expect(alle).to_be_focused()
+    expect(alle).to_have_attribute("aria-current", "true")
+    expect(page.locator("#antallslinje")).to_have_text("1 ledig oppdrag i 0571 Oslo")
+
+
+def test_klikk_pa_kortflaten_apner_detaljene(page: Page) -> None:
+    """UX-DR5: hele kortet er én lenke; et klikk på prisen nederst åpner detaljene."""
+    _logg_inn(page, OLA)
+    kort = page.locator(".kort--lenke").filter(has_text="Mate katten i helgen")
+    # Musa trykker midt på prisen. Lenkens ::after ligger over, så det er lenken som får klikket
+    # (Playwright sin `click()` på prisen ville nektet, nettopp fordi lenken dekker den).
+    boks = kort.locator(".pris").bounding_box()
+    assert boks is not None
+    page.mouse.click(boks["x"] + boks["width"] / 2, boks["y"] + boks["height"] / 2)
+    expect(page.get_by_role("heading", level=1)).to_have_text("Mate katten i helgen")
+    expect(page.get_by_role("heading", level=2, name="Lagt ut av Nora Berg")).to_be_visible()
+
+
+@pytest.mark.parametrize(("bredde", "kolonner"), [(360, 1), (768, 2), (1280, 3)], ids=["360px", "768px", "1280px"])
+def test_kortene_star_i_kolonner(page: Page, bredde: int, kolonner: int) -> None:
+    """UX-DR8, NFR-6: 1, 2 og 3 kolonner ved 360, 768 og 1280 px."""
+    page.set_viewport_size({"width": bredde, "height": 800})
+    _logg_inn(page, OLA)
+    venstre = page.evaluate(
+        "() => [...new Set([...document.querySelectorAll('.kortliste > li')]"
+        ".map((li) => Math.round(li.getBoundingClientRect().left)))].length"
+    )
+    assert venstre == kolonner

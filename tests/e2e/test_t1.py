@@ -1,6 +1,6 @@
 """T1: universell utforming i ekte nettleser (SM-5, NFR-6, NFR-7, UX-DR5, UX-DR31).
 
-Hver side og tilstand fra Epic 1 og story 2.1–2.2 sjekkes
+Hver side og tilstand fra Epic 1 og story 2.1–2.3 sjekkes
 - med axe ved 360 og 1280 px: ingen brudd med `impact` «serious» eller «critical»,
 - for vannrett rulling ved 320 px: `scrollWidth <= clientWidth` på `<html>`.
 
@@ -69,7 +69,45 @@ def registrer_tom_innsending(page: Page, h: dict) -> None:
 
 
 def oversikt(page: Page, h: dict) -> None:
-    h["logg_inn_som_kari"](page)  # ender på oversikten med tomtilstanden
+    """Ola i 0571 med fire kort (story 2.3)."""
+    h["logg_inn_som"](page, OLA)
+    expect(page.locator("#antallslinje")).to_have_text("4 ledige oppdrag i 0571 Oslo")
+
+
+def oversikt_kategori(page: Page, h: dict) -> None:
+    """Ola velger «Hage»: ett kort, og fokus på den valgte lenken."""
+    h["logg_inn_som"](page, OLA)
+    page.get_by_role("link", name="Hage", exact=True).click()
+    expect(page.locator("#antallslinje")).to_have_text("1 ledig oppdrag i Hage i 0571 Oslo")
+
+
+def oversikt_tom_kategori(page: Page, h: dict) -> None:
+    """Kari med «Hage»: hennes eget hageoppdrag vises ikke, så lista er tom."""
+    h["logg_inn_som_kari"](page)
+    page.goto("/?kategori=hage")
+    expect(page.get_by_role("link", name="Vis alle kategorier")).to_be_visible()
+
+
+def oversikt_tom(page: Page, h: dict) -> None:
+    """Et postnummer uten oppdrag, med «Alle» valgt."""
+    h["logg_inn_som"](page, OLA)
+    page.goto("/?postnummer=0150")
+    expect(page.get_by_role("link", name="Velg et annet postnummer")).to_be_visible()
+
+
+def oversikt_postnummer_feil(page: Page, h: dict) -> None:
+    """Ukjent postnummer: feilen ved feltet, og lista står uendret."""
+    h["logg_inn_som"](page, OLA)
+    page.get_by_label("Postnummer").fill("9999")
+    page.get_by_label("Postnummer").press("Enter")
+    expect(page.locator("#postnummer-feil")).to_have_text("Finner ikke postnummeret. Sjekk at det har fire siffer.")
+
+
+def oppdrag_detaljer_andre(page: Page, h: dict) -> None:
+    """Ola åpner Noras oppdrag fra kortet: oppdragsgiverblokken «Lagt ut av Nora Berg»."""
+    h["logg_inn_som"](page, OLA)
+    page.get_by_role("link", name="Mate katten i helgen").click()
+    expect(page.get_by_role("heading", level=2, name="Lagt ut av Nora Berg")).to_be_visible()
 
 
 def mine_oppdrag(page: Page, h: dict) -> None:
@@ -184,7 +222,7 @@ SIDER: dict[str, Callable[[Page, dict], None]] = {
     "logg-inn-logget-ut": logg_inn_logget_ut,
     "registrer": registrer_tom,
     "registrer-tom-innsending": registrer_tom_innsending,
-    "oversikt-tom": oversikt,
+    "oversikt": oversikt,
     "mine-oppdrag": mine_oppdrag,
     "profil": min_profil,
     "profil-andre": andres_profil,
@@ -199,6 +237,12 @@ SIDER: dict[str, Callable[[Page, dict], None]] = {
     "nytt-oppdrag-steg-2": nytt_oppdrag_steg_2,
     "nytt-oppdrag-neste-feil": nytt_oppdrag_neste_feil,
     "nytt-oppdrag-feil-steg-2": nytt_oppdrag_feil_steg_2,
+    # Story 2.3
+    "oversikt-kategori": oversikt_kategori,
+    "oversikt-tom-kategori": oversikt_tom_kategori,
+    "oversikt-tom": oversikt_tom,
+    "oversikt-postnummer-feil": oversikt_postnummer_feil,
+    "oppdrag-detaljer-andre": oppdrag_detaljer_andre,
 }
 
 # «Nytt oppdrag» på én skjerm ved 768 px (nettbrett): de samme tilstandene som i to steg.
