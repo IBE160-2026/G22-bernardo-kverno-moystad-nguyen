@@ -15,9 +15,12 @@
 {% endif %}
 {% endmacro %}
 
-{# Feiloppsummering og kvittering rett etter h1 (UX-DR22, UX-DR27).
+{# Feiloppsummering, feilmelding og kvittering rett etter h1 (UX-DR22, UX-DR27).
    Feiloppsummeringen har aldri role; fokus gir opplesningen. Bare ett av dem får autofocus.
-   `lenker` kobler en gruppefeil (for eksempel «nar») til første felt i gruppen («dato»). #}
+   `lenker` kobler en gruppefeil (for eksempel «nar») til første felt i gruppen («dato»).
+   Feilmeldingen er den faste teksten etter en konflikt (§4.0, story 2.5), med lenken
+   «Last siden på nytt» (button-secondary) til siden selv. Cookien er da slettet, så siden
+   lastes uten meldingen. #}
 {% macro meldinger(lenker={}) %}
 {% if feil %}
 <div class="melding melding--feil" id="feiloppsummering" tabindex="-1"{% if fokusmal == "feiloppsummering" %} autofocus{% endif %}>
@@ -30,6 +33,15 @@
     <li><a href="#{{ lenker.get(felt, felt) }}">{{ melding }}</a></li>
     {% endfor %}
   </ul>
+</div>
+{% endif %}
+{% if feilmelding is defined and feilmelding %}
+<div class="melding melding--feil" id="feilmelding" tabindex="-1"{% if fokusmal == "feilmelding" %} autofocus{% endif %}>
+  <p class="melding__tekst">
+    <svg class="ikon" aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4"/><path d="M12 17h.01"/></svg>
+    <span>{{ feilmelding }}</span>
+  </p>
+  <a class="knapp knapp--sekundar melding__knapp" href="{{ gjeldende_url }}">Last siden på nytt</a>
 </div>
 {% endif %}
 {% if kvittering %}
@@ -162,4 +174,28 @@
 {% if lenke and not bruker.slettet %}
 <a class="tekstknapp" href="{{ url_for('profil.vis', bruker_id=bruker.id) }}">Se profil</a>
 {% endif %}
+{% endmacro %}
+
+{# Bekreftelsesdialog (NFR-8, UX-DR18, DESIGN.md § dialog). Native <dialog>, som dialog.js åpner
+   med showModal() fra lenken `a[data-dialog="{id}"]`. Uten JS følger lenken til
+   bekreftelsessiden (GET), som har samme innhold. Spørsmålet er `h2` med tabindex="-1", så
+   dialog.js kan gi det fokus, og navnet på dialogen. Forklaringen er beskrivelsen. Skjemaet
+   poster til `handling` med CSRF og de skjulte feltene. Bekreft er primærknappen, og
+   angre-valget er en <button type="button"> med `data-lukk-dialog`, aldri en lenke og aldri
+   «Avbryt» (EXPERIENCE.md § Bekreftelser). Teksten settes bare her, aldri med JS. #}
+{% macro bekreft_dialog(id, sporsmal, forklaring, handling, bekreft, angre, skjulte={}) %}
+<dialog class="dialog" id="{{ id }}" aria-labelledby="{{ id }}-sporsmal" aria-describedby="{{ id }}-forklaring">
+  <h2 class="dialog__sporsmal" id="{{ id }}-sporsmal" tabindex="-1">{{ sporsmal }}</h2>
+  <p class="dialog__forklaring" id="{{ id }}-forklaring">{{ forklaring }}</p>
+  <form method="post" action="{{ handling }}">
+    {{ csrf_felt() }}
+    {% for navn, verdi in skjulte.items() %}
+    <input type="hidden" name="{{ navn }}" value="{{ verdi }}">
+    {% endfor %}
+    <div class="dialog__knapper">
+      <button class="knapp knapp--primar" type="submit">{{ bekreft }}</button>
+      <button class="tekstknapp" type="button" data-lukk-dialog>{{ angre }}</button>
+    </div>
+  </form>
+</dialog>
 {% endmacro %}

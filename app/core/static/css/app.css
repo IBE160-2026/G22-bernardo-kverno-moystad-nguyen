@@ -1172,6 +1172,16 @@ fieldset:has(#tilbud-belop:not(:checked)) .belopfelt {
   pointer-events: none;
 }
 
+/* Snarveiene under en skillelinje, utenfor lenken (DESIGN.md § list-row, story 2.5): 1 px kant,
+ * 16 px over og under, 24 px på sidene. Knappene brytes til neste linje ved smal skjerm. */
+.listerad__handlinger {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+  padding: var(--spacing-4) var(--spacing-5);
+  border-top: 1px solid var(--color-border);
+}
+
 /* Tallet ved «Mine oppdrag» i menyen (DESIGN.md § nav-badge). I topplinjen etter teksten,
  * i bunnmenyen øverst til høyre på ikonet (ikonet er 24 px og sentrert). */
 .menytall {
@@ -1345,6 +1355,96 @@ fieldset:has(#tilbud-belop:not(:checked)) .belopfelt {
 
 .tomtilstand .knapp {
   margin-top: var(--spacing-2);
+}
+
+/* Handlingene i detaljene for oppdragsgiveren (story 2.5, FR-6, FR-7, FR-8). */
+.handlinger__merker {
+  margin: var(--spacing-5) 0 0;
+}
+
+.handlinger {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-3);
+  margin-top: var(--spacing-5);
+}
+
+.handlinger__merker + .handlinger {
+  margin-top: var(--spacing-3);
+}
+
+/* Lenken «Last siden på nytt» i feilmeldingen etter en konflikt (§4.0). */
+.melding__knapp {
+  margin-top: var(--spacing-3);
+}
+
+/* Bekreftelsesdialogen (DESIGN.md § dialog, UX-DR18). Maks 480 px, full bredde minus 16 px marg
+ * på mobil, og innholdet ruller inne i dialogen når den er høyere enn skjermen, så begge
+ * knappene alltid kan nås. Sløret er antrasitt med 55 % opasitet (custom properties arves
+ * ikke av ::backdrop i alle nettlesere, så fargen står her). */
+.dialog {
+  box-sizing: border-box;
+  width: calc(100% - 32px);
+  max-width: 480px;
+  max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  margin: auto;
+  padding: var(--spacing-5);
+  border: 0;
+  border-radius: var(--rounded-xl);
+  background: var(--color-surface-card);
+  color: var(--color-ink);
+  box-shadow: var(--shadow-dialog);
+  overflow-wrap: anywhere;
+}
+
+.dialog::backdrop {
+  background: rgba(47, 48, 45, .55);
+}
+
+.dialog__sporsmal {
+  margin: 0;
+  font-size: var(--text-heading-2);
+  line-height: var(--leading-heading-2);
+}
+
+.dialog__forklaring {
+  margin: var(--spacing-2) 0 0;
+}
+
+/* Under 768 px under hverandre: bekreftende øverst i full bredde, angre under. */
+.dialog__knapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-5);
+}
+
+.dialog__knapper .knapp {
+  width: 100%;
+}
+
+.dialog__knapper .tekstknapp {
+  align-self: flex-start;
+}
+
+@media (min-width: 48em) {
+  .dialog__knapper {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .dialog__knapper .knapp {
+    width: auto;
+  }
+}
+
+/* Med tvungne farger forsvinner skyggen, så dialogen får kant. */
+@media (forced-colors: active) {
+  .dialog {
+    border: 2px solid CanvasText;
+  }
 }
 
 /* Oppdragsgiverblokken i detaljene (FR-9, UX-DR25). */
