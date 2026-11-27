@@ -1,8 +1,15 @@
 {% extends "core/base.html" %}
 {% import "core/makroer.html" as m with context %}
-{# «Nytt oppdrag» på én skjerm (FR-5, NFR-9, NFR-10, UX-DR10–UX-DR14, UX-DR22, UX-DR27).
+{# «Nytt oppdrag» (FR-5, NFR-9, NFR-10, UX-DR10–UX-DR16, UX-DR22, UX-DR27).
    Etiketter, hjelpetekster og feltrekkefølge er fra EXPERIENCE.md § Skjemafelt og
-   mockupen key-nytt-oppdrag.html. To steg, forhåndsvisning og KI kommer i 2.2 og Epic 5. #}
+   mockupene key-nytt-oppdrag.html og key-nytt-oppdrag-steg2.html.
+   Serveren rendrer alltid ett skjema på én skjerm, med to `section` (`data-steg`) og hver
+   sin `h2`, og forhåndsvisningen rett over «Publiser» (story 2.2). Under 768 px deler
+   steg.js skjemaet i to steg. Skriptet lastes nederst i denne malen, uten defer.
+   `data-kun-en-skjerm` skjules, `data-kun-steg` vises, og `data-vis-i-steg` vises bare
+   i det steget. «Neste» og «Tilbake til steg 1» har `hidden`,
+   så de aldri vises uten JS. Overskriftene, titlene (`stegdata`) og tekstene for tomme
+   felt (`data-tom`) kommer fra ruta, og `h1` er `tittel` fra ruta. KI kommer i Epic 5. #}
 {% macro beskrevet_av(ider) %}
 {%- set ider = ider | select | list -%}
 {%- if ider %} aria-describedby="{{ ider | join(' ') }}"{% endif -%}
@@ -11,108 +18,128 @@
 {% macro feilid(felt) %}{{ felt ~ "-feil" if feltfeil.get(felt) else "" }}{% endmacro %}
 {% block innhold %}
 <div class="skjemabredde">
-  <a class="tekstknapp" href="{{ tilbake_url }}">Tilbake</a>
-  <h1>Nytt oppdrag</h1>
+  <a class="tekstknapp" href="{{ tilbake_url }}" data-vis-i-steg="1">Tilbake</a>
+  <h1>{{ tittel }}</h1>
   {{ m.meldinger(lenker=gruppelenker) }}
-  <form class="skjema" method="post" action="{{ url_for('oppdrag.send_ny') }}" novalidate>
+  <form class="skjema" method="post" action="{{ url_for('oppdrag.send_ny') }}" novalidate data-steg-skjema
+    {%- for navn, verdi in stegdata %} {{ navn }}="{{ verdi }}"{% endfor %}>
     {{ m.csrf_felt() }}
     <input type="hidden" name="skjema_id" value="{{ verdier.skjema_id }}">
 
-    <div class="felt">
-      <label for="beskrivelse">Hva trenger du hjelp til?</label>
-      <p class="hjelpetekst" id="beskrivelse-hjelp">Skriv med egne ord.</p>
-      <p class="hjelpetekst" id="beskrivelse-personvern">Ikke skriv adresse eller telefonnummer – det avtaler dere når hjelperen er valgt.</p>
-      <textarea id="beskrivelse" name="beskrivelse" rows="4" autocomplete="off" required data-maks="{{ beskrivelse_maks }}" data-teller="beskrivelse-teller" data-varsel="beskrivelse-varsel"
-        {{- ugyldig("beskrivelse") }}{{ beskrevet_av(["beskrivelse-hjelp", "beskrivelse-personvern", "beskrivelse-teller", feilid("beskrivelse")]) }}
-        {%- if fokusmal == "beskrivelse" %} autofocus{% endif %}>{{ verdier.beskrivelse }}</textarea>
-      <p class="teller" id="beskrivelse-teller">{{ antall_tegn }} av {{ beskrivelse_maks }} tegn</p>
-      <p class="skjult-tekst" id="beskrivelse-varsel" aria-live="polite"></p>
-      {{ m.feltfeil("beskrivelse-feil", feltfeil.get("beskrivelse")) }}
-    </div>
+    <section class="skjema__steg" data-steg="1">
+      <h2 class="skjema__overskrift" data-kun-en-skjerm>Hva trenger du hjelp til?</h2>
 
-    <div class="felt">
-      <label for="tittel">Tittel</label>
-      <input id="tittel" name="tittel" type="text" autocomplete="off" required value="{{ verdier.tittel }}"
-        {{- ugyldig("tittel") }}{{ beskrevet_av([feilid("tittel")]) }}>
-      {{ m.feltfeil("tittel-feil", feltfeil.get("tittel")) }}
-    </div>
-
-    <fieldset class="gruppe">
-      <legend class="gruppe__etikett">Kategori</legend>
-      <div class="kategorivalg">
-        {% for kode, tekst in KATEGORIER %}
-        <label class="kategoriknapp" for="kategori-{{ kode }}">
-          <input class="skjult-tekst" type="radio" id="kategori-{{ kode }}" name="kategori" value="{{ kode }}" required
-            {%- if verdier.kategori == kode %} checked{% endif %}{{ ugyldig("kategori") }}{{ beskrevet_av([feilid("kategori")]) }}>
-          {{ m.kategoriikon(kode) }}
-          <span class="kategoriknapp__tekst">
-            <svg class="ikon kategoriknapp__hake" aria-hidden="true" focusable="false" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
-            {%- if kode == "baerehjelp-flytting" %}<span>Bærehjelp/<wbr>flytting</span>{% else %}<span>{{ tekst }}</span>{% endif %}
-          </span>
-        </label>
-        {% endfor %}
+      <div class="felt">
+        <label for="beskrivelse">Hva trenger du hjelp til?</label>
+        <p class="hjelpetekst" id="beskrivelse-hjelp">Skriv med egne ord.</p>
+        <p class="hjelpetekst" id="beskrivelse-personvern">Ikke skriv adresse eller telefonnummer – det avtaler dere når hjelperen er valgt.</p>
+        <textarea id="beskrivelse" name="beskrivelse" rows="4" autocomplete="off" required data-maks="{{ beskrivelse_maks }}" data-teller="beskrivelse-teller" data-varsel="beskrivelse-varsel" data-tom="{{ tomme_felt.beskrivelse }}"
+          {{- ugyldig("beskrivelse") }}{{ beskrevet_av(["beskrivelse-hjelp", "beskrivelse-personvern", "beskrivelse-teller", feilid("beskrivelse")]) }}
+          {%- if fokusmal == "beskrivelse" %} autofocus{% endif %}>{{ verdier.beskrivelse }}</textarea>
+        <p class="teller" id="beskrivelse-teller">{{ antall_tegn }} av {{ beskrivelse_maks }} tegn</p>
+        <p class="skjult-tekst" id="beskrivelse-varsel" aria-live="polite"></p>
+        {{ m.feltfeil("beskrivelse-feil", feltfeil.get("beskrivelse")) }}
       </div>
-      {{ m.feltfeil("kategori-feil", feltfeil.get("kategori")) }}
-    </fieldset>
 
-    <div class="felt">
-      <label for="postnummer">Postnummer</label>
-      <div class="postnummerfelt">
-        <input id="postnummer" name="postnummer" type="text" inputmode="numeric" autocomplete="postal-code" required value="{{ verdier.postnummer }}" data-poststed="postnummer-sted" data-postnumre="{{ url_for('static', path='postnumre.json') }}"
-          {{- ugyldig("postnummer") }}{{ beskrevet_av(["postnummer-sted", feilid("postnummer")]) }}>
-        <span id="postnummer-sted" aria-live="polite">{{ poststed }}</span>
+      <div class="felt">
+        <label for="tittel">Tittel</label>
+        <input id="tittel" name="tittel" type="text" autocomplete="off" required value="{{ verdier.tittel }}" data-tom="{{ tomme_felt.tittel }}"
+          {{- ugyldig("tittel") }}{{ beskrevet_av([feilid("tittel")]) }}>
+        {{ m.feltfeil("tittel-feil", feltfeil.get("tittel")) }}
       </div>
-      {{ m.feltfeil("postnummer-feil", feltfeil.get("postnummer")) }}
-    </div>
 
-    <fieldset class="gruppe">
-      <legend class="gruppe__etikett">Når?</legend>
-      <div class="nar">
-        <div class="felt">
-          <label for="dato">Dato</label>
-          <p class="hjelpetekst" id="dato-hjelp">dd.mm.åååå, for eksempel 14.11.2026</p>
-          <input class="felt--kort" id="dato" name="dato" type="text" autocomplete="off" required value="{{ verdier.dato }}"
-            {{- ugyldig("dato", "nar") }}{{ beskrevet_av(["dato-hjelp", feilid("dato"), feilid("nar")]) }}>
-          {{ m.feltfeil("dato-feil", feltfeil.get("dato")) }}
+      <fieldset class="gruppe" data-tom="{{ tomme_felt.kategori }}">
+        <legend class="gruppe__etikett">Kategori</legend>
+        <div class="kategorivalg">
+          {% for kode, tekst in KATEGORIER %}
+          <label class="kategoriknapp" for="kategori-{{ kode }}">
+            <input class="skjult-tekst" type="radio" id="kategori-{{ kode }}" name="kategori" value="{{ kode }}" required
+              {%- if verdier.kategori == kode %} checked{% endif %}{{ ugyldig("kategori") }}{{ beskrevet_av([feilid("kategori")]) }}>
+            {{ m.kategoriikon(kode) }}
+            <span class="kategoriknapp__tekst">
+              <svg class="ikon kategoriknapp__hake" aria-hidden="true" focusable="false" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+              {%- if kode == "baerehjelp-flytting" %}<span>Bærehjelp/<wbr>flytting</span>{% else %}<span>{{ tekst }}</span>{% endif %}
+            </span>
+          </label>
+          {% endfor %}
         </div>
-        <div class="felt">
-          <label for="klokkeslett">Klokkeslett</label>
-          <p class="hjelpetekst" id="klokkeslett-hjelp">tt:mm, for eksempel 07:00</p>
-          <input class="felt--klokkeslett" id="klokkeslett" name="klokkeslett" type="text" autocomplete="off" required value="{{ verdier.klokkeslett }}"
-            {{- ugyldig("klokkeslett", "nar") }}{{ beskrevet_av(["klokkeslett-hjelp", feilid("klokkeslett"), feilid("nar")]) }}>
-          {{ m.feltfeil("klokkeslett-feil", feltfeil.get("klokkeslett")) }}
-        </div>
-      </div>
-      {{ m.feltfeil("nar-feil", feltfeil.get("nar")) }}
-    </fieldset>
+        {{ m.feltfeil("kategori-feil", feltfeil.get("kategori")) }}
+      </fieldset>
 
-    <fieldset class="gruppe">
-      <legend class="gruppe__etikett">Hva tilbyr du?</legend>
-      <div class="radiovalg">
-        <input type="radio" id="tilbud-belop" name="tilbud" value="belop" required
-          {%- if verdier.tilbud == "belop" %} checked{% endif %}{{ ugyldig("tilbud") }}{{ beskrevet_av([feilid("tilbud")]) }}>
-        <label for="tilbud-belop">Beløp</label>
-      </div>
-      <div class="felt belopfelt">
-        <label for="belop">Beløp i kr</label>
-        <div class="belopfelt__rad">
-          <input id="belop" name="belop" type="text" inputmode="numeric" autocomplete="off" value="{{ verdier.belop }}"
-            {{- ugyldig("belop") }}{{ beskrevet_av([feilid("belop")]) }}>
-          <span aria-hidden="true">kr</span>
-        </div>
-        {{ m.feltfeil("belop-feil", feltfeil.get("belop")) }}
-      </div>
-      <div class="radiovalg">
-        <input type="radio" id="tilbud-uten" name="tilbud" value="uten" required
-          {%- if verdier.tilbud == "uten" %} checked{% endif %}{{ ugyldig("tilbud") }}{{ beskrevet_av([feilid("tilbud")]) }}>
-        <label for="tilbud-uten">Uten betaling</label>
-      </div>
-      {{ m.feltfeil("tilbud-feil", feltfeil.get("tilbud")) }}
-    </fieldset>
+      <button class="knapp knapp--primar" type="button" data-neste data-kun-steg hidden>Neste</button>
+    </section>
 
-    <div class="skjema__knapper">
-      <button class="knapp knapp--primar" type="submit">Publiser</button>
-    </div>
+    <section class="skjema__steg" data-steg="2">
+      <h2 class="skjema__overskrift" data-kun-en-skjerm>Når og hvor?</h2>
+
+      <div class="felt">
+        <label for="postnummer">Postnummer</label>
+        <div class="postnummerfelt">
+          <input id="postnummer" name="postnummer" type="text" inputmode="numeric" autocomplete="postal-code" required value="{{ verdier.postnummer }}" data-poststed="postnummer-sted" data-postnumre="{{ url_for('static', path='postnumre.json') }}"
+            {{- ugyldig("postnummer") }}{{ beskrevet_av(["postnummer-sted", feilid("postnummer")]) }}>
+          <span id="postnummer-sted" aria-live="polite">{{ poststed }}</span>
+        </div>
+        {{ m.feltfeil("postnummer-feil", feltfeil.get("postnummer")) }}
+      </div>
+
+      <fieldset class="gruppe">
+        <legend class="gruppe__etikett">Når?</legend>
+        <div class="nar">
+          <div class="felt">
+            <label for="dato">Dato</label>
+            <p class="hjelpetekst" id="dato-hjelp">dd.mm.åååå, for eksempel 14.11.2026</p>
+            <input class="felt--kort" id="dato" name="dato" type="text" autocomplete="off" required value="{{ verdier.dato }}"
+              {{- ugyldig("dato", "nar") }}{{ beskrevet_av(["dato-hjelp", feilid("dato"), feilid("nar")]) }}>
+            {{ m.feltfeil("dato-feil", feltfeil.get("dato")) }}
+          </div>
+          <div class="felt">
+            <label for="klokkeslett">Klokkeslett</label>
+            <p class="hjelpetekst" id="klokkeslett-hjelp">tt:mm, for eksempel 07:00</p>
+            <input class="felt--klokkeslett" id="klokkeslett" name="klokkeslett" type="text" autocomplete="off" required value="{{ verdier.klokkeslett }}"
+              {{- ugyldig("klokkeslett", "nar") }}{{ beskrevet_av(["klokkeslett-hjelp", feilid("klokkeslett"), feilid("nar")]) }}>
+            {{ m.feltfeil("klokkeslett-feil", feltfeil.get("klokkeslett")) }}
+          </div>
+        </div>
+        {{ m.feltfeil("nar-feil", feltfeil.get("nar")) }}
+      </fieldset>
+
+      <fieldset class="gruppe">
+        <legend class="gruppe__etikett">Hva tilbyr du?</legend>
+        <div class="radiovalg">
+          <input type="radio" id="tilbud-belop" name="tilbud" value="belop" required
+            {%- if verdier.tilbud == "belop" %} checked{% endif %}{{ ugyldig("tilbud") }}{{ beskrevet_av([feilid("tilbud")]) }}>
+          <label for="tilbud-belop">Beløp</label>
+        </div>
+        <div class="felt belopfelt">
+          <label for="belop">Beløp i kr</label>
+          <div class="belopfelt__rad">
+            <input id="belop" name="belop" type="text" inputmode="numeric" autocomplete="off" value="{{ verdier.belop }}"
+              {{- ugyldig("belop") }}{{ beskrevet_av([feilid("belop")]) }}>
+            <span aria-hidden="true">kr</span>
+          </div>
+          {{ m.feltfeil("belop-feil", feltfeil.get("belop")) }}
+        </div>
+        <div class="radiovalg">
+          <input type="radio" id="tilbud-uten" name="tilbud" value="uten" required
+            {%- if verdier.tilbud == "uten" %} checked{% endif %}{{ ugyldig("tilbud") }}{{ beskrevet_av([feilid("tilbud")]) }}>
+          <label for="tilbud-uten">Uten betaling</label>
+        </div>
+        {{ m.feltfeil("tilbud-feil", feltfeil.get("tilbud")) }}
+      </fieldset>
+
+      <section class="forhandsvisning" aria-labelledby="forhandsvisning-etikett">
+        <p class="forhandsvisning__etikett" id="forhandsvisning-etikett">Slik vises oppdraget for andre.</p>
+        {{ m.oppdragskort(forhandsvisning.kategori, forhandsvisning.tittel, forhandsvisning.tid, forhandsvisning.sted, forhandsvisning.pris, forhandsvisning=True) }}
+      </section>
+
+      <div class="skjema__knapper">
+        <button class="knapp knapp--primar" type="submit">Publiser</button>
+        <button class="tekstknapp" type="button" data-tilbake-steg data-kun-steg hidden>Tilbake til steg 1</button>
+      </div>
+    </section>
   </form>
+  {# Uten defer, rett etter skjemaet: stegvisningen settes før første opptegning, så
+     skjemaet ikke vises på én skjerm og så faller sammen på mobil. #}
+  <script src="{{ url_for('static', path='js/steg.js') }}"></script>
 </div>
 {% endblock %}
