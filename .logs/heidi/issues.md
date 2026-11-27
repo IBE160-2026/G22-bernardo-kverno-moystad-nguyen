@@ -83,3 +83,5 @@
 - [ ] 2026-11-27 [story-2-2-to-steg-mobil](980-2026-11-27-09-04-31-story-2-2-to-steg-mobil.md) — tastatursjekk (cirka fem minutter) av «Nytt oppdrag» i to steg og på én skjerm, utsatt til 6.1
 - [ ] 2026-11-27 [story-2-3-oversikt-og-detaljer](979-2026-11-27-13-23-19-story-2-3-oversikt-og-detaljer.md) — tastatursjekk (cirka fem minutter) av oversikten, filtrene og detaljene, utsatt til 6.1
 - [ ] 2026-11-27 [story-2-4-mine-oppdrag](978-2026-11-27-14-04-38-story-2-4-mine-oppdrag.md) — tastatursjekk (cirka fem minutter) av «Mine oppdrag» og menyen med tall, utsatt til 6.1
+- [ ] 2026-11-27 [story-2-5-redigere-og-avbryte](977-2026-11-27-18-42-01-story-2-5-redigere-og-avbryte.md) — tastatursjekk (cirka fem minutter) av redigering, dialogen og snarveiene, utsatt til 6.1
+- [ ] 2026-11-27 [story-2-5-redigere-og-avbryte](977-2026-11-27-18-42-01-story-2-5-redigere-og-avbryte.md) — detaljsiden ruller vannrett ved 320 px med 200 % tekst (`deferred-work.md`), ta i 6.1 (T3)
