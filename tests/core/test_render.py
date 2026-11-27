@@ -172,6 +172,71 @@ def test_filtrene_escaper_tekst() -> None:
     assert "<" not in miljo.from_string("{{ b|kr }}").render(b=None)
 
 
+def _request(app, sporring: bytes = b"") -> Request:
+    return Request({"type": "http", "method": "GET", "path": "/", "headers": [], "app": app,
+                    "query_string": sporring, "state": {}})
+
+
+def _filterlenke(app, sporring: bytes, mal: str) -> str:
+    return miljo.from_string(mal).render(request=_request(app, sporring))
+
+
+def test_filterlenke_beholder_andre_parametre(app) -> None:
+    """AR-27, FR-11: `filterlenke` endrer én parameter og beholder de andre i samme rekkefølge."""
+    assert _filterlenke(app, b"postnummer=5006&kategori=hage", "{{ filterlenke(kategori='alle') }}") == (
+        "/?postnummer=5006&amp;kategori=alle"
+    )
+    assert _filterlenke(app, b"", "{{ filterlenke(kategori='hage') }}") == "/?kategori=hage"
+    assert _filterlenke(app, b"kategori=hage", "{{ filterlenke(postnummer='5006') }}") == (
+        "/?kategori=hage&amp;postnummer=5006"
+    )
+
+
+def test_filterlenke_utelater_none_og_vist_postnummer(app) -> None:
+    """AR-27: `None` fjerner parameteren, og `vist_postnummer` følger aldri med."""
+    sporring = b"postnummer=5006&kategori=hage&vist_postnummer=0571"
+    assert _filterlenke(app, sporring, "{{ filterlenke(postnummer=None) }}") == "/?kategori=hage"
+    assert _filterlenke(app, sporring, "{{ filterlenke(kategori=None, postnummer=None) }}") == "/"
+    assert "vist_postnummer" not in _filterlenke(app, sporring, "{{ filterlenke() }}")
+
+
+def test_filterlenke_koder_verdiene(app) -> None:
+    """NFR-12: verdier fra adressen kodes i lenken og escapes i HTML."""
+    html = _filterlenke(app, b"postnummer=%22%3E%3Cscript%3E", "{{ filterlenke(kategori='hage') }}")
+    assert "<script>" not in html and '"' not in html
+    assert html == "/?postnummer=%22%3E%3Cscript%3E&amp;kategori=hage"
+
+
+@pytest.mark.parametrize(
+    ("snitt", "antall", "forventet"),
+    [(None, 0, "Ingen vurderinger ennå"), (4.3, 7, "4,3 av 5, 7 vurderinger"), (5.0, 1, "5,0 av 5, 1 vurdering"),
+     (4.25, 4, "4,2 av 5, 4 vurderinger"), (4.0, 0, "Ingen vurderinger ennå")],
+)
+def test_filteret_vurdering(snitt: float | None, antall: int, forventet: str) -> None:
+    """FR-21, EXPERIENCE.md § Formater: snittet som «4,3 av 5, 7 vurderinger»."""
+    erfaring = domene.Erfaring(fullforte=0, per_kategori=(), snitt=snitt, antall_vurderinger=antall)
+    assert miljo.from_string("{{ e|vurdering }}").render(e=erfaring) == forventet
+
+
+@pytest.mark.parametrize(
+    ("antall", "forventet"),
+    [(0, "Ingen fullførte oppdrag ennå"), (1, "1 fullført oppdrag"), (12, "12 fullførte oppdrag")],
+)
+def test_filteret_fullforte(antall: int, forventet: str) -> None:
+    """FR-21: «Ingen fullførte oppdrag ennå», «1 fullført oppdrag» eller «12 fullførte oppdrag»."""
+    assert miljo.from_string("{{ n|fullforte }}").render(n=antall) == forventet
+
+
+def test_feil_i_tittel_uten_feiloppsummering(app) -> None:
+    """UX-DR2: `feil_i_tittel=True` gir «Feil: » i tittelen, men ingen feiloppsummering."""
+    request = Request({"type": "http", "method": "GET", "path": "/x", "headers": [], "app": app,
+                       "query_string": b"", "state": {"innlogget": object(), "csrf": "n"}})
+    html = render(request, "core/feil.html", tittel="T", aktiv_meny=None, feil_i_tittel=True,
+                  overskrift="O").body.decode()
+    assert "<title>Feil: T – Nabolagshelten</title>" in html
+    assert "feiloppsummering" not in html
+
+
 def test_underside_gir_aria_current_true(app) -> None:
     """UX-DR3: på en underside får menyvalget `aria-current="true"`, og ingen har `"page"`."""
     request = Request({"type": "http", "method": "GET", "path": "/x", "headers": [], "app": app,
