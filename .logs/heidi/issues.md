@@ -78,3 +78,6 @@
 - [ ] 2026-11-27 [story-2-1-legge-ut-oppdrag](982-2026-11-27-08-21-44-story-2-1-legge-ut-oppdrag.md) — tastatursjekk (cirka fem minutter) av «Nytt oppdrag» og detaljsiden, utsatt til 6.1
 - [ ] 2026-11-27 [story-2-1-legge-ut-oppdrag](982-2026-11-27-08-21-44-story-2-1-legge-ut-oppdrag.md) — Epic 3: `endre_status` gir misvisende `Konflikt` når tidspunktet er passert (`deferred-work.md`)
 - [ ] 2026-11-27 [story-2-1-legge-ut-oppdrag](982-2026-11-27-08-21-44-story-2-1-legge-ut-oppdrag.md) — story 3.1: tømmingen i seed må ta hensyn til FK fra `interesse` (`deferred-work.md`)
+- [ ] 2026-11-27 [bilde-av-oppdrag-endring](981-2026-11-27-09-04-31-bilde-av-oppdrag-endring.md) — story 2.7 bygges etter 2.5. Blir tiden knapp, kuttes 2.6 først og så 2.7, og kuttet føres i PRD §6.1
+- [ ] 2026-11-27 [bilde-av-oppdrag-endring](981-2026-11-27-09-04-31-bilde-av-oppdrag-endring.md) — kjent begrensning: uten JS stopper Vercel bilder over cirka 4,5 MB med sin egen feilside (FR-27)
+- [ ] 2026-11-27 [story-2-2-to-steg-mobil](980-2026-11-27-09-04-31-story-2-2-to-steg-mobil.md) — tastatursjekk (cirka fem minutter) av «Nytt oppdrag» i to steg og på én skjerm, utsatt til 6.1
