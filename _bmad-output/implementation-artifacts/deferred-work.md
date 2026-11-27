@@ -35,3 +35,7 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-5-redigere-og-avbryte.md`
   summary: Detaljsiden ruller vannrett ved 320 px når rotstørrelsen er 200 % (366 px > 320 px), også før dialogen åpnes.
   evidence: Funnet av implementeringen i 2.5 under testen av dialogen ved 200 % tekst. Det er ikke forårsaket av 2.5, og T1 sjekker 320 px med vanlig tekststørrelse. Bør sjekkes i story 6.1 (T3, 200 % tekst) og rettes der.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-6-utlopt-innlogging.md`
+  summary: CSRF-cookien har ingen `Max-Age`, så etter at nettleseren har vært lukket, gir en innsending 403 før AD-7 slår inn, og det utfylte innholdet går tapt.
+  evidence: Funnet ved planleggingen av 2.6. AD-7 beskytter bare mot utløpt sesjon, ikke mot manglende CSRF-cookie. Retten er en `Max-Age` på CSRF-cookien som er lengre enn sesjonen (7 dager, FR-2). Det er utenfor 2.6.
