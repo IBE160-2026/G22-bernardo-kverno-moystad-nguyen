@@ -87,3 +87,7 @@
 - [ ] 2026-11-27 [story-2-5-redigere-og-avbryte](977-2026-11-27-18-42-01-story-2-5-redigere-og-avbryte.md) — detaljsiden ruller vannrett ved 320 px med 200 % tekst (`deferred-work.md`), ta i 6.1 (T3)
 - [ ] 2026-11-27 [story-2-7-bilde-av-oppdraget](976-2026-11-27-23-37-13-story-2-7-bilde-av-oppdraget.md) — prøv opplasting av bilde i produksjon (Pillow på Vercel, binærdata i Supabase) med en ekte konto før demo
 - [ ] 2026-11-27 [story-2-7-bilde-av-oppdraget](976-2026-11-27-23-37-13-story-2-7-bilde-av-oppdraget.md) — tastatursjekk (cirka fem minutter) av bildefeltet, «Fjern bildet» og bildet i kort og detaljer, utsatt til 6.1
+- [ ] 2026-11-28 [story-2-6-utlopt-innlogging](975-2026-11-28-00-28-10-story-2-6-utlopt-innlogging.md) — tastatursjekk (cirka fem minutter) av 401-siden og flyten, utsatt til 6.1
+- [ ] 2026-11-28 [story-2-6-utlopt-innlogging](975-2026-11-28-00-28-10-story-2-6-utlopt-innlogging.md) — Epic 4 og 5: unngå gjentatte feltnavn i skjemaene, eller la mellomvaren bruke `form.multi_items()` (`deferred-work.md`)
+- [ ] 2026-11-28 [story-2-6-utlopt-innlogging](975-2026-11-28-00-28-10-story-2-6-utlopt-innlogging.md) — CSRF-cookien trenger `Max-Age` lengre enn sesjonen, så en innsending etter at nettleseren har vært lukket ikke gir 403 (`deferred-work.md`)
+- [ ] 2026-11-28 [story-2-6-utlopt-innlogging](975-2026-11-28-00-28-10-story-2-6-utlopt-innlogging.md) — retrospektiv for Epic 2 (valgfri) før Epic 3
