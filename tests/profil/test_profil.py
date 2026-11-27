@@ -124,15 +124,19 @@ def personopplysninger(*brukere) -> list[str]:
 
 
 def test_ar24_ingen_get_rute_viser_telefon_epost_eller_fodselsdato(
-    app: FastAPI, klient: TestClient, kari, amir, logg_inn_som
+    app: FastAPI, klient: TestClient, kari, amir, logg_inn_som, lag_oppdrag
 ) -> None:
-    """AR-24: alle GET-ruter rendret for innlogget bruker, også `/profil/{annen id}`."""
+    """AR-24, AD-16: alle GET-ruter rendret for innlogget bruker, også `/profil/{annen id}`
+    og detaljene for et oppdrag Amir har lagt ut (story 2.1)."""
+    amirs_oppdrag = lag_oppdrag(oppdragsgiver=amir)
+    id_for_rute = {"oppdrag.detaljer": amirs_oppdrag.id}
     logg_inn_som(klient, kari)
     sider = 0
     for rute in alle_ruter(app.routes):
         if "GET" not in (getattr(rute, "methods", None) or set()):
             continue
-        sti = rute.path_format.format(**{navn: str(amir.id) for navn in rute.param_convertors})
+        verdi_ = id_for_rute.get(rute.name, amir.id)
+        sti = rute.path_format.format(**{navn: str(verdi_) for navn in rute.param_convertors})
         svar = klient.get(sti)
         assert svar.status_code == 200, (sti, svar.status_code)
         for verdi in personopplysninger(kari, amir):

@@ -1,8 +1,11 @@
 {% extends "core/base.html" %}
 {% import "core/makroer.html" as m with context %}
-{# Oversikten (FR-21 grunnside). Oppdragene og «+ Legg ut oppdrag» kommer i story 2.1,
-   postnummerfilteret i 2.3. #}
+{# Oversikten (FR-10 grunnside, FR-5). «+ Legg ut oppdrag» står før h1 (UX-DR10).
+   Oppdragene og postnummerfilteret kommer i story 2.3. #}
 {% block innhold %}
+<p class="hovedhandling">
+  <a class="knapp knapp--primar" href="{{ url_for('oppdrag.ny') }}"><span aria-hidden="true">+</span>&nbsp;Legg ut oppdrag</a>
+</p>
 <h1>Ledige oppdrag i {{ sted }}</h1>
 {{ m.meldinger() }}
 <div class="tomtilstand">
