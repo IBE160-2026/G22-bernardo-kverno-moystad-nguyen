@@ -12,7 +12,7 @@ Appen har én kjerneflyt: legge ut et oppdrag → melde interesse → velge hjel
 
 ## Status
 
-Prosjektet er i implementasjonsfasen: Epic 1 (konto og innlogging) er ferdig, Epic 2 (legge ut og finne oppdrag) er neste. Frist for innlevering er 15. desember 2026.
+Prosjektet er i implementasjonsfasen: Epic 1 (konto og innlogging) er ferdig, og Epic 2 (legge ut og finne oppdrag) pågår. Frist for innlevering er 15. desember 2026.
 
 | Steg | Status |
 |---|---|
@@ -21,7 +21,7 @@ Prosjektet er i implementasjonsfasen: Epic 1 (konto og innlogging) er ferdig, Ep
 | UX-design | Ferdig: designsystem, atferd, mockups og tilgjengelighetsgjennomgang |
 | Arkitektur | Ferdig: FastAPI + Jinja, SQLite lokalt og Supabase Postgres på Vercel (AD-1–AD-17) |
 | Epics og stories | Ferdig: [epics.md](_bmad-output/planning-artifacts/epics.md) og [sprint-status.yaml](_bmad-output/implementation-artifacts/sprint-status.yaml) |
-| Implementasjon og testing | Pågår: Epic 1 ferdig (story 1.1–1.5: skjelett, innlogging, publisering i produksjon, registrering og automatisk test av universell utforming), med retrospektiv og herding. Epic 2 er neste |
+| Implementasjon og testing | Pågår: Epic 1 ferdig (story 1.1–1.5: skjelett, innlogging, publisering i produksjon, registrering og automatisk test av universell utforming), med retrospektiv og herding. Epic 2 pågår: story 2.1 (legge ut oppdrag) |
 
 ## Kom i gang
 
@@ -46,7 +46,7 @@ uv run uvicorn main:app --reload
 ```
 
 - `uv sync` installerer avhengighetene i `.venv/` med de låste versjonene i `uv.lock`.
-- `uv run python -m app.seed` kjører `alembic upgrade head`. Det lager SQLite-fila `nabolagshelten.db` med tabellene og postnumrene, og legger inn de seks testbrukerne under. Seed kan kjøres flere ganger; brukere som finnes, røres ikke. Eksempeloppdrag kommer i story 2.1 og senere.
+- `uv run python -m app.seed` kjører `alembic upgrade head`. Det lager SQLite-fila `nabolagshelten.db` med tabellene og postnumrene, og legger inn de seks testbrukerne og de 12 eksempeloppdragene under. Seed kan kjøres flere ganger: brukere som finnes, røres ikke, og testbrukernes oppdrag legges inn på nytt, så tidspunktene alltid er regnet fra når du kjørte seed. Andre brukere og deres oppdrag røres ikke.
 - Åpne <http://127.0.0.1:8000/> i nettleseren og logg inn med en av testbrukerne, eller lag en ny konto under «Registrer deg» (<http://127.0.0.1:8000/registrer>). Stopp appen med Ctrl+C.
 
 ### Testbrukere (bare for lokal testing)
@@ -63,6 +63,27 @@ Seed legger inn seks oppdiktede brukere i tre postnumre (NFR-2). E-post og passo
 | Jonas Dahl | jonas@eksempel.no | jonas-lokal-1 | 5006 Bergen | Hjelper i Bergen: tester postnummerfilteret og andre postnumre. |
 
 Etter fem feil passord på samme e-post innen 15 minutter er innloggingen sperret i 15 minutter (FR-2).
+
+### Eksempeloppdrag (bare for lokal testing)
+
+Seed legger inn 12 eksempeloppdrag (NFR-2). Bare Kari, Nora og Sofie har lagt ut oppdrag. Alle seks kategorier finnes blant de åpne oppdragene, ett er utgått (tidspunktet er passert, FR-8) og ett er avbrutt. Tidspunktene er regnet fra dagen du kjørte seed («+1» betyr i morgen), alltid på hel time mellom kl. 09 og 18 i norsk tid.
+
+| Tittel | Lagt ut av | Kategori | Postnummer | Når | Godtgjørelse | Status |
+|---|---|---|---|---|---|---|
+| Måke snø i innkjørselen | Kari | Snømåking | 0571 Oslo | +1 dag kl. 09 | 200 kr | Åpen |
+| Raking av løv i hagen | Kari | Hage | 0571 Oslo | +4 dager kl. 11 | 300 kr | Åpen |
+| Hjelp med nytt nettbrett | Kari | Teknologihjelp | 0571 Oslo | +6 dager kl. 14 | Uten betaling | Åpen |
+| Bære ved opp til tredje etasje | Kari | Bærehjelp/flytting | 0571 Oslo | −2 dager kl. 10 | 400 kr | Åpen, utgått |
+| Lufte hunden mens jeg er bortreist | Kari | Dyrepass | 0571 Oslo | +10 dager kl. 16 | 500 kr | Avbrutt |
+| Mate katten i helgen | Nora | Dyrepass | 0571 Oslo | +3 dager kl. 12 | 250 kr | Åpen |
+| Flytte sofa ned i kjelleren | Nora | Bærehjelp/flytting | 0572 Oslo | +5 dager kl. 17 | 600 kr | Åpen |
+| Henge opp gardiner | Nora | Annet | 0572 Oslo | +8 dager kl. 13 | 350 kr | Åpen |
+| Måke trappa før helgen | Nora | Snømåking | 0572 Oslo | +2 dager kl. 15 | 150 kr | Åpen |
+| Klippe hekken | Sofie | Hage | 5006 Bergen | +7 dager kl. 10 | 450 kr | Åpen |
+| Sette opp skriver | Sofie | Teknologihjelp | 5006 Bergen | +3 dager kl. 18 | 200 kr | Åpen |
+| Handle og bære opp varer | Sofie | Annet | 5006 Bergen | +1 dag kl. 16 | Uten betaling | Åpen |
+
+Oversikten viser oppdragene fra story 2.3. Til da finner du dine egne under «Mine oppdrag», og du kan legge ut nye med «+ Legg ut oppdrag» på oversikten (FR-5).
 
 ### Nytt passord for en bruker
 

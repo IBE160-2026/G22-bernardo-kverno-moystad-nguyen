@@ -2,7 +2,7 @@
 title: EXPERIENCE – Nabolagshelten
 status: final
 created: 2026-11-07
-updated: 2026-11-23
+updated: 2026-11-26
 sources:
   - ../../prds/prd-G22-bernardo-kverno-moystad-nguyen-2026-11-05/prd.md
   - ../../product-brief-nabolagshelten.md
@@ -194,7 +194,7 @@ Hver feil sier hva som er galt og hvordan det rettes, med et eksempel der format
 | Tittel | 3–80 tegn | «Skriv en tittel.» / «Tittelen må ha minst 3 tegn.» / «Tittelen kan ha høyst 80 tegn.» | FR-5 |
 | Kategori | Ett valg | «Velg en kategori.» | FR-5 |
 | Dato | dd.mm.åååå, finnes | «Skriv datoen.» / «Skriv datoen som dd.mm.åååå, for eksempel 14.11.2026.» / «Den datoen finnes ikke. Sjekk dag og måned.» | FR-5 |
-| Klokkeslett | tt:mm | «Skriv klokkeslettet.» / «Skriv klokkeslettet som tt:mm, for eksempel 07:00.» | FR-5 |
+| Klokkeslett | tt:mm; finnes den natten (sommertid) | «Skriv klokkeslettet.» / «Skriv klokkeslettet som tt:mm, for eksempel 07:00.» / «Klokkeslettet finnes ikke den natten, fordi klokka stilles fram. Velg et annet klokkeslett.» (lagt til i story 2.1; et klokkeslett som finnes to ganger om høsten, tolkes som det første) | FR-5, AD-9 |
 | Når? (dato + klokkeslett sammen) | Ikke passert, høyst 12 måneder fram | «Velg et nytt tidspunkt fram i tid» (ordrett FR-6, brukes også i nytt oppdrag) / «Velg et tidspunkt høyst 12 måneder fram i tid.» Vises under gruppen og knyttes til begge feltene. | FR-5, FR-6 |
 | Hva tilbyr du? | Ett valg | «Velg beløp eller uten betaling.» | FR-5 |
 | Beløp i kr | Heltall 1–10 000 | «Skriv et beløp fra 1 til 10 000 kr, i hele kroner.» | FR-5 |
