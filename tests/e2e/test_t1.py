@@ -15,6 +15,10 @@ kvitteringen etter avbrudd og feilmeldingen etter en konflikt.
 Story 2.7 la til oversikten og detaljene med bilde, «Nytt oppdrag» med bildefeil og
 med beholdt bilde, og redigering av et oppdrag med bilde (FR-27, UX-DR33).
 
+Story 2.6 la til 401-siden med skjemaet fra «Nytt oppdrag», etter feil passord og med et
+nytt bilde (AD-7). «401» utløses nå av bekreftelsessiden for avbrudd, fordi `/logg-ut`
+er offentlig.
+
 Ingen regler slås av, og ingen side utelates. Senere stories legger sine nye
 sider og tilstander inn i `SIDER` (Definition of Done).
 """
@@ -150,11 +154,12 @@ def fant_ikke_siden(page: Page, h: dict) -> None:
 
 
 def logg_inn_igjen_401(page: Page, h: dict) -> None:
-    """Sesjonscookien forsvinner mens profilen er åpen, og «Logg ut» gir 401-siden."""
-    h["logg_inn_som_kari"](page)
-    page.goto("/profil")
+    """Sesjonscookien forsvinner mens bekreftelsessiden for avbrudd er åpen, og «Ja, avbryt
+    oppdraget» gir 401-siden (story 2.6: `/logg-ut` er offentlig og gir ikke lenger 401)."""
+    _kari_detaljer(page, h, MAKE)
+    page.goto(page.get_by_role("link", name="Avbryt oppdrag").get_attribute("href"))
     page.context.clear_cookies(name="sesjon")
-    page.get_by_role("button", name="Logg ut").click()
+    page.get_by_role("button", name="Ja, avbryt oppdraget").click()
     expect(page.get_by_role("heading", level=1)).to_have_text("Du må logge inn igjen.")
 
 
@@ -379,6 +384,44 @@ def rediger_oppdrag_med_bilde(page: Page, h: dict) -> None:
     expect(page.get_by_label("Hva viser bildet?")).to_have_value("Snødekt innkjørsel med en spade")
 
 
+# ---------- utløpt innlogging (story 2.6, AD-7) ----------
+
+
+def logg_inn_igjen_nytt_oppdrag(page: Page, h: dict) -> None:
+    """«Publiser» etter at sesjonscookien er fjernet: 401-siden med skjemaet som skjulte felt."""
+    h["logg_inn_som_kari"](page)
+    fyll_ut_nytt_oppdrag(page)
+    page.context.clear_cookies(name="sesjon")
+    page.get_by_role("button", name="Publiser").click()
+    expect(page.get_by_role("heading", level=1)).to_have_text("Du må logge inn igjen.")
+    expect(page.get_by_label("E-post")).to_be_focused()
+
+
+def logg_inn_igjen_feil_passord(page: Page, h: dict) -> None:
+    """Feil passord på 401-siden: feiloppsummeringen i fokus og «Skriv passordet på nytt.»."""
+    logg_inn_igjen_nytt_oppdrag(page, h)
+    page.get_by_label("E-post").fill("kari@eksempel.no")
+    page.locator("#innlogging-passord").fill("feil-passord")
+    page.get_by_role("button", name="Logg inn").click()
+    expect(page.locator("#feiloppsummering")).to_contain_text("Feil e-post eller passord.")
+    expect(page.locator("#feiloppsummering")).to_be_focused()
+
+
+def logg_inn_igjen_nytt_bilde(page: Page, h: dict) -> None:
+    """Et nytt bilde kan ikke bli et skjult felt: «Velg bildet på nytt etter innlogging.»."""
+    h["logg_inn_som_kari"](page)
+    fyll_ut_steg_1(page)
+    _velg_bilde(page, bilder.jpeg(800, 600), "bilde.jpg")
+    page.get_by_label("Hva viser bildet?").fill("Snø i innkjørselen")
+    trykk_neste_hvis_synlig(page)
+    page.get_by_label("Dato").fill("25.11.2026")
+    page.get_by_label("Klokkeslett").fill("07:00")
+    page.get_by_label("Uten betaling").check()
+    page.context.clear_cookies(name="sesjon")
+    page.get_by_role("button", name="Publiser").click()
+    expect(page.get_by_text("Velg bildet på nytt etter innlogging.")).to_be_visible()
+
+
 SIDER: dict[str, Callable[[Page, dict], None]] = {
     "logg-inn": logg_inn_tom,
     "logg-inn-tom-innsending": logg_inn_tom_innsending,
@@ -422,6 +465,10 @@ SIDER: dict[str, Callable[[Page, dict], None]] = {
     "nytt-oppdrag-bildefeil": nytt_oppdrag_bildefeil,
     "nytt-oppdrag-beholdt-bilde": nytt_oppdrag_beholdt_bilde,
     "rediger-oppdrag-med-bilde": rediger_oppdrag_med_bilde,
+    # Story 2.6
+    "401-nytt-oppdrag": logg_inn_igjen_nytt_oppdrag,
+    "401-feil-passord": logg_inn_igjen_feil_passord,
+    "401-nytt-bilde": logg_inn_igjen_nytt_bilde,
 }
 
 # «Nytt oppdrag» på én skjerm ved 768 px (nettbrett): de samme tilstandene som i to steg.

@@ -4,8 +4,9 @@
   feltfeil samles i én `RegelBrudd`, i feltrekkefølgen beskrivelse, bilde,
   bildetekst, tittel, kategori, postnummer, dato, klokkeslett, tilbud, beløp
   (NFR-10).
-- `tolk_bildevalg` (FR-27, AD-18): ny fil, beholdt bilde (`bilde_beholdt`) og
-  «Fjern bildet» blir et `Bildevalg`. Ruta kaller den før transaksjonen, så et
+- `tolk_bildevalg` (FR-27, AD-18): ny fil, beholdt bilde (`bilde_beholdt`),
+  «Fjern bildet» og en fil som gikk tapt ved utløpt innlogging (AD-7) blir et
+  `Bildevalg`. Ruta kaller den før transaksjonen, så et
   stort bilde ikke dekodes mens databasen er låst. Den kaster aldri; en ugyldig
   fil blir `feil`, som `valider_oppdrag` legger inn ved `bilde`.
 - `opprett_oppdrag`: innsettingen kjører i `begin_nested()`, også bildet, og en
@@ -74,6 +75,8 @@ VELG_KATEGORI = "Velg en kategori."
 VELG_TILBUD = "Velg beløp eller uten betaling."
 BELOP_FEIL = "Skriv et beløp fra 1 til 10 000 kr, i hele kroner."
 KONFLIKT = "Oppdraget er endret. Last siden på nytt."
+# Ved bildet når en ny fil gikk tapt ved utløpt innlogging (AD-7, FR-27, EXPERIENCE.md § Feiltekster ved felt).
+VELG_BILDET_PA_NYTT = "Velg bildet på nytt."
 # Handlingsmerket på egne utgåtte oppdrag, ordrett fra FR-18 (EXPERIENCE.md § Merker).
 TIDSPUNKTET_ER_PASSERT = "Tidspunktet er passert"
 
@@ -209,13 +212,19 @@ def _beholdt(tekst: str | None) -> Bilde | None:
         return None
 
 
-def tolk_bildevalg(fil: bytes | None, beholdt: str | None, fjern: str | None) -> Bildevalg:
+def tolk_bildevalg(
+    fil: bytes | None, beholdt: str | None, fjern: str | None, *, tapt: bool = False
+) -> Bildevalg:
     """Filfeltet, `bilde_beholdt` og `fjern_bilde` som ett `Bildevalg` (FR-27, AD-18). Kaster aldri.
 
     En ny fil går foran det beholdte bildet. Er den nye fila ugyldig, gir det
     `feil`, og et gyldig beholdt bilde står fortsatt i `ny`, så det vises igjen.
     Med «Fjern bildet» og uten ny fil brukes ikke det beholdte bildet. All
     behandling skjer i `oppdrag/bilde.py`.
+
+    `tapt=True` betyr at en ny fil gikk tapt fordi innloggingen var utløpt (AD-7,
+    story 2.6). Uten ny fil gir det feilen «Velg bildet på nytt.», så ingenting
+    lagres, og et gyldig beholdt bilde vises fortsatt.
     """
     fjern_ = bool((fjern or "").strip())
     if fil:
@@ -225,6 +234,10 @@ def tolk_bildevalg(fil: bytes | None, beholdt: str | None, fjern: str | None) ->
             return Bildevalg(
                 ny=None if fjern_ else _beholdt(beholdt), fjern=fjern_, feil=brudd.feil[0][1]
             )
+    if tapt:
+        return Bildevalg(
+            ny=None if fjern_ else _beholdt(beholdt), fjern=fjern_, feil=VELG_BILDET_PA_NYTT
+        )
     if fjern_ or not (beholdt or "").strip():
         return Bildevalg(fjern=fjern_)
     try:

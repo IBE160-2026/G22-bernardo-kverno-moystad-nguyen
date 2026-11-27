@@ -188,6 +188,72 @@ def test_bare_bilde_leser_bilde_beholdt() -> None:
         assert "b64decode" not in tekst, fil.relative_to(ROT).as_posix()
 
 
+# AD-7: bare 401-siden og sesjonsmellomvaren bruker feltnavn som begynner med `_`.
+UNDERSTREK_UNNTAK = {
+    APP / "core" / "templates" / "core" / "logg_inn_igjen.html",
+    APP / "core" / "mellomvare.py",
+}
+UNDERSTREK_I_MAL = re.compile(r"""\bname\s*=\s*["']_""")
+UNDERSTREK_I_JS = re.compile(r"""\.(append|set)\(\s*["']_|\bname\s*=\s*["']_""")
+UNDERSTREK_I_PY = re.compile(r"""skjema(\.get\(|\[)\s*["']_""")
+
+
+def _understrek_funn() -> list[str]:
+    funn = []
+    for fil in sorted(APP.rglob("*")):
+        if fil in UNDERSTREK_UNNTAK or "__pycache__" in fil.parts:
+            continue
+        if fil.suffix == ".html":
+            monster = UNDERSTREK_I_MAL
+        elif fil.suffix == ".js" and fil.is_relative_to(APP / "core" / "static" / "js"):
+            monster = UNDERSTREK_I_JS
+        elif fil.suffix == ".py":
+            monster = UNDERSTREK_I_PY
+        else:
+            continue
+        if monster.search(fil.read_text(encoding="utf-8")):
+            funn.append(fil.relative_to(ROT).as_posix())
+    return funn
+
+
+def test_bare_401_siden_har_feltnavn_med_understrek() -> None:
+    """AD-7 (story 2.6, AC 3): ingen andre skjema har feltnavn som begynner med `_`.
+
+    Maler (`name="_`), `FormData`/`append` i `core/static/js/` og `skjema.get("_` i
+    app/ sjekkes, unntatt 401-malen og `core/mellomvare.py`.
+    """
+    assert _understrek_funn() == []
+
+
+@pytest.mark.parametrize(
+    "tekst",
+    [
+        '<input type="hidden" name="_hemmelig" value="x">',
+        "<input name='_x'>",
+    ],
+)
+def test_understrek_i_mal_blir_funnet(tekst: str) -> None:
+    """Kanari: mønsteret for maler fanger et feltnavn som begynner med `_`."""
+    assert UNDERSTREK_I_MAL.search(tekst)
+
+
+@pytest.mark.parametrize("tekst", ['data.append("_x", 1);', "skjema.set('_x', 1)", 'felt.name = "_x";'])
+def test_understrek_i_js_blir_funnet(tekst: str) -> None:
+    assert UNDERSTREK_I_JS.search(tekst)
+
+
+@pytest.mark.parametrize("tekst", ['skjema.get("_innlogging_epost")', "skjema['_x']"])
+def test_understrek_i_python_blir_funnet(tekst: str) -> None:
+    assert UNDERSTREK_I_PY.search(tekst)
+
+
+def test_401_malen_har_bare_innloggingsfeltene_med_understrek() -> None:
+    """AD-7: i 401-malen begynner bare `_innlogging_`-feltene med `_`."""
+    tekst = (APP / "core" / "templates" / "core" / "logg_inn_igjen.html").read_text(encoding="utf-8")
+    navn = set(re.findall(r'name="(_[^"{]*)"', tekst))
+    assert navn == {"_innlogging_fil", "_innlogging_epost", "_innlogging_passord"}
+
+
 def _testruter(app_env: str) -> dict[str, str]:
     # Produksjon nekter SQLite i `Settings`, så miljøet byttes etter valideringen.
     # Om ruta finnes, avgjøres bare av APP_ENV.

@@ -10,10 +10,11 @@
   en delt lenke havner på lenken (retro T-2, FR-1, FR-2).
 
 - GET og POST `/logg-inn` er offentlige. Innloggingen går gjennom
-  `Autentisering` (AD-4). `neste` bæres som skjult felt og avgjøres bare av
-  `trygg_neste`.
-- POST `/logg-ut` sletter sesjonen og cookien og sender til innloggingssiden
-  med kvitteringen «Du er logget ut.».
+  `prov_innlogging` og `Autentisering` (AD-4), den samme som 401-siden bruker
+  (AD-7). `neste` bæres som skjult felt og avgjøres bare av `trygg_neste`.
+- POST `/logg-ut` er offentlig (AD-4, story 2.6). Den sletter sesjonen og
+  cookien og sender til innloggingssiden med kvitteringen «Du er logget ut.»,
+  også når sesjonen allerede er utløpt. CSRF gjelder fortsatt (AD-5).
 """
 
 from __future__ import annotations
@@ -33,19 +34,14 @@ from app.core.postnummer import poststed
 from app.core.render import render
 from app.core.sesjon import (
     SESJON_COOKIE,
-    Innloggingsutfall,
     hent_autentisering,
     offentlig,
+    prov_innlogging,
     sett_sesjonscookie,
     slett_sesjonscookie,
     trygg_neste,
 )
-from app.identity.service import (
-    FEIL_INNLOGGING,
-    FOR_MANGE_FORSOK,
-    registrer,
-    sjekk_innloggingsskjema,
-)
+from app.identity.service import registrer
 
 router = APIRouter()
 
@@ -100,29 +96,22 @@ def logg_inn(request: Request, db: Session = Depends(hent_db)) -> Response:
     passord = skjema.get("passord", "")
     neste = trygg_neste(skjema.get("neste"))
 
-    feltfeil = sjekk_innloggingsskjema(epost, passord)
-    if feltfeil:
+    gammel_nokkel = request.cookies.get(SESJON_COOKIE) if request.state.innlogget else None
+    prov = prov_innlogging(
+        hent_autentisering(request), db, epost, passord, gammel_nokkel=gammel_nokkel
+    )
+    if prov.nokkel is None:
         return _vis_skjema(
             request,
             neste=neste,
             epost=epost,
-            feil=feltfeil,
-            feltfeil=dict(feltfeil),
+            feil=prov.feil,
+            feltfeil=prov.feltfeil,
             status_code=422,
         )
 
-    gammel_nokkel = request.cookies.get(SESJON_COOKIE) if request.state.innlogget else None
-    with db.begin():
-        resultat = hent_autentisering(request).logg_inn(
-            db, epost, passord, gammel_nokkel=gammel_nokkel
-        )
-
-    if not resultat.vellykket:
-        melding = FOR_MANGE_FORSOK if resultat.utfall is Innloggingsutfall.SPERRET else FEIL_INNLOGGING
-        return _vis_skjema(request, neste=neste, epost=epost, feil=[("epost", melding)], status_code=422)
-
     svar = RedirectResponse(neste, status_code=303)
-    sett_sesjonscookie(svar, resultat.nokkel, secure=request.app.state.settings.produksjon)
+    sett_sesjonscookie(svar, prov.nokkel, secure=request.app.state.settings.produksjon)
     return svar
 
 
@@ -194,8 +183,13 @@ def send_registrer(request: Request, db: Session = Depends(hent_db)) -> Response
 
 
 @router.post("/logg-ut", name="identity.logg_ut")
+@offentlig
 def logg_ut(request: Request, db: Session = Depends(hent_db)) -> Response:
-    """FR-2: sesjonsraden og cookien slettes, og brukeren får kvitteringen på innloggingssiden."""
+    """FR-2: sesjonsraden og cookien slettes, og brukeren får kvitteringen på innloggingssiden.
+
+    Offentlig (AD-4, story 2.6): uten gyldig sesjon slettes bare cookien, og
+    brukeren får samme kvittering, uten å bli bedt om passordet.
+    """
     with db.begin():
         hent_autentisering(request).logg_ut(db, request.cookies.get(SESJON_COOKIE))
     svar = RedirectResponse(request.app.url_path_for("identity.logg_inn"), status_code=303)

@@ -121,6 +121,9 @@ class TellendeAutentisering:
     def logg_ut(self, db, nokkel) -> None:
         return None
 
+    def sjekk_innloggingsskjema(self, epost, passord) -> list[tuple[str, str]]:
+        return []
+
 
 def test_statiske_filer_slar_ikke_opp_sesjonen(sesjonsfabrikk) -> None:
     """AD-4: /static trenger ikke databaseoppslag."""

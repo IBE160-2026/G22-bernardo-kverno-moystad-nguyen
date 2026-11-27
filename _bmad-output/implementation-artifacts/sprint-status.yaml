@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 11-24-2026 00:00
-last_updated: 11-27-2026 23:37
+last_updated: 11-28-2026 01:30
 project: G22-bernardo-kverno-moystad-nguyen
 project_key: NOKEY
 tracking_system: file-system
@@ -51,7 +51,7 @@ development_status:
   2-5-redigere-og-avbryte-oppdrag: done
   # 2.7 bygges før 2.6 (sprint-change-proposal-2026-11-27)
   2-7-bilde-av-oppdraget: done
-  2-6-utfylt-skjema-går-ikke-tapt-når-innloggingen-utløper: backlog
+  2-6-utfylt-skjema-går-ikke-tapt-når-innloggingen-utløper: review
   epic-2-retrospective: optional
 
   epic-3: backlog

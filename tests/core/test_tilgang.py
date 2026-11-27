@@ -20,15 +20,19 @@ from app.identity.models import Sesjon
 from .test_mellomvare import hent_csrf
 
 # Story 1.4 la til `/registrer` (FR-1). Story 1.5 la til `/_test/tilstand`, som
-# bare finnes når APP_ENV=test, slik testappen kjører (AD-14). Ingen andre ruter
-# er offentlige (FR-3).
+# bare finnes når APP_ENV=test, slik testappen kjører (AD-14). Story 2.6 gjorde
+# `/logg-ut` offentlig, så utlogging uten gyldig sesjon gir «Du er logget ut.»
+# og ikke 401 (AD-4). Ingen andre ruter er offentlige (FR-3).
 OFFENTLIGE = {
     ("GET", "/logg-inn"),
     ("POST", "/logg-inn"),
     ("GET", "/registrer"),
     ("POST", "/registrer"),
+    ("POST", "/logg-ut"),
     ("POST", "/_test/tilstand"),
 }
+# En POST-rute som krever innlogging, til å utløse 401 (story 2.6: ikke lenger `/logg-ut`).
+POST_RUTE = "/oppdrag/ny"
 
 
 def ruter_som_krever_innlogging(app: FastAPI) -> list[tuple[str, str]]:
@@ -70,7 +74,7 @@ def test_fr3_alle_ruter_krever_innlogging(app: FastAPI, klient: TestClient) -> N
 
 
 def test_offentlige_ruter_er_bare_innlogging_og_registrering(app: FastAPI) -> None:
-    """FR-3: bare innlogging, registrering og testruta (bare i test) er merket offentlige."""
+    """FR-3, AD-4: bare innlogging, registrering, utlogging og testruta (bare i test) er offentlige."""
     offentlige = set()
     for rute in alle_ruter(app.routes):
         if getattr(rute, "methods", None) and er_offentlig(rute.endpoint):
@@ -108,11 +112,12 @@ def test_head_uten_innlogging_gir_303(klient: TestClient) -> None:
 def test_post_med_x_fragment_uten_innlogging_gir_401_fragment(klient: TestClient) -> None:
     nokkel = hent_csrf(klient)
     svar = klient.post(
-        "/logg-ut", data={"csrf_token": nokkel}, headers={"X-Fragment": "1"}, follow_redirects=False
+        POST_RUTE, data={"csrf_token": nokkel}, headers={"X-Fragment": "1"}, follow_redirects=False
     )
     assert svar.status_code == 401
     assert "Du må logge inn igjen." in svar.text
     assert "<html" not in svar.text
+    assert 'href="/logg-inn?neste=/oppdrag/ny"' in svar.text
 
 
 def test_post_til_sti_som_bare_har_get_gir_401_uten_innlogging(klient: TestClient) -> None:
@@ -128,7 +133,7 @@ def test_ukjent_sti_uten_innlogging_gir_404(klient: TestClient) -> None:
 
 
 def test_post_uten_innlogging_gir_401_uten_endring(klient: TestClient, db, lag_bruker) -> None:
-    """AR-17: 401 «Du må logge inn igjen.» med lenken «Logg inn». Ingen data endres."""
+    """AR-17, AD-7: 401 «Du må logge inn igjen.» med innloggingsskjemaet. Ingen data endres."""
     bruker = lag_bruker(navn="Hemmelig Hansen")
     db.add(
         Sesjon(
@@ -140,10 +145,11 @@ def test_post_uten_innlogging_gir_401_uten_endring(klient: TestClient, db, lag_b
     )
     db.commit()
     nokkel = hent_csrf(klient)
-    svar = klient.post("/logg-ut", data={"csrf_token": nokkel}, follow_redirects=False)
+    svar = klient.post(POST_RUTE, data={"csrf_token": nokkel}, follow_redirects=False)
     assert svar.status_code == 401
     assert "<h1>Du må logge inn igjen.</h1>" in svar.text
-    assert ">Logg inn</a>" in svar.text
+    assert 'name="_innlogging_epost"' in svar.text and 'name="_innlogging_passord"' in svar.text
+    assert '<button class="knapp knapp--primar" type="submit">Logg inn</button>' in svar.text
     assert "Hemmelig Hansen" not in svar.text
     assert "<nav" not in svar.text
     assert db.scalar(select(func.count()).select_from(Sesjon)) == 1
@@ -157,7 +163,7 @@ def test_401_rendres_uten_database(app: FastAPI, klient: TestClient) -> None:
         raise AssertionError("401-siden skal ikke bruke databasen")
 
     app.state.sesjonsfabrikk = ingen_database
-    svar = klient.post("/logg-ut", data={"csrf_token": nokkel}, follow_redirects=False)
+    svar = klient.post(POST_RUTE, data={"csrf_token": nokkel}, follow_redirects=False)
     assert svar.status_code == 401
 
 

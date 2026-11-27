@@ -33,7 +33,9 @@ from app.core.config import hent_settings
 from app.core.feil import RegelBrudd
 from app.core.postnummer import finnes as postnummer_finnes
 from app.core.postnummer import normaliser_postnummer, poststed
-from app.core.sesjon import (
+from app.core.sesjon import (  # noqa: F401 (FEIL_INNLOGGING og FOR_MANGE_FORSOK hentes herfra)
+    FEIL_INNLOGGING,
+    FOR_MANGE_FORSOK,
     SESJON_COOKIE,
     Innlogget,
     Innloggingsresultat,
@@ -51,8 +53,8 @@ BCRYPT_KOSTNAD = 12
 BCRYPT_KOSTNAD_TEST = 4
 SLETTET_BRUKER = "Slettet bruker"
 
-FEIL_INNLOGGING = "Feil e-post eller passord."
-FOR_MANGE_FORSOK = "For mange mislykkede forsøk. Prøv igjen om 15 minutter."
+# `FEIL_INNLOGGING` og `FOR_MANGE_FORSOK` ligger i `core/sesjon.py`, fordi 401-siden
+# også viser dem (AD-7). De importeres hit, så de fortsatt kan hentes herfra.
 SKRIV_EPOST = "Skriv e-postadressen din."
 SKRIV_PASSORD = "Skriv passordet ditt."
 
@@ -432,6 +434,9 @@ class IdentityAutentisering:
 
     def logg_ut(self, db: Session, nokkel: str | None) -> None:
         logg_ut(db, nokkel)
+
+    def sjekk_innloggingsskjema(self, epost: str | None, passord: str | None) -> list[tuple[str, str]]:
+        return sjekk_innloggingsskjema(epost, passord)
 
 
 # ---------- personopplysninger i maler (AD-16, AR-24) ----------
