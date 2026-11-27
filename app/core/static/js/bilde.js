@@ -168,6 +168,10 @@
         settForhandsvisning(null);
       }
     });
+    // Avkrysningen kan være satt før skriptet (defer) koblet til lytteren.
+    if (fjern.checked && !harFil()) {
+      settForhandsvisning(null);
+    }
   }
 
   function send(knapp) {

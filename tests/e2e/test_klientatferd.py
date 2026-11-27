@@ -1129,6 +1129,8 @@ def test_fjern_bildet_tar_bildet_ut_av_forhandsvisningen(page: Page) -> None:
     _logg_inn(page, KARI)
     _detaljer(page, MAKE)
     page.get_by_role("link", name="Rediger", exact=True).click()
+    # Vent til bilde.js (defer) har koblet til lytterne før avkrysningen.
+    page.wait_for_load_state("load")
     forhandsvisning = page.locator('[data-forhandsvisning] img[data-felt="bilde"]')
     expect(forhandsvisning).to_be_visible()
     page.get_by_label("Fjern bildet").check()
