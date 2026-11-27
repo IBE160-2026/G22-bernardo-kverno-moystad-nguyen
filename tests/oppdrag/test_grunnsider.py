@@ -25,7 +25,11 @@ def kari_klient(klient: TestClient, lag_bruker, logg_inn_som) -> TestClient:
 
 
 def menyvalg(html: str, variant: str) -> list[tuple[str, str | None, str]]:
-    """(href, aria-current, tekst) for hvert valg i menyen «topp» eller «bunn»."""
+    """(href, aria-current, tekst) for hvert valg i menyen «topp» eller «bunn».
+
+    Teksten er menynavnet uten tallet og den skjulte teksten fra story 2.4
+    (`menytall` i test_mine_oppdrag.py leser dem).
+    """
     nav = re.search(rf'<nav class="meny meny--{variant}" aria-label="Hovedmeny">(.*?)</nav>', html, re.S)
     assert nav, f"Mangler menyen {variant}"
     valg = []
@@ -33,6 +37,7 @@ def menyvalg(html: str, variant: str) -> list[tuple[str, str | None, str]]:
         attrs, innhold = treff.groups()
         href = re.search(r'href="([^"]+)"', attrs).group(1)
         current = re.search(r'aria-current="([^"]+)"', attrs)
+        innhold = re.sub(r'<span class="(menytall|skjult-tekst)"[^>]*>[^<]*</span>', "", innhold)
         tekst = re.sub(r"<[^>]+>", "", innhold).strip()
         valg.append((href, current.group(1) if current else None, tekst))
     return valg
@@ -86,27 +91,31 @@ def test_oversikten_bruker_brukerens_postnummer(klient, lag_bruker, logg_inn_som
 
 
 def test_mine_oppdrag_har_tomtilstand(kari_klient: TestClient) -> None:
-    """FR-18 (grunnversjon): uten oppdrag vises tomtilstanden med lenken «Legg ut oppdrag»."""
+    """FR-18, UX-DR21: uten oppdrag vises h2 og tomtilstanden med lenken «Legg ut oppdrag»."""
     svar = kari_klient.get("/mine-oppdrag")
-    assert "<title>Mine oppdrag – Nabolagshelten</title>" in svar.text
+    assert "<title>Mine oppdrag: Oppdrag jeg har lagt ut – Nabolagshelten</title>" in svar.text
     assert "<h1>Mine oppdrag</h1>" in svar.text
+    assert "<h2>Oppdrag jeg har lagt ut</h2>" in svar.text
     assert "Du har ikke lagt ut noen oppdrag." in svar.text
     assert re.search(r'<a class="[^"]*" href="/oppdrag/ny">Legg ut oppdrag</a>', svar.text)
+    assert "listerad" not in svar.text
 
 
-def test_mine_oppdrag_viser_egne_oppdrag_nyeste_forst(
+def test_mine_oppdrag_viser_egne_oppdrag_etter_tidspunkt(
     klient: TestClient, lag_bruker, logg_inn_som, lag_oppdrag
 ) -> None:
-    """Beslutning i spec 2.1: med oppdrag vises titlene som lenker, nyeste først, og ingen tomtilstand."""
+    """FR-18 (story 2.4, snudd fra «nyeste først» i 2.1): lenkerader etter tidspunkt, tidligste først."""
     kari = lag_bruker()
-    eldst = lag_oppdrag(oppdragsgiver=kari, tittel="Eldste", opprettet=datetime(2026, 11, 1, tzinfo=timezone.utc))
-    nyest = lag_oppdrag(oppdragsgiver=kari, tittel="Nyeste", opprettet=datetime(2026, 11, 20, tzinfo=timezone.utc))
+    sent = lag_oppdrag(oppdragsgiver=kari, tittel="Sent", tidspunkt=datetime(2026, 12, 20, tzinfo=timezone.utc),
+                       opprettet=datetime(2026, 11, 1, tzinfo=timezone.utc))
+    tidlig = lag_oppdrag(oppdragsgiver=kari, tittel="Tidlig", tidspunkt=datetime(2026, 12, 1, tzinfo=timezone.utc),
+                         opprettet=datetime(2026, 11, 20, tzinfo=timezone.utc))
     lag_oppdrag(tittel="Andres oppdrag")
     logg_inn_som(klient, kari)
     html = klient.get("/mine-oppdrag").text
     assert "Du har ikke lagt ut noen oppdrag." not in html
-    lenker = re.findall(r'<li><a href="(/oppdrag/\d+)">([^<]+)</a></li>', html)
-    assert lenker == [(f"/oppdrag/{nyest.id}", "Nyeste"), (f"/oppdrag/{eldst.id}", "Eldste")]
+    lenker = re.findall(r'<a class="listerad__lenke" href="(/oppdrag/\d+)"[^>]*>([^<]+)</a>', html)
+    assert lenker == [(f"/oppdrag/{tidlig.id}", "Tidlig"), (f"/oppdrag/{sent.id}", "Sent")]
 
 
 @pytest.mark.parametrize(

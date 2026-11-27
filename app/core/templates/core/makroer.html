@@ -45,7 +45,10 @@
 {# Hovedmenyen (NFR-11, UX-DR3). «topp» vises fra 768 px, «bunn» under 768 px;
    den andre er display:none, så skjermlesere bare finner én. Aktivt valg:
    fet, strek og aria-current="page", på undersider aria-current="true".
-   Ingen antall før story 2.4. #}
+   Ved «Mine oppdrag» står `meny_antall` fra menykroken når det er over 0 (NFR-11,
+   UX-DR3): tallet er aria-hidden, og den skjulte teksten «, 1 trenger handling» gjør
+   navnet til «Mine oppdrag, 1 trenger handling». I bunnmenyen plasserer CSS tallet
+   øverst til høyre på ikonet, i topplinjen står det etter teksten. Ingen aria-live. #}
 {% macro meny(variant) %}
 <nav class="meny meny--{{ variant }}" aria-label="Hovedmeny">
   <ul class="meny__liste">
@@ -67,7 +70,21 @@
   </svg>
   {% endif %}
   <span>{{ tekst }}</span>
+  {% if nokkel == "mine_oppdrag" and meny_antall > 0 %}
+  <span class="menytall" aria-hidden="true">{{ meny_antall }}</span>
+  <span class="skjult-tekst">, {{ meny_antall }} trenger handling</span>
+  {% endif %}
 </a>
+{% endmacro %}
+
+{# Handlingsmerket (DESIGN.md § action-tag, EXPERIENCE.md § Rader i lister, UX-DR10): pilikon,
+   skjult «Må gjøres: » foran og «.» etter. Teksten forkortes aldri og brytes over så mange
+   linjer som trengs. Brukes i «Mine oppdrag», og i detaljene fra 2.5. #}
+{% macro handlingsmerke(tekst) %}
+<span class="handlingsmerke">
+  <svg class="ikon" aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8h10M9 4.5 12.5 8 9 11.5"/></svg>
+  <span><span class="skjult-tekst">Må gjøres: </span>{{ tekst }}<span class="skjult-tekst">.</span></span>
+</span>
 {% endmacro %}
 
 {# Kategoriikonet (DESIGN.md § category-button og category-chip). Dekorativt. #}

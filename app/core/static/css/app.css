@@ -1050,16 +1050,167 @@ fieldset:has(#tilbud-belop:not(:checked)) .belopfelt {
   white-space: pre-line;
 }
 
-/* «Mine oppdrag» før story 2.4: titlene som lenker med 48 px trykkflate. */
-.oppdragsliste {
-  margin: 0;
-  padding-left: var(--spacing-5);
+/* ---------- Mine oppdrag (FR-18, UX-DR9, UX-DR10, UX-DR26) ---------- */
+
+/* «1 oppdrag trenger at du gjør noe.» rett under h1, i body-strong med pilikonet fra
+ * handlingsmerket foran (DESIGN.md § Antallslinje). */
+.handlingslinje {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+  margin: calc(-1 * var(--spacing-2)) 0 var(--spacing-5);
+  font-weight: var(--weight-bold);
 }
 
-.oppdragsliste a {
+/* Handlingsmerket (DESIGN.md § action-tag): pille i badge-fargene, uten kant, med pilikon
+ * ved første linje. Teksten forkortes aldri og brytes over så mange linjer som trengs; aldri
+ * line-clamp, ellipse eller skjult overflyt. Aldri bredere enn raden. */
+.handlingsmerke {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 6px;
+  max-width: 100%;
+  padding: 4px var(--spacing-4);
+  border-radius: var(--rounded-full);
+  background: var(--color-badge-bg);
+  color: var(--color-badge-fg);
+  font-size: var(--text-meta);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-meta);
+}
+
+.handlingsmerke .ikon {
+  margin-top: 0.15em;
+}
+
+/* Radene (DESIGN.md § list-row): beige flate, 1 px kant, 14 px hjørner, kortskygge, 24 px
+ * innside og 12 px mellom radene. Lange ord brytes, så raden aldri gir vannrett rulling. */
+.listerader {
+  display: grid;
+  gap: var(--spacing-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.listerad {
+  background: var(--color-surface-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--rounded-lg);
+  box-shadow: var(--shadow-card);
+  overflow-wrap: anywhere;
+}
+
+/* Lenkedelen. `position: relative` gjør at lenkens ::after bare dekker denne delen, så
+ * knappene under skillelinja (story 2.5) aldri ligger inne i lenken. */
+.listerad__hoved {
+  position: relative;
+  padding: var(--spacing-5);
+  border-radius: var(--rounded-lg);
+}
+
+.listerad__tittel {
+  margin: 0;
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-label);
+}
+
+/* Pila står på tittellinja; tittelen holder 40 px fri plass til den. */
+.listerad--lenke .listerad__tittel {
+  padding-right: 2.5rem;
+}
+
+.listerad__lenke {
+  color: var(--color-ink);
+  text-decoration: none;
+}
+
+.listerad__lenke::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--rounded-lg);
+}
+
+/* Fokusringen tegnes på ::after og virker uten :has() (DESIGN.md § Fokus). Lenken selv får
+ * gjennomsiktig outline, så ringen ikke dobles, men synes med tvungne farger. */
+.listerad__lenke:focus-visible {
+  outline: var(--focus-width) solid transparent;
+}
+
+.listerad__lenke:focus-visible::after {
+  outline: var(--focus-width) solid var(--color-focus);
+  outline-offset: var(--focus-offset);
+}
+
+/* 2 px kant i primærfargen ved hover over lenkedelen og ved fokus (1 px kant + 1 px ring). */
+.listerad--lenke:has(.listerad__hoved:hover),
+.listerad--lenke:has(.listerad__lenke:focus-visible) {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-card), 0 0 0 1px var(--color-primary);
+}
+
+.listerad .merkelinje {
+  margin: var(--spacing-2) 0 0;
+}
+
+.listerad__fakta {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+  margin: var(--spacing-2) 0 0;
+  font-weight: var(--weight-bold);
+}
+
+/* Pila ligger etter lenken i koden og ville ellers tatt klikket over lenkens ::after. */
+.listerad__pil {
+  position: absolute;
+  top: var(--spacing-5);
+  right: var(--spacing-4);
+  color: var(--color-link);
+  pointer-events: none;
+}
+
+/* Tallet ved «Mine oppdrag» i menyen (DESIGN.md § nav-badge). I topplinjen etter teksten,
+ * i bunnmenyen øverst til høyre på ikonet (ikonet er 24 px og sentrert). */
+.menytall {
   display: inline-flex;
   align-items: center;
-  min-height: var(--spacing-touch-target);
+  justify-content: center;
+  padding: 1px 9px;
+  border-radius: var(--rounded-full);
+  background: var(--color-badge-bg);
+  color: var(--color-badge-fg);
+  font-size: var(--text-meta);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-meta);
+}
+
+.meny--topp .menytall {
+  margin-left: var(--spacing-2);
+}
+
+.meny--bunn .meny__valg {
+  position: relative;
+}
+
+.meny--bunn .menytall {
+  position: absolute;
+  top: 0;
+  left: calc(50% + 3px);
+}
+
+/* Med tvungne farger forsvinner flaten, så merket og tallet får kant. */
+@media (forced-colors: active) {
+  .handlingsmerke,
+  .menytall {
+    border: 1px solid currentColor;
+  }
+
+  .listerad__lenke:focus-visible::after {
+    outline-color: Highlight;
+  }
 }
 
 .tomtilstand__lenke {

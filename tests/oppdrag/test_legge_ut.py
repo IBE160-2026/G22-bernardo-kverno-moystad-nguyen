@@ -254,10 +254,16 @@ def test_eget_oppdrag_markerer_mine_oppdrag_og_tilbake_gar_dit(kari_klient: Test
 
 
 def test_nytt_oppdrag_vises_under_mine_oppdrag(kari_klient: TestClient, db) -> None:
+    """FR-5, FR-18 (lenkeraden fra story 2.4): det nye oppdraget står med status Åpen og uten merke."""
     send(kari_klient)
     oppdrag = db.scalars(select(Oppdrag)).one()
     html = kari_klient.get("/mine-oppdrag").text
-    assert f'<li><a href="/oppdrag/{oppdrag.id}">Måke snø i innkjørselen</a></li>' in html
+    assert (
+        f'<a class="listerad__lenke" href="/oppdrag/{oppdrag.id}" '
+        f'aria-describedby="rad-{oppdrag.id}-merker rad-{oppdrag.id}-tid">Måke snø i innkjørselen</a>'
+    ) in html
+    assert '<span class="skjult-tekst">Status: </span>Åpen' in html
+    assert "handlingsmerke" not in html
     assert "Du har ikke lagt ut noen oppdrag." not in html
 
 

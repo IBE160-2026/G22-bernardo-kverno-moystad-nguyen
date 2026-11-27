@@ -20,7 +20,11 @@
   `alle`), `postnummer` og `vist_postnummer`, som postnummerskjemaet sender
   (FR-10, FR-11, UX-DR24). Adressen bestemmer fokus, fordi serveren bare ser
   URL-en. Et ugyldig postnummer gir 200 med feilen ved feltet, og lista står
-  uendret. Fanene i «Mine oppdrag» kommer i 2.4.
+  uendret.
+- GET `/mine-oppdrag` viser «Oppdrag jeg har lagt ut» som lenkerader med
+  statusmerke, handlingsmerker og tidspunkt, sortert etter tidspunkt, og linja
+  «N oppdrag trenger at du gjør noe.» med tallet fra menyen (FR-8, FR-18,
+  UX-DR9, UX-DR26). Fanene kommer i 3.1, snarveiene i 2.5.
 """
 
 from __future__ import annotations
@@ -181,14 +185,18 @@ def mine_oppdrag(
     innlogget: Innlogget = Depends(innlogget_bruker),
     db: Session = Depends(hent_db),
 ) -> HTMLResponse:
-    """Oppdragene brukeren har lagt ut, nyeste først, eller tomtilstanden.
+    """«Oppdrag jeg har lagt ut»: lenkerader etter tidspunkt, eller tomtilstanden (FR-18).
 
-    Grunnversjon før story 2.4, som legger til fanene, gruppene og merkene.
+    Merkene kommer fra `lagt_ut_av` (AD-3). Linja «N oppdrag trenger at du gjør
+    noe.» bruker `meny_antall`, som `render` henter fra menykroken med rutas
+    sesjon, så linja og menyen viser samme tall med én telling per forespørsel.
+    Fanene kommer i 3.1, og til da har `<title>` allerede fanenavnet
+    (EXPERIENCE.md § Sidetitler). Gruppene og de andre merkene kommer i 3.5.
     """
     return render(
         request,
         "oppdrag/mine.html",
-        tittel="Mine oppdrag",
+        tittel="Mine oppdrag: Oppdrag jeg har lagt ut",
         aktiv_meny="mine_oppdrag",
         oppdrag=lagt_ut_av(db, innlogget.bruker_id),
     )
