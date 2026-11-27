@@ -1402,7 +1402,7 @@ slik at jeg kan vurdere både produktet og prosessen innen 15–20 minutter.
 
 **Gitt** README
 **Når** sensor leser den
-**Så** har den en kort beskrivelse og et skjermbilde, forutsetninger med versjoner, eksakte kommandoer for å starte appen, laste eksempeldata og kjøre testene, testbrukere med hva de brukes til, at mock er standard for KI, mappestrukturen, lenker til brief, PRD, UX, arkitektur, epics, testprotokoller og `.logs/`, kildelinja for postnummerdata, kontoer for drift og lenke til produksjonsversjonen (NFR-1, NFR-2, AR-10)
+**Så** har den en kort beskrivelse og et skjermbilde, forutsetninger med versjoner, eksakte kommandoer for å starte appen, laste eksempeldata og kjøre testene, testbrukere med hva de brukes til, hvilke eksempeloppdrag som har bilde (FR-27, hvis 2.7 ikke er kuttet), at mock er standard for KI, mappestrukturen, lenker til brief, PRD, UX, arkitektur, epics, testprotokoller og `.logs/`, kildelinja for postnummerdata, kontoer for drift og lenke til produksjonsversjonen (NFR-1, NFR-2, AR-10)
 **Og** statustabellen viser hva som er ferdig, og hva som er kuttet med begrunnelse.
 
 **Gitt** git-historikken
