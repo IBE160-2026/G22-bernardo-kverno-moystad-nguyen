@@ -330,7 +330,7 @@ Pilene betyr «kan importere fra». Bare direkte piler gjelder.
 | pydantic-settings | 2.16.x |
 | bcrypt | 5.0.x |
 | itsdangerous | 2.2.x |
-| Pillow | 12.x |
+| Pillow | 13.0.x |
 | httpx | 0.28.x (<1.0) |
 | tzdata | 2026.6 |
 | pytest | 9.2.x |
