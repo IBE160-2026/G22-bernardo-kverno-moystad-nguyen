@@ -19,7 +19,7 @@ excluded:
 
 ## Overview
 
-Dokumentet deler kravene i PRD v1.2, UX-spinene (DESIGN.md og EXPERIENCE.md) og arkitekturspinen opp i epics og stories som kan implementeres. Krav-ID-ene (FR-N, NFR-N, AD-N, UX-DR-N) brukes i stories, commits, tester og PR-er, slik PRD §0 og arkitekturkonvensjonen «Sporbarhet» krever.
+Dokumentet deler kravene i PRD v1.3, UX-spinene (DESIGN.md og EXPERIENCE.md) og arkitekturspinen opp i epics og stories som kan implementeres. Krav-ID-ene (FR-N, NFR-N, AD-N, UX-DR-N) brukes i stories, commits, tester og PR-er, slik PRD §0 og arkitekturkonvensjonen «Sporbarhet» krever.
 
 **Kildeprioritet:** PRD > arkitekturspinen og UX-spinene > mockups. Kravteksten under er et sammendrag for sporing. Ved tvil gjelder ordlyden i PRD-en, og tekstene i EXPERIENCE.md gjelder ordrett.
 
@@ -27,7 +27,7 @@ Dokumentet deler kravene i PRD v1.2, UX-spinene (DESIGN.md og EXPERIENCE.md) og 
 
 ### Functional Requirements
 
-Prioritet etter PRD §6.1: **Må** = FR-1–FR-21, **Bør** = FR-22–FR-26.
+Prioritet etter PRD §6.1: **Må** = FR-1–FR-21, **Bør** = FR-22–FR-27.
 
 **Konto og innlogging (§4.1)**
 
@@ -43,6 +43,7 @@ Prioritet etter PRD §6.1: **Må** = FR-1–FR-21, **Bør** = FR-22–FR-26.
 - **FR-7: Avbryte oppdrag** (Må). Bare oppdragsgiveren, og bare fra Åpen eller Hjelper valgt. Krever bekreftelse. Telefonnumrene skjules. Avbrytes oppdraget fra Hjelper valgt, beholdes koblingen til hjelperen, som ser oppdraget som Avbrutt uten telefonnumre.
 - **FR-8: Utgåtte oppdrag** (Må). Åpent oppdrag med passert tidspunkt vises ikke i oversikten, kan ikke få nye interesser, og hjelper kan ikke velges. Under «Mine oppdrag» står merket «Tidspunktet er passert», og oppdraget kan endres eller avbrytes. Får det nytt tidspunkt, vises det igjen.
 - **FR-9: Innsyn i oppdragsdetaljer** (Må). Alle felt og status, oppdragsgiverens navn, erfaring og snitt med lenke til profilen. Åpen: alle innloggede ser detaljene, men bare oppdragsgiveren ser de interesserte. Andre statuser: bare oppdragsgiveren og valgt hjelper, og andre avvises.
+- **FR-27: Bilde av oppdraget** (Bør). Ett valgfritt bilde når oppdraget legges ut og redigeres. Ved redigering kan bildet byttes eller fjernes, og endringen setter ikke «Meldt før endring». JPEG, PNG eller WebP etter innholdet i fila, høyst 4 MB og 40 megapiksler. Ugyldig fil gir melding ved feltet, og ingenting lagres. «Hva viser bildet?» er påkrevd når et bilde er valgt (3–120 tegn), og teksten er bildets alternative tekst. Lagres uten metadata (EXIF og GPS) og høyst 1 600 px. Hjelpetekst «Ikke vis husnummer, bilskilt, navn eller ansikter.» Vises i detaljene og øverst på kortet i oversikten. Kan bare hentes av den som kan se detaljene. Et gyldig bilde beholdes når andre felt har feil. Kjent begrensning: uten JS kan Vercel stoppe bilder over cirka 4,5 MB.
 
 **Finne oppdrag (§4.3)**
 
@@ -135,6 +136,7 @@ Fra arkitekturspinen. **Startmal:** Arkitekturen bruker ingen startmal. Det er e
 - **AR-28 Klientatferd:** Én JS-fil per oppgave i `core/static/js/`: `fokus.js`, `dialog.js` (uten JS: GET-bekreftelsesside med POST-knapp), `sending.js`, `steg.js`, `ki.js` og `skjema.js`. JS har aldri regler. Filtrene er GET-parametre som bygges av én hjelper.
 - **AR-29 Tester:** `uv run pytest`. Midlertidig SQLite (Postgres i CI) med `alembic upgrade head` én gang, og hver test rulles tilbake. Fabrikkene `lag_bruker`, `lag_oppdrag`, `lag_interesse`, `lag_tilbakemelding` og `sett_na` ligger bare i `tests/conftest.py`. Hver regel testes mot serveren, også dobbel innsending. FR-3-testen forventer 303 for GET og 401 for POST. Tester av CSRF, headere og rekkefølgen på mellomvaren. E2E bruker `POST /_test/tilstand`. T1 kjøres med axe ved 360 og 1280 px og sjekk ved 320 px. T2–T6 er protokoller i `docs/tester/`.
 - **AR-30 Logging og sporbarhet:** Passord, telefon, e-post, sesjonsnøkler og KI-tekst logges aldri. Commits, tester og docstrings for regler oppgir krav-ID-en.
+- **AR-31 Bilder (AD-18):** Bare `oppdrag/bilde.py` åpner opplastede filer, med Pillow 12.x: formatet etter innholdet (JPEG, PNG eller WebP), høyst 4 MB og 40 megapiksler sjekket før dekoding, snudd etter EXIF-orienteringen, og lagret som JPEG på høyst 1 600 px og miniatyr på høyst 640 px uten metadata. Tabellen `oppdragsbilde` (én rad per oppdrag, `LargeBinary`) eies av `oppdrag`. `GET /oppdrag/{oppdrag_id:int}/bilde` og `/bilde/liten` krever innlogging og har samme tilgangsregel og samme 404 som detaljene (FR-9), med `Cache-Control: private, max-age=31536000, immutable` og `?v=` i URL-en. Ved 422 ligger bildet i det skjulte feltet `bilde_beholdt` (base64) og behandles på nytt ved neste innsending. Skjemaet har `enctype="multipart/form-data"`, og CSRF-mellomvaren leser filfelt uten å gjøre dem til tekst. `bilde.js` skalerer bildet ned i nettleseren før innsending. Bildet slettes med oppdraget og ved sletting av konto (AD-8).
 
 ### UX Design Requirements
 
@@ -184,6 +186,10 @@ Fra DESIGN.md og EXPERIENCE.md. Tekstene markert [ASSUMPTION] i EXPERIENCE.md og
 - **UX-DR31 T1, automatisk med axe:** Ingen funn på nivåene «serious» eller «critical» på alle sidene og tilstandene i T1 (oversikt med treff og tom, nytt oppdrag steg 1, steg 2 og én skjerm, KI-forslag og KI-feil, detaljer for oppdragsgiver med og uten interesserte, for interessert og for valgt hjelper, tilbakemelding, Mine oppdrag i begge faner og tom, profil, registrering, innlogging, rediger profil, skjema med feil, feilside, slettet bruker og de fem dialogene pluss slett konto). Ingen vannrett rulling ved 320 px.
 - **UX-DR32 T2–T6, manuelle protokoller i `docs/tester/`:** T2 tastatur gjennom UJ-1, UJ-2 **og støtteflytene** (registrering, innlogging, rediger profil, slett konto), med kontroll av felttyper og `autocomplete`. T3 skjermleser gjennom UJ-1, UJ-2 steg 3–6, et skjema med feil og en kvittering. T4 ved 360, 768 og 1280 px, **320 px, 200 % zoom, tekstavstand etter WCAG 1.4.12, 200 % tekst i operativsystemet** og liggende telefon. T5 **kontrast på kanter, fokusring og tilstander (1.4.11)**, som axe ikke sjekker, og én gjennomgang med gråtoner eller tvungne farger. T6 brukertest (SM-4).
 
+**Bilde av oppdraget (FR-27, Bør)**
+
+- **UX-DR33 Bilde av oppdraget:** Filfeltet «Bilde (valgfritt)» i steg 1 rett etter beskrivelsen (etter «Få forslag» og KI-teksten), med `accept="image/jpeg,image/png,image/webp"` og hjelpetekstene «Ikke vis husnummer, bilskilt, navn eller ansikter.» og «JPEG, PNG eller WebP, høyst 4 MB.». «Hva viser bildet?» med teller (120) vises med CSS `:has()` når en fil er valgt eller et bilde er beholdt. Et beholdt bilde vises som miniatyr (høyst 160 px bred) med «Fjern bildet», og ved redigering står «Bytt bilde» og «Fjern bildet». Filfeltet har 48 px trykkflate og samme fokusring som andre felt. Kortet i oversikten har miniatyren øverst (16:9, `object-fit: cover`, `alt=""`, `loading="lazy"`, `width` og `height`), og kort uten bilde har ingen plassholder. Detaljene viser bildet under tittelen med bildeteksten som `alt`, i full innholdsbredde og høyst 480 px høyt (`object-fit: contain`), uten lenke. Forhåndsvisningen viser bildet. Radene under «Mine oppdrag» viser ikke bildet.
+
 ### FR Coverage Map
 
 | Krav | Epic | Kort |
@@ -214,6 +220,7 @@ Fra DESIGN.md og EXPERIENCE.md. Tekstene markert [ASSUMPTION] i EXPERIENCE.md og
 | FR-24 | Epic 5 | Bruke eller forkaste forslag (Bør) |
 | FR-25 | Epic 5 | Kontroll av KI-svar (Bør) |
 | FR-26 | Epic 5 | Mock-modus (Bør) |
+| FR-27 | Epic 2 | Bilde av oppdraget (Bør), story 2.7, med linjer i 4.5 (sletting) og 6.1 |
 
 | Kvalitetskrav | Epic |
 |---|---|
@@ -253,8 +260,8 @@ En person kan registrere seg, logge inn og logge ut, og alt annet i appen krever
 
 ### Epic 2: Legge ut og finne oppdrag
 Kari kan legge ut, redigere og avbryte oppdrag. Amir finner åpne oppdrag i sitt postnummer, filtrerer på kategori og postnummer, og åpner detaljene.
-**FRs covered:** FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, og en grunnversjon av FR-18 («Oppdrag jeg har lagt ut» med status, tidspunkt og merket «Tidspunktet er passert»), slik at Kari finner egne oppdrag igjen når FR-10 skjuler dem i oversikten
-**Også:** AR-12, AR-13, AR-17 (fullstendig AD-7, story 2.6), AR-19, AR-20, AR-28 (`skjema.js`, `steg.js`, `fokus.js`, `dialog.js`, `sending.js`); UX-DR8–UX-DR11, UX-DR14–UX-DR16, UX-DR18 (dialogkomponenten, først brukt for «Avbryt oppdrag»), UX-DR21, UX-DR24–UX-DR26.
+**FRs covered:** FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-27 (Bør, story 2.7), og en grunnversjon av FR-18 («Oppdrag jeg har lagt ut» med status, tidspunkt og merket «Tidspunktet er passert»), slik at Kari finner egne oppdrag igjen når FR-10 skjuler dem i oversikten
+**Også:** AR-12, AR-13, AR-17 (fullstendig AD-7, story 2.6), AR-19, AR-20, AR-28 (`skjema.js`, `steg.js`, `fokus.js`, `dialog.js`, `sending.js`), AR-31 (`bilde.js`, `oppdrag/bilde.py`); UX-DR8–UX-DR11, UX-DR14–UX-DR16, UX-DR18 (dialogkomponenten, først brukt for «Avbryt oppdrag»), UX-DR21, UX-DR24–UX-DR26, UX-DR33.
 
 ### Epic 3: Interesse, valg av hjelper og Mine oppdrag
 Amir melder interesse. Kari ser de interesserte, sammenligner erfaring og velger hjelper, og de ser hverandres telefonnummer. Hjelperen kan fjernes eller trekke seg. Begge følger oppdragene sine under «Mine oppdrag» med situasjoner, merker, grupper og antallet i menyen.
@@ -736,7 +743,7 @@ Som oppdragsgiver som har brukt lang tid på et skjema
 vil jeg kunne logge inn igjen uten å miste det jeg har skrevet,
 slik at jeg ikke må begynne på nytt.
 
-**Krav:** AD-7 (fullstendig versjon), FR-2, FR-3, AR-17. **Kan kuttes** (AR-11, punkt 1). Da står den enkle 401-siden fra story 1.2 igjen, og kuttet føres i memlog og i PRD §9.2.
+**Krav:** AD-7 (fullstendig versjon), FR-2, FR-3, AR-17, AD-18 (filfelt). **Kan kuttes** (AR-11, punkt 1). Da står den enkle 401-siden fra story 1.2 igjen, og kuttet føres i memlog og i PRD §9.2.
 
 **Acceptance Criteria:**
 
@@ -757,6 +764,61 @@ slik at jeg ikke må begynne på nytt.
 **Gitt** kodebasen
 **Når** testen kjøres
 **Så** bruker ingen andre skjema feltnavn som begynner med `_` (AD-7).
+
+**Gitt** en innsending med et nytt bilde når sesjonen er utløpt
+**Når** 401-siden vises
+**Så** står «Velg bildet på nytt etter innlogging.» over knappen, og `bilde_beholdt` følger med som skjult felt hvis det fantes (AD-7, AD-18).
+
+### Story 2.7: Bilde av oppdraget (Bør)
+
+Som oppdragsgiver
+vil jeg legge ved et bilde som viser oppdraget,
+slik at hjelperen lettere ser hva jobben er.
+
+**Krav:** FR-27, FR-4 (bildet ved sletting forberedes i service), FR-9, FR-10, NFR-9, NFR-10, NFR-12, AD-18, AR-31, UX-DR33. **Kan kuttes** (Bør). Bygges etter 2.5 og før 2.6.
+
+**Acceptance Criteria:**
+
+**Gitt** «Nytt oppdrag»
+**Når** Kari velger et bilde og skriver hva det viser
+**Så** lagres oppdraget med bildet, kodet om til JPEG på høyst 1 600 px uten EXIF og GPS, og med en miniatyr på høyst 640 px
+**Og** detaljene viser bildet under tittelen med bildeteksten som `alt`, og kortet i oversikten viser miniatyren øverst med `alt=""`.
+
+**Gitt** en fil som ikke er JPEG, PNG eller WebP (også en tekstfil eller SVG som heter `.jpg`), en fil over 4 MB eller et bilde over 40 megapiksler
+**Når** skjemaet sendes
+**Så** vises feilteksten ved bildefeltet, ingenting lagres, og de andre feltene beholdes (NFR-10).
+
+**Gitt** et bilde uten «Hva viser bildet?», eller en tekst under 3 eller over 120 tegn
+**Når** skjemaet sendes
+**Så** vises feilen ved feltet, og bildet beholdes som miniatyr med «Fjern bildet» (`bilde_beholdt`).
+
+**Gitt** et beholdt bilde etter 422
+**Når** skjemaet sendes på nytt med gyldige felt
+**Så** lagres oppdraget med bildet. Et forfalsket `bilde_beholdt` avvises som en ugyldig fil.
+
+**Gitt** et oppdrag med status Avbrutt, eller et som ikke finnes
+**Når** en annen bruker enn oppdragsgiveren og valgt hjelper henter `/oppdrag/{id}/bilde`
+**Så** er svaret samme 404 som for detaljene (FR-9). Uten innlogging gjelder FR-3.
+
+**Gitt** «Rediger oppdrag» (2.5)
+**Når** Kari bytter eller fjerner bildet
+**Så** lagres endringen, `vesentlig_endret` settes ikke, og URL-en til bildet endres (`?v=`).
+
+**Gitt** mobil med JS
+**Når** Kari velger et bilde på 6 MB
+**Så** skalerer `bilde.js` det ned før innsending, og forhåndsvisningen viser bildet. Uten JS virker skjemaet med bilder opp til 4 MB.
+
+**Gitt** `<script>alert(1)</script>` i «Hva viser bildet?»
+**Når** detaljene vises
+**Så** står teksten som tekst i `alt` (NFR-12).
+
+**Gitt** seed
+**Når** eksempeldataene lastes
+**Så** har 4 av oppdragene bilder tegnet av seed (uten personer og adresser), i ulike kategorier.
+
+**Gitt** T1
+**Når** testen kjøres
+**Så** er oversikten med bilder, detaljene med bilde og skjemaet med bildefeil uten brudd på nivåene «serious» eller «critical» og uten vannrett rulling ved 320 px.
 
 ---
 
@@ -1111,7 +1173,7 @@ Som bruker
 vil jeg kunne slette kontoen min selv,
 slik at personopplysningene mine fjernes uten at andres dokumenterte erfaring forsvinner.
 
-**Krav:** FR-4, FR-17, FR-18 («Hjelperen trakk seg»), FR-20, FR-21, NFR-9, AR-9 (`slett-konto`), AR-18, AR-25; UX-DR21, UX-DR29
+**Krav:** FR-4, FR-17, FR-18 («Hjelperen trakk seg»), FR-20, FR-21, FR-27 (bilder), NFR-9, AR-9 (`slett-konto`), AR-18, AR-25, AR-31; UX-DR21, UX-DR29
 
 **Acceptance Criteria:**
 
@@ -1133,6 +1195,7 @@ slik at personopplysningene mine fjernes uten at andres dokumenterte erfaring fo
 **Gitt** dataene til brukeren som slettes
 **Når** slettingen kjøres
 **Så** behandles de etter tabellen i FR-4: egne åpne og avbrutte oppdrag slettes sammen med interessene, egne oppdrag med Hjelper valgt blir Avbrutt med telefonnumrene skjult, utførte oppdrag beholdes og teller fortsatt i den andre partens profil, interesser brukeren har meldt slettes, oppdrag der brukeren er valgt hjelper med status Hjelper valgt går tilbake til Åpen gjennom overgangen i AD-2 (`arsak='slettet'`) slik at oppdragsgiveren ser «Hjelperen trakk seg», tilbakemeldinger brukeren har gitt beholdes, og tilbakemeldinger brukeren har fått slettes (FR-4, FR-17, FR-18)
+**Og** bilder på egne oppdrag som beholdes (Utført, eller Avbrutt fra Hjelper valgt), slettes, og oppdrag som slettes, tar bildet med seg. En test sjekker at `oppdragsbilde` ikke har rader for brukerens beholdte oppdrag etter slettingen (FR-4, FR-27, AD-18)
 **Og** hele slettingen skjer i én transaksjon styrt av `profil/service.py`. En test feiler slettingen til slutt med vilje og sjekker at ingenting er endret, både mot SQLite og mot Postgres (AD-8, AD-17).
 
 **Gitt** en slettet bruker
@@ -1267,7 +1330,7 @@ Som bruker med tastatur, skjermleser, stor tekst eller nedsatt syn
 vil jeg at appen er testet manuelt på det automatiske tester ikke finner,
 slik at jeg faktisk kan gjennomføre kjerneflyten.
 
-**Krav:** NFR-6, NFR-7, NFR-8, NFR-11; UX-DR32
+**Krav:** NFR-6, NFR-7, NFR-8, NFR-11, FR-27; UX-DR32, UX-DR33
 
 **Acceptance Criteria:**
 
@@ -1290,6 +1353,10 @@ slik at jeg faktisk kan gjennomføre kjerneflyten.
 **Gitt** en gjennomgang av kjerneflyten mot ordlisten i PRD §3
 **Når** den gjøres
 **Så** er avvik i knappetekster og overskrifter dokumentert og rettet (NFR-8).
+
+**Gitt** at story 2.7 er bygget (FR-27)
+**Når** T2–T5 gjennomføres
+**Så** er bildet med alt-tekst og filfeltet «Bilde (valgfritt)» med «Hva viser bildet?» med i protokollene, også med tastatur (T2) og skjermleser (T3).
 
 **Gitt** funn fra T2–T5
 **Når** de er alvorlige (en flyt kan ikke gjennomføres, eller WCAG 2.1 AA brytes)
@@ -1335,7 +1402,7 @@ slik at jeg kan vurdere både produktet og prosessen innen 15–20 minutter.
 
 **Gitt** README
 **Når** sensor leser den
-**Så** har den en kort beskrivelse og et skjermbilde, forutsetninger med versjoner, eksakte kommandoer for å starte appen, laste eksempeldata og kjøre testene, testbrukere med hva de brukes til, at mock er standard for KI, mappestrukturen, lenker til brief, PRD, UX, arkitektur, epics, testprotokoller og `.logs/`, kildelinja for postnummerdata, kontoer for drift og lenke til produksjonsversjonen (NFR-1, NFR-2, AR-10)
+**Så** har den en kort beskrivelse og et skjermbilde, forutsetninger med versjoner, eksakte kommandoer for å starte appen, laste eksempeldata og kjøre testene, testbrukere med hva de brukes til, hvilke eksempeloppdrag som har bilde (FR-27, hvis 2.7 ikke er kuttet), at mock er standard for KI, mappestrukturen, lenker til brief, PRD, UX, arkitektur, epics, testprotokoller og `.logs/`, kildelinja for postnummerdata, kontoer for drift og lenke til produksjonsversjonen (NFR-1, NFR-2, AR-10)
 **Og** statustabellen viser hva som er ferdig, og hva som er kuttet med begrunnelse.
 
 **Gitt** git-historikken
