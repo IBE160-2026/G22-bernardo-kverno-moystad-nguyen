@@ -8,6 +8,10 @@
   `UPDATE` som også øker `versjon`.
 - `hent_for_visning`: det malene får vite om et oppdrag, etter tilgangsregelen
   i FR-9. Aldri telefon, e-post eller fødselsdato (AD-16).
+- `utgatt`: eneste definisjon av «tidspunktet er passert» (FR-8, AD-3). Brukes
+  av `endre_status`, `ledige_oppdrag` og merket i «Mine oppdrag» (2.4).
+- `ledige_oppdrag`: kortene i oversikten (FR-10, FR-11). `erfaring`: fullførte
+  oppdrag som hjelper, til oppdragsgiverblokken og profilen (FR-9, FR-21, AR-13).
 
 Funksjonene her committer aldri. Ruta eier transaksjonen (AD-17).
 """
@@ -18,8 +22,9 @@ import secrets
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any
 
-from sqlalchemy import select, update
+from sqlalchemy import ColumnElement, func, not_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -64,6 +69,21 @@ def detaljer_url(oppdrag_id: int) -> str:
     return f"/oppdrag/{oppdrag_id}"
 
 
+def utgatt(tidspunkt: Any, *, na: datetime | None = None) -> Any:
+    """Om tidspunktet er passert: `tidspunkt <= na` (FR-8, AD-3).
+
+    Eneste definisjon av «utgått». Med en `datetime` gir den `bool`, og med
+    kolonnen `Oppdrag.tidspunkt` et SQL-uttrykk, så spørringene og merket i
+    «Mine oppdrag» (2.4) bruker samme grense. Uten `na` brukes `klokke.na()`.
+    """
+    return tidspunkt <= (klokke.na() if na is None else na)
+
+
+def ikke_utgatt(na: datetime | None = None) -> ColumnElement[bool]:
+    """SQL-vilkåret for oppdrag der tidspunktet ikke er passert (`NOT utgatt`)."""
+    return not_(utgatt(Oppdrag.tidspunkt, na=na))
+
+
 def ny_skjema_id() -> str:
     """Engangsnøkkelen i skjemaet «Nytt oppdrag» (AD-2). 22 tegn fra `[A-Za-z0-9_-]`."""
     return secrets.token_urlsafe(16)
@@ -84,7 +104,7 @@ def endre_status(
     """Endrer status med én betinget `UPDATE` og øker `versjon` (AD-2).
 
     `WHERE` har `id`, `status IN fra`, eier når `oppdragsgiver_id` er gitt, og
-    `tidspunkt > nå` når `ikke_passert` er sann. En overgang som ikke står i
+    `NOT utgatt(tidspunkt)` når `ikke_passert` er sann. En overgang som ikke står i
     `OVERGANGER`, gir `ValueError`. Endres ingen rad, leses raden på nytt:
     finnes den ikke, eller har den en annen eier, gir det `FinnesIkke`. Ellers
     har noen endret den, og det gir `Konflikt`.
@@ -100,7 +120,7 @@ def endre_status(
     if oppdragsgiver_id is not None:
         vilkar.append(Oppdrag.oppdragsgiver_id == oppdragsgiver_id)
     if ikke_passert:
-        vilkar.append(Oppdrag.tidspunkt > klokke.na())
+        vilkar.append(ikke_utgatt())
     resultat = db.execute(
         update(Oppdrag)
         .where(*vilkar)
@@ -241,6 +261,7 @@ class OppdragVisning:
     tidspunkt: datetime
     belop: int | None
     status: str
+    oppdragsgiver_id: int
     er_eier: bool
 
     @property
@@ -282,6 +303,7 @@ def hent_for_visning(db: Session, oppdrag_id: int, bruker_id: int) -> OppdragVis
         tidspunkt=oppdrag.tidspunkt,
         belop=oppdrag.belop,
         status=oppdrag.status,
+        oppdragsgiver_id=oppdrag.oppdragsgiver_id,
         er_eier=oppdrag.oppdragsgiver_id == bruker_id,
     )
 
@@ -294,3 +316,101 @@ def lagt_ut_av(db: Session, bruker_id: int) -> list[OppdragRad]:
         .order_by(Oppdrag.opprettet.desc(), Oppdrag.id.desc())
     ).all()
     return [OppdragRad(id=rad.id, tittel=rad.tittel) for rad in rader]
+
+
+# ---------- oversikten (FR-10, FR-11) ----------
+
+
+@dataclass(frozen=True)
+class OppdragKort:
+    """Et kort i oversikten: det kortet viser, og id-en til lenken. Ingen personfelt (AD-16)."""
+
+    id: int
+    tittel: str
+    kategori: str
+    postnummer: str
+    poststed: str | None
+    tidspunkt: datetime
+    belop: int | None
+
+    @property
+    def sted(self) -> str:
+        """Postnummer med poststed, «0571 Oslo»."""
+        return " ".join(del_ for del_ in (self.postnummer, self.poststed) if del_)
+
+
+def ledige_oppdrag(
+    db: Session, *, postnummer: str, kategori: str | None, bruker_id: int
+) -> list[OppdragKort]:
+    """Åpne oppdrag i postnummeret der tidspunktet ikke er passert (FR-8, FR-10, FR-11).
+
+    Brukerens egne vises ikke. `kategori=None` gir alle kategorier. Sortert
+    etter tidspunkt, så etter når oppdraget ble lagt ut, eldste først, og til
+    sist etter id, så rekkefølgen alltid er fast.
+    """
+    vilkar = [
+        Oppdrag.status == "apen",
+        Oppdrag.postnummer == postnummer,
+        Oppdrag.oppdragsgiver_id != bruker_id,
+        ikke_utgatt(),
+    ]
+    if kategori is not None:
+        vilkar.append(Oppdrag.kategori == kategori)
+    rader = db.execute(
+        select(
+            Oppdrag.id,
+            Oppdrag.tittel,
+            Oppdrag.kategori,
+            Oppdrag.postnummer,
+            Oppdrag.tidspunkt,
+            Oppdrag.belop,
+        )
+        .where(*vilkar)
+        .order_by(Oppdrag.tidspunkt, Oppdrag.opprettet, Oppdrag.id)
+    ).all()
+    sted = poststed(postnummer)
+    return [
+        OppdragKort(
+            id=rad.id,
+            tittel=rad.tittel,
+            kategori=rad.kategori,
+            postnummer=rad.postnummer,
+            poststed=sted,
+            tidspunkt=rad.tidspunkt,
+            belop=rad.belop,
+        )
+        for rad in rader
+    ]
+
+
+# ---------- erfaring (FR-9, FR-21, AR-13) ----------
+
+
+def erfaring(db: Session, bruker_ids: Iterable[int]) -> dict[int, domene.Erfaring]:
+    """`Erfaring` for hver id: utførte oppdrag der brukeren var valgt hjelper, per kategori.
+
+    Alle id-ene får en verdi, også de uten fullførte oppdrag. Snittet er `None`
+    og antallet vurderinger 0 til tilbakemeldingene kommer i Epic 4. Én spørring
+    for alle id-ene, så interessertlista (Epic 3) ikke gir én spørring per person.
+    """
+    ider = sorted(set(bruker_ids))
+    tall: dict[int, dict[str, int]] = {bruker_id: {} for bruker_id in ider}
+    if ider:
+        rader = db.execute(
+            select(Oppdrag.valgt_hjelper_id, Oppdrag.kategori, func.count())
+            .where(Oppdrag.status == "utfort", Oppdrag.valgt_hjelper_id.in_(ider))
+            .group_by(Oppdrag.valgt_hjelper_id, Oppdrag.kategori)
+        ).all()
+        for hjelper_id, kategori, antall in rader:
+            tall[hjelper_id][kategori] = antall
+    return {
+        bruker_id: domene.Erfaring(
+            fullforte=sum(per.values()),
+            per_kategori=tuple(
+                (kode, per[kode]) for kode, _ in domene.KATEGORIER if per.get(kode)
+            ),
+            snitt=None,
+            antall_vurderinger=0,
+        )
+        for bruker_id, per in tall.items()
+    }

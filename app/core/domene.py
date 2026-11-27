@@ -7,11 +7,15 @@
 - Grensene for tittel og beskrivelse (FR-5). Andre grenser ligger i eier-slicen.
 - `normaliser_tekst`: tekst fra brukere trimmes og NFC-normaliseres før `len()`.
 - `kr`: beløp som «1 000 kr» eller «Uten betaling» (EXPERIENCE.md § Formater).
+- `Erfaring`: fullførte oppdrag som hjelper og vurderinger, som oppdragsgiverblokken,
+  interessertlista og profilen viser (FR-21, AD-3). `fullforte_tekst` og
+  `vurdering_tekst` (og Jinja-filtrene `fullforte` og `vurdering`) gir teksten.
 """
 
 from __future__ import annotations
 
 import unicodedata
+from dataclasses import dataclass
 
 KATEGORIER: tuple[tuple[str, str], ...] = (
     ("snomaking", "Snømåking"),
@@ -83,3 +87,41 @@ def kr(belop: int | None) -> str:
     if belop is None:
         return UTEN_BETALING
     return f"{belop:,}".replace(",", NBSP) + f"{NBSP}kr"
+
+
+INGEN_VURDERINGER = "Ingen vurderinger ennå"
+INGEN_FULLFORTE = "Ingen fullførte oppdrag ennå"
+
+
+@dataclass(frozen=True)
+class Erfaring:
+    """Erfaringen til en bruker som hjelper (FR-21, AD-3). Beregnes ved lesing.
+
+    `fullforte` er antall utførte oppdrag der brukeren var valgt hjelper, og
+    `per_kategori` det samme per kategorikode, i rekkefølgen i `KATEGORIER` og
+    uten kategorier med 0. `snitt` er `None` og `antall_vurderinger` 0 til
+    tilbakemeldingene kommer i Epic 4.
+    """
+
+    fullforte: int
+    per_kategori: tuple[tuple[str, int], ...]
+    snitt: float | None
+    antall_vurderinger: int
+
+
+def fullforte_tekst(antall: int) -> str:
+    """«Ingen fullførte oppdrag ennå», «1 fullført oppdrag» eller «12 fullførte oppdrag»."""
+    if antall <= 0:
+        return INGEN_FULLFORTE
+    if antall == 1:
+        return "1 fullført oppdrag"
+    return f"{antall} fullførte oppdrag"
+
+
+def vurdering_tekst(erfaring: Erfaring) -> str:
+    """«4,3 av 5, 7 vurderinger», «5,0 av 5, 1 vurdering» eller «Ingen vurderinger ennå» (FR-21)."""
+    if erfaring.snitt is None or erfaring.antall_vurderinger <= 0:
+        return INGEN_VURDERINGER
+    snitt = f"{erfaring.snitt:.1f}".replace(".", ",")
+    ord_ = "vurdering" if erfaring.antall_vurderinger == 1 else "vurderinger"
+    return f"{snitt} av 5, {erfaring.antall_vurderinger} {ord_}"
