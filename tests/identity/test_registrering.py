@@ -477,3 +477,86 @@ def test_post_uten_csrf_avvises(klient: TestClient, db: Session) -> None:
     svar = klient.post("/registrer", data=GYLDIG, follow_redirects=False)
     assert svar.status_code == 403
     assert antall_brukere(db) == 0
+
+
+# ---------- `neste` gjennom registreringen (retro T-2, FR-1, FR-2, AD-4) ----------
+
+
+def lenke_href(html: str, tekst: str) -> str:
+    return re.search(rf'<a class="tekstknapp" href="([^"]+)">{tekst}</a>', html).group(1)
+
+
+def skjult_neste(html: str) -> str:
+    return felt(html, "neste")["value"]
+
+
+def test_registrer_deg_baerer_neste(klient: TestClient) -> None:
+    """T-2: «Registrer deg» har `?neste=` når innloggingen har en annen `neste` enn `/`."""
+    assert lenke_href(klient.get("/logg-inn?neste=/oppdrag/5").text, "Registrer deg") == (
+        "/registrer?neste=%2Foppdrag%2F5"
+    )
+    assert lenke_href(klient.get("/logg-inn").text, "Registrer deg") == "/registrer"
+
+
+def test_registreringen_har_neste_som_skjult_felt_og_logg_inn_baerer_den(klient: TestClient) -> None:
+    html = klient.get("/registrer?neste=/oppdrag/5").text
+    assert skjult_neste(html) == "/oppdrag/5"
+    assert lenke_href(html, "Logg inn") == "/logg-inn?neste=%2Foppdrag%2F5"
+    html = klient.get("/registrer").text
+    assert skjult_neste(html) == "/"
+    assert lenke_href(html, "Logg inn") == "/logg-inn"
+
+
+def test_neste_beholdes_ved_422(klient: TestClient) -> None:
+    svar = send(klient, navn="", neste="/oppdrag/5")
+    assert svar.status_code == 422
+    assert skjult_neste(svar.text) == "/oppdrag/5"
+    assert lenke_href(svar.text, "Logg inn") == "/logg-inn?neste=%2Foppdrag%2F5"
+
+
+def test_vellykket_registrering_sender_til_neste(klient: TestClient, db: Session) -> None:
+    """T-2: 303 til `trygg_neste(neste)`, og `neste` blir ikke et registreringsfelt."""
+    svar = send(klient, neste="/oppdrag/5")
+    assert svar.status_code == 303
+    assert svar.headers["location"] == "/oppdrag/5"
+    assert antall_brukere(db) == 1
+
+
+@pytest.mark.parametrize("neste", ["//evil.no", "https://evil.no", "/logg-ut", "/\\evil.no", ""])
+def test_ugyldig_neste_gir_oversikten(klient: TestClient, neste: str) -> None:
+    assert skjult_neste(klient.get("/registrer", params={"neste": neste}).text) == "/"
+    svar = send(klient, neste=neste)
+    assert svar.status_code == 303
+    assert svar.headers["location"] == "/"
+
+
+def test_delt_lenke_gjennom_registrer_deg(klient: TestClient, lag_bruker, lag_oppdrag) -> None:
+    """Akseptansekriteriet fra T-2: delt lenke → innlogging → «Registrer deg» → registrering → lenken."""
+    oppdrag = lag_oppdrag(oppdragsgiver=lag_bruker(epost="eier@x.no"))
+    sti = f"/oppdrag/{oppdrag.id}"
+    innlogging = klient.get(sti, follow_redirects=False).headers["location"]
+    registrering = lenke_href(klient.get(innlogging).text, "Registrer deg")
+    html = klient.get(registrering).text
+    assert skjult_neste(html) == sti
+    token = re.search(r'name="csrf_token" value="([^"]+)"', html).group(1)
+    svar = klient.post("/registrer", data={"csrf_token": token, **GYLDIG, "neste": sti}, follow_redirects=False)
+    assert svar.status_code == 303
+    assert svar.headers["location"] == sti
+    assert klient.get(sti).status_code == 200
+
+
+def test_registrering_med_neste_sletter_mislykkede_forsok(klient: TestClient, db: Session) -> None:
+    """Invariant 1.4 (T-6): registreringen sletter `innloggingsforsok` for e-posten, også med `neste`."""
+    from app.identity.models import Innloggingsforsok
+
+    db.add(Innloggingsforsok(epost="kari@x.no", tidspunkt=T0))
+    db.commit()
+    assert send(klient, neste="/oppdrag/5").status_code == 303
+    assert db.scalar(select(func.count()).select_from(Innloggingsforsok)) == 0
+
+
+def test_innlogget_med_neste_sendes_fortsatt_til_oversikten(klient: TestClient, lag_bruker, logg_inn_som) -> None:
+    """Invariant 1.4 (T-6): innlogget GET og POST til `/registrer` gir 303 til `/`, uansett `neste`."""
+    logg_inn_som(klient, lag_bruker())
+    assert klient.get("/registrer?neste=/oppdrag/5", follow_redirects=False).headers["location"] == "/"
+    assert send(klient, epost="ny@x.no", neste="/oppdrag/5").headers["location"] == "/"

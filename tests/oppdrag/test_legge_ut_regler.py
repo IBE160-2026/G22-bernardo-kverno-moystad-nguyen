@@ -301,9 +301,14 @@ def test_hent_for_visning_eget_og_andres(db, kari, lag_bruker, lag_oppdrag) -> N
 
 
 def test_oppdragvisning_har_ingen_personfelt() -> None:
-    """AD-16: malene får aldri telefon, e-post, fødselsdato eller eier-id."""
+    """AD-16: malene får aldri telefon, e-post, fødselsdato eller navn.
+
+    Fra story 2.3 har `OppdragVisning` eier-id-en, fordi oppdragsgiverblokken lenker til
+    `/profil/{id}` («Se profil»). Id-en er ingen personopplysning, den står i lenken.
+    """
     felt = {f.name for f in dataclasses.fields(OppdragVisning)}
-    assert felt.isdisjoint({"telefon", "epost", "fodselsdato", "oppdragsgiver_id", "navn", "skjema_id"})
+    assert felt.isdisjoint({"telefon", "epost", "fodselsdato", "navn", "skjema_id"})
+    assert "oppdragsgiver_id" in felt
 
 
 def test_finnes_ikke(db, kari) -> None:

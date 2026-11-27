@@ -50,6 +50,7 @@ FAST_KLOKKE = "2026-11-24T12:00:00+00:00"
 CSRF_FELT = re.compile(r'name="csrf_token" value="([^"]+)"')
 KARI = next(t for t in TESTBRUKERE if t.epost == "kari@eksempel.no")
 OLA = next(t for t in TESTBRUKERE if t.epost == "ola@eksempel.no")
+AMIR = next(t for t in TESTBRUKERE if t.epost == "amir@eksempel.no")
 
 
 @pytest.fixture(scope="session")

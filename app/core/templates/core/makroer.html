@@ -107,16 +107,18 @@
    formatert fra ruta. `kategori` er en kode fra KATEGORIER, eller tom, og da står «–».
    Med `forhandsvisning=True` (steg 2 i «Nytt oppdrag») er tittelen en `p` med samme stil
    som `h2`, så den ikke forveksles med sidens overskrifter, og hver verdi har `data-felt`,
-   som skjema.js oppdaterer. Kortet har da ingen lenke. Oversikten (2.3) bruker `h2`. #}
-{% macro oppdragskort(kategori, tittel, tid, sted, pris, forhandsvisning=False) %}
-<div class="kort{% if forhandsvisning %} kort--forhandsvisning{% endif %}"{% if forhandsvisning %} data-forhandsvisning{% endif %}>
+   som skjema.js oppdaterer. Kortet har da ingen lenke. Oversikten (2.3) bruker `h2`, og med
+   `href` er tittelen lenken til detaljene. Trykkflaten er lenkens ::after, som dekker kortet,
+   så kortet ikke har andre lenker eller knapper (EXPERIENCE.md § card, UX-DR5). #}
+{% macro oppdragskort(kategori, tittel, tid, sted, pris, forhandsvisning=False, href=None) %}
+<div class="kort{% if forhandsvisning %} kort--forhandsvisning{% endif %}{% if href %} kort--lenke{% endif %}"{% if forhandsvisning %} data-forhandsvisning{% endif %}>
   <span class="kategorimerke"{% if forhandsvisning %} data-felt="kategori"{% endif %}>
     {%- if kategori %}{{ kategoriikon(kategori, 18) }}<span>{{ kategori|kategori_tekst }}</span>{% else %}<span>–</span>{% endif -%}
   </span>
   {% if forhandsvisning %}
   <p class="kort__tittel" data-felt="tittel">{{ tittel }}</p>
   {% else %}
-  <h2 class="kort__tittel">{{ tittel }}</h2>
+  <h2 class="kort__tittel">{% if href %}<a class="kort__lenke" href="{{ href }}">{{ tittel }}</a>{% else %}{{ tittel }}{% endif %}</h2>
   {% endif %}
   <ul class="fakta">
     <li class="fakta__tid">
@@ -130,4 +132,17 @@
   </ul>
   <p class="pris"{% if forhandsvisning %} data-felt="pris"{% endif %}>{{ pris }}</p>
 </div>
+{% endmacro %}
+
+{# Erfaringen til en bruker og «Se profil» (FR-9, FR-21, UX-DR25). Brukes i oppdragsgiverblokken,
+   og senere i interessertlista (Epic 3). Fullførte og snitt formateres med filtrene
+   `fullforte` og `vurdering`, som i mockupen for interessertlista. En slettet bruker har
+   ingen erfaring og ingen lenke (AD-8). Malen får bare `OffentligBruker` og `Erfaring` (AD-16). #}
+{% macro brukerkort(bruker, erfaring, lenke=True) %}
+{% if erfaring and not bruker.slettet %}
+<p class="brukerkort__erfaring">{{ erfaring.fullforte|fullforte }} · {{ erfaring|vurdering }}</p>
+{% endif %}
+{% if lenke and not bruker.slettet %}
+<a class="tekstknapp" href="{{ url_for('profil.vis', bruker_id=bruker.id) }}">Se profil</a>
+{% endif %}
 {% endmacro %}

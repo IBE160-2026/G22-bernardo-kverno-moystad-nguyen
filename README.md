@@ -21,7 +21,7 @@ Prosjektet er i implementasjonsfasen: Epic 1 (konto og innlogging) er ferdig, og
 | UX-design | Ferdig: designsystem, atferd, mockups og tilgjengelighetsgjennomgang |
 | Arkitektur | Ferdig: FastAPI + Jinja, SQLite lokalt og Supabase Postgres på Vercel (AD-1–AD-17) |
 | Epics og stories | Ferdig: [epics.md](_bmad-output/planning-artifacts/epics.md) og [sprint-status.yaml](_bmad-output/implementation-artifacts/sprint-status.yaml) |
-| Implementasjon og testing | Pågår: Epic 1 ferdig (story 1.1–1.5: skjelett, innlogging, publisering i produksjon, registrering og automatisk test av universell utforming), med retrospektiv og herding. Epic 2 pågår: story 2.1 (legge ut oppdrag) og 2.2 (nytt oppdrag i to steg på mobil, med forhåndsvisning) |
+| Implementasjon og testing | Pågår: Epic 1 ferdig (story 1.1–1.5: skjelett, innlogging, publisering i produksjon, registrering og automatisk test av universell utforming), med retrospektiv og herding. Epic 2 pågår: story 2.1 (legge ut oppdrag), 2.2 (nytt oppdrag i to steg på mobil, med forhåndsvisning) og 2.3 (oversikten med kategori- og postnummerfilter, og detaljene med oppdragsgiverblokken) |
 
 ## Kom i gang
 
@@ -46,7 +46,7 @@ uv run uvicorn main:app --reload
 ```
 
 - `uv sync` installerer avhengighetene i `.venv/` med de låste versjonene i `uv.lock`.
-- `uv run python -m app.seed` kjører `alembic upgrade head`. Det lager SQLite-fila `nabolagshelten.db` med tabellene og postnumrene, og legger inn de seks testbrukerne og de 12 eksempeloppdragene under. Seed kan kjøres flere ganger: brukere som finnes, røres ikke, og testbrukernes oppdrag legges inn på nytt, så tidspunktene alltid er regnet fra når du kjørte seed. Andre brukere og deres oppdrag røres ikke.
+- `uv run python -m app.seed` kjører `alembic upgrade head`. Det lager SQLite-fila `nabolagshelten.db` med tabellene og postnumrene, og legger inn de seks testbrukerne og de 13 eksempeloppdragene under. Seed kan kjøres flere ganger: brukere som finnes, røres ikke, og testbrukernes oppdrag legges inn på nytt, så tidspunktene alltid er regnet fra når du kjørte seed. Andre brukere og deres oppdrag røres ikke.
 - Åpne <http://127.0.0.1:8000/> i nettleseren og logg inn med en av testbrukerne, eller lag en ny konto under «Registrer deg» (<http://127.0.0.1:8000/registrer>). Stopp appen med Ctrl+C.
 
 ### Testbrukere (bare for lokal testing)
@@ -66,7 +66,7 @@ Etter fem feil passord på samme e-post innen 15 minutter er innloggingen sperre
 
 ### Eksempeloppdrag (bare for lokal testing)
 
-Seed legger inn 12 eksempeloppdrag (NFR-2). Bare Kari, Nora og Sofie har lagt ut oppdrag. Alle seks kategorier finnes blant de åpne oppdragene, ett er utgått (tidspunktet er passert, FR-8) og ett er avbrutt. Tidspunktene er regnet fra dagen du kjørte seed («+1» betyr i morgen), alltid på hel time mellom kl. 09 og 18 i norsk tid.
+Seed legger inn 13 eksempeloppdrag (NFR-2). Bare Kari, Nora og Sofie har lagt ut oppdrag. Alle seks kategorier finnes blant de åpne oppdragene, ett er utgått (tidspunktet er passert, FR-8), ett er avbrutt, og ett er utført med Nora som hjelper. Derfor står «1 fullført oppdrag» i blokken «Lagt ut av Nora Berg» når en annen åpner Noras oppdrag (FR-9). Tidspunktene er regnet fra dagen du kjørte seed («+1» betyr i morgen), alltid på hel time mellom kl. 09 og 18 i norsk tid.
 
 | Tittel | Lagt ut av | Kategori | Postnummer | Når | Godtgjørelse | Status |
 |---|---|---|---|---|---|---|
@@ -82,8 +82,9 @@ Seed legger inn 12 eksempeloppdrag (NFR-2). Bare Kari, Nora og Sofie har lagt ut
 | Klippe hekken | Sofie | Hage | 5006 Bergen | +7 dager kl. 10 | 450 kr | Åpen |
 | Sette opp skriver | Sofie | Teknologihjelp | 5006 Bergen | +3 dager kl. 18 | 200 kr | Åpen |
 | Handle og bære opp varer | Sofie | Annet | 5006 Bergen | +1 dag kl. 16 | Uten betaling | Åpen |
+| Bytte lyspære i taket | Kari | Annet | 0571 Oslo | −5 dager kl. 12 | 150 kr | Utført, med Nora som hjelper |
 
-Oversikten viser oppdragene fra story 2.3. Til da finner du dine egne under «Mine oppdrag», og du kan legge ut nye med «+ Legg ut oppdrag» på oversikten (FR-5).
+Oversikten viser åpne oppdrag som ikke er passert, i ditt postnummer og uten dine egne, sortert etter tidspunkt (FR-10). Logg inn som Ola for å se fire oppdrag i 0571 Oslo. Tidspunktene er regnet fra da eksempeldataene ble lagt inn, så antallet kan endre seg etter noen dager. Kjør `uv run python -m app.seed` på nytt hvis det ikke stemmer. Du kan filtrere på kategori og skrive et annet postnummer, for eksempel 5006 (FR-11). Dine egne oppdrag finner du under «Mine oppdrag», og du kan legge ut nye med «+ Legg ut oppdrag» på oversikten (FR-5).
 
 ### Nytt passord for en bruker
 
@@ -118,7 +119,7 @@ uv run pytest -m e2e
 
 - Hver side og tilstand sjekkes med axe ved 360 og 1280 px. Brudd med alvorlighet «serious» eller «critical» stopper testen, og feilmeldingen viser regel, alvorlighet og selektor.
 - Hver side sjekkes for vannrett rulling ved 320 px.
-- I tillegg testes JavaScript-oppførselen: «Vis passord», sendeknappen (`aria-disabled`) og poststed ved postnummerfeltet.
+- I tillegg testes JavaScript-oppførselen: «Vis passord», sendeknappen (`aria-disabled`), poststed ved postnummerfeltet, «Nytt oppdrag» i to steg og fokus i oversikten etter kategori, «Vis» og «Velg et annet postnummer». Kortene i oversikten sjekkes i 1, 2 og 3 kolonner ved 360, 768 og 1280 px.
 - Testene starter en egen server på en ledig port med en egen SQLite-fil i temp-mappen, og setter tilstanden (testbrukere og klokke) gjennom `POST /_test/tilstand`. Den ruta finnes bare når `APP_ENV=test`.
 - Lista over sider står i `SIDER` i [`tests/e2e/test_t1.py`](tests/e2e/test_t1.py). Hver story som lager en ny side eller tilstand, legger den inn der (Definition of Done).
 - På Linux trenger nettleseren systembiblioteker: `uv run playwright install --with-deps chromium`.

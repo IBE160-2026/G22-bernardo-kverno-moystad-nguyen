@@ -14,8 +14,13 @@
   samme reglene som `skjema.js` (UX-DR15). Serveren vet ikke skjermbredden.
 - GET `/oppdrag/{id}` viser detaljene etter tilgangsregelen i FR-9. Menyvalget
   er «Mine oppdrag» på eget oppdrag og «Oppdrag» på andres, med
-  `aria-current="true"` (underside).
-- Lista i oversikten kommer i 2.3, fanene i «Mine oppdrag» i 2.4.
+  `aria-current="true"` (underside). Andre enn oppdragsgiveren ser
+  oppdragsgiverblokken med erfaringen (UX-DR25).
+- GET `/` er oversikten med filtrene som GET-parametre: `kategori` (kode eller
+  `alle`), `postnummer` og `vist_postnummer`, som postnummerskjemaet sender
+  (FR-10, FR-11, UX-DR24). Adressen bestemmer fokus, fordi serveren bare ser
+  URL-en. Et ugyldig postnummer gir 200 med feilen ved feltet, og lista står
+  uendret. Fanene i «Mine oppdrag» kommer i 2.4.
 """
 
 from __future__ import annotations
@@ -33,16 +38,19 @@ from app.core import domene
 from app.core.db import hent_db
 from app.core.feil import FinnesIkke, RegelBrudd, feilside
 from app.core.kvittering import sett_kvittering
-from app.core.postnummer import poststed
+from app.core.postnummer import finnes as postnummer_finnes
+from app.core.postnummer import normaliser_postnummer, poststed
 from app.core.render import render, sidetittel, tilbake_url
 from app.core.sesjon import Innlogget, innlogget_bruker
-from app.identity.service import hent_offentlig_bruker
+from app.identity.service import POSTNUMMER_UKJENT, SKRIV_POSTNUMMER, hent_offentlig_bruker
 from app.oppdrag.service import (
     SKRIV_BESKRIVELSE,
     SKRIV_TITTEL,
     VELG_KATEGORI,
+    erfaring,
     hent_for_visning,
     lagt_ut_av,
+    ledige_oppdrag,
     ny_skjema_id,
     opprett_oppdrag,
 )
@@ -72,22 +80,98 @@ GRUPPELENKER = {
 }
 
 
+# ---------- oversikten (FR-10, FR-11) ----------
+
+ALLE = "alle"  # «Alle» i kategorifilteret: ingen kategori, men fokus på lenken
+
+
+def _gyldig_postnummer(verdi: str | None) -> str | None:
+    """Fire sifre som finnes i registeret, ellers `None`."""
+    nummer = normaliser_postnummer(domene.normaliser_tekst(verdi))
+    return nummer if nummer is not None and postnummer_finnes(nummer) else None
+
+
+def _sted(postnummer: str) -> str:
+    """«0571 Oslo». Postnummeret vises alltid med poststed (EXPERIENCE.md § Formater)."""
+    return " ".join(del_ for del_ in (postnummer, poststed(postnummer)) if del_)
+
+
+def antallslinje(antall: int, sted: str, kategori: str | None) -> str:
+    """«4 ledige oppdrag i 0571 Oslo», «1 ledig oppdrag …», med kategori «… i Hage i 0571 Oslo»."""
+    ord_ = "ledig oppdrag" if antall == 1 else "ledige oppdrag"
+    hvor = f"{domene.kategori_tekst(kategori)} i {sted}" if kategori else sted
+    return f"{antall} {ord_} i {hvor}"
+
+
 @router.get("/", name="oppdrag.oversikt", response_class=HTMLResponse)
 def oversikt(
     request: Request,
     innlogget: Innlogget = Depends(innlogget_bruker),
     db: Session = Depends(hent_db),
 ) -> HTMLResponse:
-    """Oversikten for brukerens eget postnummer, med «+ Legg ut oppdrag» (lista kommer i 2.3)."""
-    bruker = hent_offentlig_bruker(db, innlogget.bruker_id)
-    if bruker is None:
-        raise FinnesIkke
+    """Ledige oppdrag i ett postnummer, med kategori- og postnummerfilter (FR-10, FR-11).
+
+    Uten `postnummer` gjelder brukerens eget, fra `Innlogget` (R7). Et tomt
+    eller ukjent postnummer gir feilen ved feltet, og lista viser
+    `vist_postnummer` (det lista viste før innsendingen), eller eget
+    postnummer. En ukjent kategori regnes som «Alle».
+
+    Fokus (UX-DR24, høyst ett `autofocus`): feil i feltet eller innsending fra
+    postnummerskjemaet gir feltet, ellers gir `kategori` i adressen den valgte
+    kategorilenken, ellers flyttes ikke fokus.
+    """
+    sporring = request.query_params
+    eget = innlogget.postnummer or ""
+    kategori_verdi = sporring.get("kategori")
+    kategori = kategori_verdi if kategori_verdi in domene.KATEGORIKODER else None
+
+    skrevet = sporring.get("postnummer")
+    fra_skjema = "vist_postnummer" in sporring
+    postnummer_feil: str | None = None
+    if skrevet is None:
+        vist = eget
+    elif (gyldig := _gyldig_postnummer(skrevet)) is not None:
+        vist = gyldig
+    else:
+        tomt = not domene.normaliser_tekst(skrevet)
+        postnummer_feil = SKRIV_POSTNUMMER if tomt else POSTNUMMER_UKJENT
+        vist = _gyldig_postnummer(sporring.get("vist_postnummer")) or eget
+
+    if postnummer_feil or fra_skjema:
+        fokus = "postnummer"
+    elif kategori_verdi is not None:
+        fokus = "kategori"
+    else:
+        fokus = None
+
+    oppdrag = ledige_oppdrag(
+        db, postnummer=vist, kategori=kategori, bruker_id=innlogget.bruker_id
+    ) if vist else []
+    sted = _sted(vist)
+    overskrift = f"Ledige oppdrag i {sted}"
     return render(
         request,
         "oppdrag/oversikt.html",
-        tittel=f"Ledige oppdrag i {bruker.sted}",
+        tittel=f"{domene.kategori_tekst(kategori)} – {overskrift}" if kategori else overskrift,
         aktiv_meny="oppdrag",
-        sted=bruker.sted,
+        fokus=fokus,
+        feil_i_tittel=postnummer_feil is not None,
+        overskrift=overskrift,
+        sted=sted,
+        kategori=kategori,
+        oppdrag=oppdrag,
+        antallslinje=antallslinje(len(oppdrag), sted, kategori) if oppdrag else None,
+        # Den valgte kategorien og feltet viser til antallslinja, eller ved 0 treff
+        # til første setning i tomtilstanden (EXPERIENCE.md § Filtrene i oversikten).
+        beskrevet_av="antallslinje" if oppdrag else "tom-forste",
+        poststed=poststed(vist) or "",
+        fra_skjema=fra_skjema,
+        # Feltet viser det brukeren skrev, også ved feil (NFR-10).
+        postnummer_verdi=vist if skrevet is None or postnummer_feil is None else skrevet,
+        postnummer_feil=postnummer_feil,
+        vist_postnummer=vist,
+        # Lenkene i filtrene har postnummeret bare når lista viser et annet enn eget.
+        lenkepostnummer=vist if vist != eget else None,
     )
 
 
@@ -223,9 +307,8 @@ def ny(
     db: Session = Depends(hent_db),
 ) -> HTMLResponse:
     """Tomt skjema med postnummeret fra profilen og en ny `skjema_id` (FR-5, AD-2)."""
-    bruker = hent_offentlig_bruker(db, innlogget.bruker_id)
     verdier = {felt: "" for felt in SKJEMAFELT}
-    verdier["postnummer"] = (bruker.postnummer if bruker else None) or ""
+    verdier["postnummer"] = innlogget.postnummer or ""
     verdier["skjema_id"] = ny_skjema_id()
     return _vis_skjema(request, verdier=verdier)
 
@@ -279,10 +362,21 @@ def detaljer(
     innlogget: Innlogget = Depends(innlogget_bruker),
     db: Session = Depends(hent_db),
 ) -> HTMLResponse:
-    """Detaljene for et oppdrag (FR-9). Finnes ikke og ingen tilgang gir samme 404."""
+    """Detaljene for et oppdrag (FR-9). Finnes ikke og ingen tilgang gir samme 404.
+
+    Andre enn oppdragsgiveren får `OffentligBruker` og `Erfaring` for
+    oppdragsgiveren til blokken «Lagt ut av …» (UX-DR25). En slettet
+    oppdragsgiver vises som «Slettet bruker», uten erfaring og lenke (AD-8).
+    """
     if not 1 <= id <= MAKS_ID:
         raise FinnesIkke  # før databasekallet, så store tall ikke gir OverflowError
     oppdrag = hent_for_visning(db, id, innlogget.bruker_id)
+    oppdragsgiver = None
+    oppdragsgivers_erfaring = None
+    if not oppdrag.er_eier:
+        oppdragsgiver = hent_offentlig_bruker(db, oppdrag.oppdragsgiver_id)
+        if oppdragsgiver is not None and not oppdragsgiver.slettet:
+            oppdragsgivers_erfaring = erfaring(db, [oppdragsgiver.id])[oppdragsgiver.id]
     return render(
         request,
         "oppdrag/detaljer.html",
@@ -290,5 +384,7 @@ def detaljer(
         aktiv_meny="mine_oppdrag" if oppdrag.er_eier else "oppdrag",
         underside=True,
         oppdrag=oppdrag,
+        oppdragsgiver=oppdragsgiver,
+        erfaring=oppdragsgivers_erfaring,
         tilbake_url=_tilbake_fra_detaljer(request),
     )

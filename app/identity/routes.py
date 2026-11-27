@@ -4,7 +4,10 @@
   `service.registrer` direkte, fordi både registrering og innlogging ligger i
   `identity`. Ved `RegelBrudd` vises skjemaet igjen med 422, alle feilene og
   verdiene, men uten passordet (NFR-10). Ved suksess settes sesjonscookien, og
-  brukeren sendes til oversikten.
+  brukeren sendes til `trygg_neste(neste)`, som er oversikten når `neste` mangler.
+- `neste` bæres gjennom «Registrer deg» på innloggingssiden, som skjult felt i
+  registreringen (også ved 422) og tilbake med «Logg inn», så en ny bruker fra
+  en delt lenke havner på lenken (retro T-2, FR-1, FR-2).
 
 - GET og POST `/logg-inn` er offentlige. Innloggingen går gjennom
   `Autentisering` (AD-4). `neste` bæres som skjult felt og avgjøres bare av
@@ -14,6 +17,8 @@
 """
 
 from __future__ import annotations
+
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -45,6 +50,12 @@ from app.identity.service import (
 router = APIRouter()
 
 
+def _med_neste(request: Request, rutenavn: str, neste: str) -> str:
+    """Stien til ruta, med `?neste=` når `neste` ikke er `/` (retro T-2)."""
+    sti = str(request.app.url_path_for(rutenavn))
+    return f"{sti}?{urlencode({'neste': neste})}" if neste != "/" else sti
+
+
 def _vis_skjema(
     request: Request,
     *,
@@ -62,6 +73,7 @@ def _vis_skjema(
         fokus="epost",
         status_code=status_code,
         neste=neste,
+        registrer_url=_med_neste(request, "identity.registrer", neste),
         epost=epost,
         feil=feil or [],
         feltfeil=feltfeil or {},
@@ -123,6 +135,7 @@ REGISTRERINGSFELT = ("navn", "epost", "passord", "telefon", "postnummer", "fodse
 def _vis_registrering(
     request: Request,
     *,
+    neste: str,
     verdier: dict[str, str] | None = None,
     feil: list[tuple[str, str]] | None = None,
     status_code: int = 200,
@@ -135,6 +148,8 @@ def _vis_registrering(
         aktiv_meny=None,
         fokus="navn",
         status_code=status_code,
+        neste=neste,
+        logg_inn_url=_med_neste(request, "identity.logg_inn", neste),
         verdier=verdier,
         poststed=poststed(verdier["postnummer"]) or "",
         feil=feil or [],
@@ -147,7 +162,7 @@ def _vis_registrering(
 def vis_registrer(request: Request) -> Response:
     if request.state.innlogget is not None:
         return RedirectResponse("/", status_code=303)
-    return _vis_registrering(request)
+    return _vis_registrering(request, neste=trygg_neste(request.query_params.get("neste")))
 
 
 @router.post("/registrer", name="identity.send_registrer", response_class=HTMLResponse)
@@ -155,20 +170,25 @@ def vis_registrer(request: Request) -> Response:
 def send_registrer(request: Request, db: Session = Depends(hent_db)) -> Response:
     """FR-1: oppretter kontoen og logger inn, eller viser skjemaet igjen med alle feilene.
 
-    Ved feil: 422, verdiene beholdt, passordet tømt og fokus på feiloppsummeringen.
-    Ved suksess: ny sesjon og 303 til oversikten. Innloggede sendes til `/` uten ny konto.
+    Ved feil: 422, verdiene og `neste` beholdt, passordet tømt og fokus på
+    feiloppsummeringen. Ved suksess: ny sesjon og 303 til `trygg_neste(neste)`
+    (retro T-2). Innloggede sendes til `/` uten ny konto.
     """
     if request.state.innlogget is not None:
         return RedirectResponse("/", status_code=303)
     skjema: dict[str, str] = request.state.skjema
+    # `neste` er ikke et registreringsfelt og holdes utenfor `registrer`.
+    neste = trygg_neste(skjema.get("neste"))
     verdier = {felt: skjema.get(felt, "") for felt in REGISTRERINGSFELT}
     try:
         with db.begin():
             nokkel = registrer(db, **verdier)
     except RegelBrudd as brudd:
-        return _vis_registrering(request, verdier=verdier, feil=brudd.feil, status_code=422)
+        return _vis_registrering(
+            request, neste=neste, verdier=verdier, feil=brudd.feil, status_code=422
+        )
 
-    svar = RedirectResponse("/", status_code=303)
+    svar = RedirectResponse(neste, status_code=303)
     sett_sesjonscookie(svar, nokkel, secure=request.app.state.settings.produksjon)
     return svar
 

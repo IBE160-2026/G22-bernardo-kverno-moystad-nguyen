@@ -460,4 +460,5 @@ def test_detaljene_har_ingen_personopplysninger(klient: TestClient, kari, lag_br
     html = klient.get(url).text
     for verdi in sjekk:
         assert verdi not in html, verdi
-    assert "Kari Nordmann" not in html  # oppdragsgiverblokken kommer i 2.3
+    # Fra story 2.3 ser andre oppdragsgiverblokken med navnet, men fortsatt ingen personopplysninger.
+    assert "Lagt ut av Kari Nordmann" in html

@@ -1,7 +1,7 @@
 {% extends "core/base.html" %}
 {% import "core/makroer.html" as m with context %}
 {# Innloggingssiden (FR-2, UX-DR12, UX-DR13, UX-DR22, UX-DR27, UX-DR28).
-   Lenken til registrering står nederst (FR-1). #}
+   Lenken til registrering står nederst (FR-1) og bærer `neste` (retro T-2). #}
 {% block innhold %}
 <div class="skjemabredde">
   <h1>Logg inn</h1>
@@ -35,7 +35,7 @@
   </form>
   <div class="annen-side">
     <p>Har du ikke konto?</p>
-    <a class="tekstknapp" href="{{ url_for('identity.registrer') }}">Registrer deg</a>
+    <a class="tekstknapp" href="{{ registrer_url }}">Registrer deg</a>
   </div>
 </div>
 {% endblock %}
