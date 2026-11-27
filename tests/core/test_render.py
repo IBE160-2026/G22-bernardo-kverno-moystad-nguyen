@@ -1,14 +1,18 @@
-"""Sideramme og stilark (UX-DR1, UX-DR2, UX-DR4, AR-27)."""
+"""Sideramme, filtre, menyvalg på undersider og stilark (UX-DR1, UX-DR2, UX-DR4, AR-27, AD-9, AD-10)."""
 
 from __future__ import annotations
 
 import re
+from datetime import datetime, timezone
 from html.parser import HTMLParser
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
+from starlette.requests import Request
 
-from app.core.render import sidetittel
+from app.core import domene
+from app.core.render import miljo, render, sidetittel
 
 ROT = Path(__file__).resolve().parents[2]
 CSS = ROT / "app" / "core" / "static" / "css" / "app.css"
@@ -122,6 +126,73 @@ def test_autoescape_er_pa() -> None:
     assert miljo.autoescape is True
     mal = miljo.from_string("{{ tekst }}")
     assert mal.render(tekst="<script>alert(1)</script>") == "&lt;script&gt;alert(1)&lt;/script&gt;"
+
+
+# ---------- filtre (AD-9, AD-10) ----------
+
+
+def test_filteret_tidspunkt(sett_na) -> None:
+    """AD-9: `tidspunkt` viser norsk tid med `klokke.na()` som «i dag»."""
+    sett_na(datetime(2026, 11, 24, 12, 0, tzinfo=timezone.utc))
+    mal = miljo.from_string("{{ t|tidspunkt }}")
+    assert mal.render(t=datetime(2026, 11, 25, 6, 0, tzinfo=timezone.utc)) == "I morgen kl. 07:00"
+    assert mal.render(t=datetime(2026, 11, 28, 11, 0, tzinfo=timezone.utc)) == "Lørdag 28. nov. kl. 12:00"
+
+
+@pytest.mark.parametrize(
+    ("belop", "forventet"),
+    [(None, "Uten betaling"), (1, "1\u00a0kr"), (200, "200\u00a0kr"), (1000, "1\u00a0000\u00a0kr"),
+     (10000, "10\u00a0000\u00a0kr")],
+)
+def test_filteret_kr(belop: int | None, forventet: str) -> None:
+    """EXPERIENCE.md § Formater: «1 000 kr» med NBSP som tusenskille og før «kr»."""
+    assert miljo.from_string("{{ b|kr }}").render(b=belop) == forventet
+    assert domene.kr(belop) == forventet
+
+
+def test_filtrene_kategori_tekst_og_status_tekst() -> None:
+    """AD-10: kategori og status lagres som kode og vises bare med filtrene."""
+    mal = miljo.from_string("{{ k|kategori_tekst }} / {{ s|status_tekst }}")
+    assert mal.render(k="baerehjelp-flytting", s="hjelper_valgt") == "Bærehjelp/flytting / Hjelper valgt"
+    assert [domene.kategori_tekst(kode) for kode, _ in domene.KATEGORIER] == [
+        "Snømåking", "Hage", "Bærehjelp/flytting", "Dyrepass", "Teknologihjelp", "Annet",
+    ]
+    assert [domene.status_tekst(kode) for kode, _ in domene.STATUSER] == [
+        "Åpen", "Hjelper valgt", "Utført", "Avbrutt",
+    ]
+    assert all(kode.isascii() for kode in domene.KATEGORIKODER | domene.STATUSKODER)
+    with pytest.raises(ValueError):
+        domene.kategori_tekst("Snømåking")
+    with pytest.raises(ValueError):
+        domene.status_tekst("open")
+
+
+def test_filtrene_escaper_tekst() -> None:
+    """AD-11: filtrene gir vanlig tekst, som autoescape escaper."""
+    assert "<" not in miljo.from_string("{{ b|kr }}").render(b=None)
+
+
+def test_underside_gir_aria_current_true(app) -> None:
+    """UX-DR3: på en underside får menyvalget `aria-current="true"`, og ingen har `"page"`."""
+    request = Request({"type": "http", "method": "GET", "path": "/x", "headers": [], "app": app,
+                       "query_string": b"", "state": {"innlogget": object(), "csrf": "n"}})
+    html = render(request, "core/feil.html", tittel="T", aktiv_meny="profil", underside=True,
+                  overskrift="O").body.decode()
+    assert 'href="/profil" aria-current="true"' in html
+    assert 'aria-current="page"' not in html
+    html = render(request, "core/feil.html", tittel="T", aktiv_meny="profil", overskrift="O").body.decode()
+    assert 'href="/profil" aria-current="page"' in html
+
+
+def test_feiloppsummeringen_lenker_gruppefeil_til_forste_felt() -> None:
+    """UX-DR12: `meldinger(lenker=...)` sender lenken for «nar» til «dato»."""
+    mal = miljo.from_string(
+        '{% import "core/makroer.html" as m with context %}{{ m.meldinger(lenker={"nar": "dato"}) }}'
+    )
+    html = mal.render(feil=[("nar", "Velg et nytt tidspunkt fram i tid"), ("tittel", "Skriv en tittel.")],
+                      kvittering=None, fokusmal="feiloppsummering")
+    assert '<a href="#dato">Velg et nytt tidspunkt fram i tid</a>' in html
+    assert '<a href="#tittel">Skriv en tittel.</a>' in html
 
 
 # ---------- stilark ----------

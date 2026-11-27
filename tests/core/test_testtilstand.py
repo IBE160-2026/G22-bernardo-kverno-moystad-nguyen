@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from fastapi import FastAPI
@@ -12,8 +12,9 @@ from sqlalchemy import func, select
 from app import lag_app
 from app.core import klokke
 from app.core.config import Settings
-from app.identity.models import Bruker, Sesjon
-from app.seed import TESTBRUKERE
+from app.identity.models import Bruker, Innloggingsforsok, Sesjon
+from app.oppdrag.models import Oppdrag
+from app.seed import EKSEMPELOPPDRAG, TESTBRUKERE
 
 from .test_mellomvare import hent_csrf
 
@@ -33,7 +34,10 @@ def antall(db, modell) -> int:
 def test_tilstand_setter_klokke_ki_og_seed(
     app: FastAPI, klient: TestClient, db, lag_bruker, logg_inn_som
 ) -> None:
-    """AD-14: 204, klokka er satt, `ki_utgave` er «feil», bare de seks testbrukerne og ingen sesjoner."""
+    """AD-14: 204, klokka er satt, `ki_utgave` er «feil», testbrukerne og eksempeloppdragene, ingen sesjoner.
+
+    Invariant 1.5 (T-6, story 2.1): også eksempeloppdragene, med `opprettet` fra den faste klokka.
+    """
     nokkel = hent_csrf(klient)
     logg_inn_som(klient, lag_bruker(epost="annen@eksempel.no"))
     assert app.state.ki_utgave == "mock"
@@ -58,6 +62,11 @@ def test_tilstand_setter_klokke_ki_og_seed(
         datetime(2026, 11, 24, 12, 0, tzinfo=timezone.utc)
     }
     assert antall(db, Sesjon) == 0
+    assert antall(db, Innloggingsforsok) == 0
+    assert antall(db, Oppdrag) == len(EKSEMPELOPPDRAG)
+    t0 = datetime(2026, 11, 24, 12, 0, tzinfo=timezone.utc)
+    opprettet = db.scalars(select(Oppdrag.opprettet)).all()
+    assert all(t0 - timedelta(days=30) <= o <= t0 for o in opprettet)
 
 
 def test_tom_klokke_gir_vanlig_klokke(klient: TestClient) -> None:

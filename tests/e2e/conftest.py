@@ -9,6 +9,9 @@
 - `tilstand(page, **felt)` henter CSRF-nøkkelen fra `/logg-inn` og poster
   feltene til `/_test/tilstand`.
 - Før hver test: `seed=1` og fast klokke. Etter hver test og etter økta: vanlig klokke.
+- `logg_inn_som(page, testbruker)` logger inn en av testbrukerne gjennom
+  skjemaet. `fyll_ut_nytt_oppdrag(page, ...)` fyller ut «Nytt oppdrag» med
+  gyldige verdier for den faste klokka (story 2.1).
 
 Kjøres med `uv run playwright install chromium` og `uv run pytest -m e2e`.
 Vanlig `uv run pytest` velger E2E bort (`-m "not e2e"` i pyproject.toml).
@@ -29,20 +32,22 @@ import pytest
 import uvicorn
 from alembic import command
 from playwright.sync_api import Page, expect
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app import lag_app
 from app.core import klokke
 from app.core.config import Settings
 from app.core.db import lag_motor
 from app.identity.models import Bruker
-from app.seed import TESTBRUKERE
+from app.oppdrag.models import Oppdrag
+from app.seed import TESTBRUKERE, Testbruker
 
 from ..conftest import alembic_config
 
 FAST_KLOKKE = "2026-11-24T12:00:00+00:00"
 CSRF_FELT = re.compile(r'name="csrf_token" value="([^"]+)"')
 KARI = next(t for t in TESTBRUKERE if t.epost == "kari@eksempel.no")
+OLA = next(t for t in TESTBRUKERE if t.epost == "ola@eksempel.no")
 
 
 @pytest.fixture(scope="session")
@@ -131,18 +136,55 @@ def nullstill(page: Page, tilstand: Callable[..., None]) -> Iterator[None]:
     klokke.sett_na(None)
 
 
+def _logg_inn(page: Page, testbruker: Testbruker) -> None:
+    page.goto("/logg-inn")
+    page.get_by_label("E-post").fill(testbruker.epost)
+    page.locator("#passord").fill(testbruker.passord)
+    page.get_by_role("button", name="Logg inn").click()
+    expect(page.get_by_role("heading", level=1)).to_contain_text("Ledige oppdrag i")
+
+
+@pytest.fixture
+def logg_inn_som() -> Callable[[Page, Testbruker], None]:
+    """Logger inn en testbruker gjennom skjemaet, slik en bruker gjør (FR-2)."""
+    return _logg_inn
+
+
 @pytest.fixture
 def logg_inn_som_kari() -> Callable[[Page], None]:
-    """Logger inn Kari gjennom skjemaet, slik en bruker gjør (FR-2)."""
+    """Logger inn Kari gjennom skjemaet (FR-2)."""
+    return lambda page: _logg_inn(page, KARI)
 
-    def _logg_inn(page: Page) -> None:
-        page.goto("/logg-inn")
-        page.get_by_label("E-post").fill(KARI.epost)
-        page.locator("#passord").fill(KARI.passord)
-        page.get_by_role("button", name="Logg inn").click()
-        expect(page.get_by_role("heading", level=1)).to_contain_text("Ledige oppdrag i")
 
-    return _logg_inn
+def fyll_ut_nytt_oppdrag(page: Page, *, tittel: str = "Måke snø i innkjørselen") -> None:
+    """Fyller ut «Nytt oppdrag» med gyldige verdier: i morgen kl. 07:00 med den faste klokka, 200 kr."""
+    page.goto("/oppdrag/ny")
+    page.get_by_label("Hva trenger du hjelp til?").fill(
+        "Trenger noen som kan måke snø i innkjørselen min i morgen."
+    )
+    page.get_by_label("Tittel").fill(tittel)
+    page.locator('label[for="kategori-snomaking"]').click()
+    page.get_by_label("Dato").fill("25.11.2026")
+    page.get_by_label("Klokkeslett").fill("07:00")
+    page.get_by_label("Beløp", exact=True).check()
+    page.get_by_label("Beløp i kr").fill("200")
+
+
+@pytest.fixture
+def antall_oppdrag(e2e_database_url: str) -> Callable[[str], int]:
+    """Antall oppdrag med tittelen i E2E-databasen."""
+
+    def _tell(tittel: str) -> int:
+        motor = lag_motor(e2e_database_url)
+        try:
+            with motor.connect() as tilkobling:
+                return tilkobling.scalar(
+                    select(func.count()).select_from(Oppdrag).where(Oppdrag.tittel == tittel)
+                )
+        finally:
+            motor.dispose()
+
+    return _tell
 
 
 @pytest.fixture

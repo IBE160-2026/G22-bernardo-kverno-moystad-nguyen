@@ -1,0 +1,28 @@
+{% extends "core/base.html" %}
+{% import "core/makroer.html" as m with context %}
+{# Detaljene for et oppdrag (FR-9, AD-16, UX-DR14). Malen får bare `OppdragVisning`,
+   aldri ORM-objektet, så telefon, e-post og fødselsdato aldri havner i HTML.
+   Oppdragsgiverblokken kommer i 2.3, handlingene i 2.5 og Epic 3. #}
+{% block innhold %}
+<div class="lesebredde">
+  <a class="tekstknapp" href="{{ tilbake_url }}">Tilbake</a>
+  <h1>{{ oppdrag.tittel }}</h1>
+  {{ m.meldinger() }}
+  <div class="merkelinje">
+    {{ m.statusmerke(oppdrag.status) }}
+    {{ m.kategorimerke(oppdrag.kategori) }}
+  </div>
+  <ul class="fakta">
+    <li class="fakta__tid">
+      <svg class="ikon" aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      <span>{{ oppdrag.tidspunkt|tidspunkt }}</span>
+    </li>
+    <li class="fakta__sted">
+      <svg class="ikon" aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.5-6.1-6.5-11a6.5 6.5 0 0 1 13 0c0 4.9-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></svg>
+      <span>{{ oppdrag.sted }}</span>
+    </li>
+    <li class="pris">{{ oppdrag.belop|kr }}</li>
+  </ul>
+  <p class="beskrivelse">{{ oppdrag.beskrivelse }}</p>
+</div>
+{% endblock %}

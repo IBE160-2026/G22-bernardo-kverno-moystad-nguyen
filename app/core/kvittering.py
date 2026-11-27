@@ -18,6 +18,7 @@ _SALT = "kvittering"
 
 TEKSTER: dict[str, str] = {
     "logget_ut": "Du er logget ut.",
+    "oppdrag_lagt_ut": "Oppdraget er lagt ut.",
 }
 
 

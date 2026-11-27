@@ -23,3 +23,11 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-t-1-herding-epic-1.md`
   summary: Ref-vakten på jobben `deploy` (`if: github.ref == 'refs/heads/main'`) hindrer bare publisering fra en annen branch ved et uhell. Den som kan pushe, kan endre `deploy.yml` på sin branch og starte den med `workflow_dispatch`, og jobben får da `MIGRATION_DATABASE_URL` og `VERCEL_TOKEN`.
   evidence: Funnet i reviewen av T-1 (Blind Hunter). `workflow_dispatch` kjører workflow-fila fra den valgte branchen, og repo-hemmeligheter er tilgjengelige for alle brancher. Fantes før T-1. Ekte vern er et GitHub Environment `production` som bare tillater `main`, med hemmelighetene flyttet dit. Det krever en innstilling i GitHub (admin), som ingen i gruppen har (AR-7). Severity medium, lav sannsynlighet (bare gruppemedlemmer kan pushe).
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-1-legge-ut-oppdrag.md`
+  summary: `endre_status(..., ikke_passert=True)` gir `Konflikt` («Oppdraget er endret. Last siden på nytt.») også når tidspunktet bare er passert. Brukeren får da en melding som ikke hjelper.
+  evidence: Funnet i reviewen av 2.1 (BH). Ingen rute bruker `ikke_passert` ennå. Tas når Epic 3 (3.1 melde interesse, 3.3 velge hjelper) første gang kaller den: skill passert fra endret (egen melding etter FR-8/EXPERIENCE). Severity medium når den tas i bruk.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-1-legge-ut-oppdrag.md`
+  summary: `bytt_ut_eksempeloppdrag` i `app/seed.py` sletter testbrukernes oppdrag med en vanlig `DELETE`. Når `interesse` (Epic 3) får fremmednøkkel til `oppdrag`, feiler `python -m app.seed` nummer to med FK-feil.
+  evidence: Funnet i reviewen av 2.1 (BH), og nevnt av spec-forfatteren. Ingen barnetabell finnes nå. Tas i story 3.1: slett barneradene til testbrukernes oppdrag først. README bør også si tydelig at oppdrag som er laget for hånd på testkontoene, forsvinner.

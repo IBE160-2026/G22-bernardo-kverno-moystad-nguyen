@@ -5,6 +5,13 @@ CSRF-nøkkelen, `tilbake_url`, kvitteringen, aktivt menyvalg og fokusmålet. Aut
 alltid på. Maler ligger i `app/<slice>/templates/<slice>/` og brukes som
 `"identity/logg_inn.html"`. Antallet i menyen kommer i story 2.4.
 
+Undersider (nytt oppdrag, detaljer) gir `underside=True`. Da får menyvalget de
+hører til, `aria-current="true"` i stedet for `"page"` (EXPERIENCE.md § Information
+Architecture).
+
+Filtrene `tidspunkt`, `kr`, `kategori_tekst` og `status_tekst` er eneste måte
+maler formaterer tid, beløp, kategori og status på (AD-9, AD-10).
+
 Fokus (UX-DR27): høyst ett fokusmål per side, i rekkefølgen
 feiloppsummering > kvittering > sidens eget mål (`fokus`). Malen setter
 `autofocus` der `fokusmal` sier.
@@ -12,6 +19,7 @@ feiloppsummering > kvittering > sidens eget mål (`fokus`). Malen setter
 
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
@@ -21,6 +29,7 @@ from starlette.requests import Request
 from starlette.responses import HTMLResponse
 from starlette.templating import Jinja2Templates
 
+from app.core import domene
 from app.core.kvittering import har_kvitteringscookie, les_kvittering, slett_kvittering
 
 APP_MAPPE = Path(__file__).resolve().parents[1]
@@ -50,9 +59,21 @@ def _url_for(context: dict[str, Any], name: str, /, **path_params: Any) -> str:
     return str(request.app.url_path_for(name, **path_params))
 
 
+def _tidspunkt(verdi: datetime) -> str:
+    # Importeres her, fordi `tid` importerer `feil`, som importerer denne modulen.
+    from app.core.tid import vis_tidspunkt
+
+    return vis_tidspunkt(verdi)
+
+
 miljo = _lag_miljo()
 _maler = Jinja2Templates(env=miljo)
 miljo.globals["url_for"] = _url_for
+miljo.globals["KATEGORIER"] = domene.KATEGORIER
+miljo.filters["tidspunkt"] = _tidspunkt
+miljo.filters["kr"] = domene.kr
+miljo.filters["kategori_tekst"] = domene.kategori_tekst
+miljo.filters["status_tekst"] = domene.status_tekst
 
 
 def sidetittel(tittel: str, *, feil: bool = False) -> str:
@@ -107,6 +128,7 @@ def render(
     tittel: str,
     aktiv_meny: str | None,
     fokus: str | None = None,
+    underside: bool = False,
     status_code: int = 200,
     headers: dict[str, str] | None = None,
     **ctx: Any,
@@ -114,6 +136,7 @@ def render(
     """Rendrer en hel side med `base.html`.
 
     `aktiv_meny` er `"oppdrag"`, `"mine_oppdrag"`, `"profil"` eller `None`.
+    `underside=True` gir menyvalget `aria-current="true"` i stedet for `"page"`.
     `feil` (i `ctx`) er en liste med `(felt, melding)` til feiloppsummeringen.
     """
     if aktiv_meny not in MENYVALG:
@@ -124,6 +147,7 @@ def render(
     kontekst.update(
         aktiv_meny=aktiv_meny,
         fokus=fokus,
+        underside=underside,
         fokusmal=fokusmal(
             feil=bool(kontekst["feil"]), kvittering=bool(kontekst["kvittering"]), fokus=fokus
         ),

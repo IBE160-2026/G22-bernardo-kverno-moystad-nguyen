@@ -9,8 +9,10 @@
 - `FinnesIkke` og `IngenTilgang` gir begge 404 og samme side.
 - `RegelBrudd` bærer alle feltfeilene i et skjema, i feltrekkefølge. Ruta
   fanger den og viser skjemaet igjen med 422, alle feilene og verdiene (NFR-10).
-
-`Konflikt` og `Duplikat` kommer i storyene som trenger dem.
+- `Duplikat` betyr at det samme skjemaet allerede er sendt (AD-2, NFR-5).
+  Handleren sender brukeren med 303 til det som finnes, uten kvittering.
+- `Konflikt` betyr at raden er endret av noen andre (AD-2). Den har ingen
+  handler ennå; ruta som trenger den, får en i story 2.5.
 """
 
 from __future__ import annotations
@@ -22,7 +24,7 @@ from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.requests import Request
-from starlette.responses import HTMLResponse, Response
+from starlette.responses import HTMLResponse, RedirectResponse, Response
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from app.core.headere import med_sikkerhetsheadere
@@ -61,6 +63,27 @@ class IngenTilgang(Exception):
     """Brukeren har ikke tilgang. Vises som 404, likt `FinnesIkke`."""
 
 
+class Duplikat(Exception):
+    """Skjemaet er allerede sendt (unik `skjema_id`). Gir 303 til `til_url` (AD-2, NFR-5)."""
+
+    def __init__(self, til_url: str) -> None:
+        super().__init__("duplikat")
+        self.til_url = til_url
+
+
+class Konflikt(Exception):
+    """Raden er endret av en annen forespørsel (AD-2).
+
+    `melding` er en fast tekst, «Oppdraget er endret. Last siden på nytt.», og
+    `til_url` er siden brukeren skal tilbake til.
+    """
+
+    def __init__(self, melding: str, til_url: str) -> None:
+        super().__init__(melding)
+        self.melding = melding
+        self.til_url = til_url
+
+
 def feilside(request: Request, status_code: int, headers: dict[str, str] | None = None) -> HTMLResponse:
     """Vennlig feilside. Rendres uten databasekall."""
     if status_code == 404:
@@ -92,11 +115,17 @@ async def _finnes_ikke(request: Request, exc: Exception) -> Response:
     return feilside(request, 404)
 
 
+async def _duplikat(request: Request, exc: Exception) -> Response:
+    assert isinstance(exc, Duplikat)
+    return RedirectResponse(exc.til_url, status_code=303)
+
+
 def registrer_feilhandlere(app: FastAPI) -> None:
     app.add_exception_handler(StarletteHTTPException, _http_feil)
     app.add_exception_handler(RequestValidationError, _valideringsfeil)
     app.add_exception_handler(FinnesIkke, _finnes_ikke)
     app.add_exception_handler(IngenTilgang, _finnes_ikke)
+    app.add_exception_handler(Duplikat, _duplikat)
 
 
 def logg_uventet_feil(scope: Scope, exc: BaseException) -> None:

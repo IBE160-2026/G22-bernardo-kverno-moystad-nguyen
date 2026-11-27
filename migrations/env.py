@@ -12,6 +12,7 @@ from logging.config import fileConfig
 from alembic import context
 
 import app.identity.models  # noqa: F401  (registrerer tabellene i metadataen)
+import app.oppdrag.models  # noqa: F401
 from app.core.config import hent_settings
 from app.core.db import Base, lag_motor
 

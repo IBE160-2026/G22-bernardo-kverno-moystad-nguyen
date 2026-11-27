@@ -707,6 +707,287 @@ textarea[aria-invalid="true"] {
   margin: 0 0 var(--spacing-5);
 }
 
+/* ---------- Skjult tekst for skjermleser ---------- */
+.skjult-tekst {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* «+ Legg ut oppdrag» over overskriften i oversikten (UX-DR10). */
+.hovedhandling {
+  margin: 0 0 var(--spacing-5);
+}
+
+/* ---------- Nytt oppdrag (FR-5, UX-DR11, UX-DR13) ---------- */
+textarea {
+  min-height: 7.5rem;
+  padding: var(--spacing-3) 0.875rem;
+  resize: vertical;
+}
+
+.teller {
+  margin: 0;
+  color: var(--color-ink-muted);
+}
+
+/* Feltgruppe med fieldset og legend: «Kategori», «Når?» og «Hva tilbyr du?». */
+.gruppe {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.gruppe__etikett {
+  padding: 0;
+  font-size: var(--text-label);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-label);
+}
+
+.gruppe > * + * {
+  margin-top: var(--spacing-2);
+}
+
+/* Kategoriknapper i skjemaet: radiogruppe med samme utseende som filteret.
+ * Valgt: 3 px kant, hake og fet tekst, aldri bare farge (DESIGN.md § category-button). */
+.kategorivalg {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-2);
+}
+
+.kategoriknapp {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-1);
+  min-height: 5rem;
+  padding: var(--spacing-2);
+  background: var(--color-surface-card);
+  color: var(--color-ink);
+  border: 1px solid var(--color-border);
+  border-radius: var(--rounded-md);
+  font-size: var(--text-option);
+  font-weight: var(--weight-regular);
+  line-height: var(--leading-option);
+  text-align: center;
+  cursor: pointer;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+}
+
+.kategoriknapp:has(:checked) {
+  padding: calc(var(--spacing-2) - 2px);
+  border: 3px solid var(--color-primary);
+  font-weight: var(--weight-bold);
+}
+
+.kategoriknapp:has(:focus-visible) {
+  outline: var(--focus-width) solid var(--color-focus);
+  outline-offset: var(--focus-offset);
+}
+
+.kategoriknapp .ikon {
+  margin-top: 0;
+}
+
+.kategoriknapp__tekst {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.kategoriknapp__hake {
+  display: none;
+}
+
+.kategoriknapp:has(:checked) .kategoriknapp__hake {
+  display: inline-block;
+}
+
+@media (min-width: 48em) {
+  .kategorivalg {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* «Når?»: Dato og Klokkeslett under hverandre under 768 px, side om side fra 768 px. */
+.nar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.felt--klokkeslett {
+  max-width: 7em;
+}
+
+@media (min-width: 48em) {
+  .nar {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: var(--spacing-4) var(--spacing-3);
+  }
+}
+
+/* «Hva tilbyr du?»: radioknapper med 48 px trykkflate, «Beløp i kr» innrykket under «Beløp». */
+.radiovalg {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.radiovalg input[type="radio"] {
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: 0;
+  accent-color: var(--color-primary);
+}
+
+.radiovalg label {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  min-height: var(--spacing-touch-target);
+  font-weight: var(--weight-regular);
+  cursor: pointer;
+}
+
+.belopfelt {
+  margin-left: 2.25rem;
+}
+
+.belopfelt__rad {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.belopfelt__rad input {
+  width: 8em;
+}
+
+/* ---------- Detaljer (FR-9, UX-DR14) ---------- */
+.merkelinje {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin: 0 0 var(--spacing-4);
+}
+
+.statusmerke,
+.kategorimerke {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 12px;
+  border-radius: var(--rounded-full);
+  font-size: var(--text-meta);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-meta);
+}
+
+.statusmerke .ikon,
+.kategorimerke .ikon {
+  margin-top: 0;
+}
+
+.statusmerke {
+  border: 1.5px solid currentColor;
+}
+
+.statusmerke--apen {
+  background: var(--color-status-open-bg);
+  color: var(--color-status-open-fg);
+  border-color: var(--color-status-open-border);
+}
+
+.statusmerke--hjelper_valgt {
+  background: var(--color-status-chosen-bg);
+  color: var(--color-status-chosen-fg);
+  border-color: var(--color-status-chosen-border);
+}
+
+.statusmerke--utfort {
+  background: var(--color-status-done-bg);
+  color: var(--color-status-done-fg);
+  border-color: var(--color-status-done-border);
+}
+
+.statusmerke--avbrutt {
+  background: var(--color-status-cancelled-bg);
+  color: var(--color-status-cancelled-fg);
+  border-color: var(--color-status-cancelled-border);
+}
+
+.kategorimerke {
+  background: var(--color-chip-bg);
+  color: var(--color-chip-fg);
+  border: 1px solid var(--color-chip-border);
+}
+
+.fakta {
+  display: grid;
+  gap: var(--spacing-2);
+  margin: 0 0 var(--spacing-5);
+  padding: 0;
+  list-style: none;
+}
+
+.fakta li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+}
+
+.fakta__tid {
+  font-weight: var(--weight-bold);
+}
+
+.fakta__sted {
+  color: var(--color-ink-muted);
+}
+
+.pris {
+  font-size: var(--text-price);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-price);
+}
+
+/* Linjeskiftene brukeren skrev, beholdes; teksten vises alltid som tekst (AD-11). */
+.beskrivelse {
+  white-space: pre-line;
+}
+
+/* «Mine oppdrag» før story 2.4: titlene som lenker med 48 px trykkflate. */
+.oppdragsliste {
+  margin: 0;
+  padding-left: var(--spacing-5);
+}
+
+.oppdragsliste a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--spacing-touch-target);
+}
+
+.tomtilstand__lenke {
+  margin-left: 0;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   html:focus-within {
     scroll-behavior: smooth;
