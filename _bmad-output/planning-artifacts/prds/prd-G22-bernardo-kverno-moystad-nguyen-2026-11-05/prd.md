@@ -2,7 +2,7 @@
 title: PRD – Nabolagshelten
 status: final
 created: 2026-11-05
-updated: 2026-11-24
+updated: 2026-11-27
 ---
 
 # PRD – Nabolagshelten
@@ -10,7 +10,7 @@ updated: 2026-11-24
 | | |
 |---|---|
 | **Gruppe** | G22 – Bernardo, Kverno, Møystad, Nguyen |
-| **Versjon** | 1.2.1 (ferdig) |
+| **Versjon** | 1.3 (ferdig) |
 | **Bygger på** | [Product brief v2.2](../../product-brief-nabolagshelten.md) (= «proposal» i sensorveiledningen), [skisser av skjermbilder](../../skisser-skjermbilder.md) (erstattet av UX-spinene) |
 | **Avstemt mot (v1.2)** | UX-spinene [DESIGN.md](../../ux-designs/ux-G22-bernardo-kverno-moystad-nguyen-2026-11-07/DESIGN.md) og [EXPERIENCE.md](../../ux-designs/ux-G22-bernardo-kverno-moystad-nguyen-2026-11-07/EXPERIENCE.md), [arkitekturspinen](../../architecture/architecture-G22-bernardo-kverno-moystad-nguyen-2026-11-08/ARCHITECTURE-SPINE.md) |
 
@@ -194,6 +194,7 @@ En innlogget bruker kan slette sin egen konto etter å ha bekreftet det med pass
 | Egne oppdrag med status Hjelper valgt | Settes til Avbrutt, slik at hjelperen ser at oppdraget ikke blir noe av (FR-7). Brukeren vises som «Slettet bruker», og telefonnumrene skjules |
 | Egne oppdrag som allerede hadde status Avbrutt | Slettes |
 | Oppdrag med status Utført (som oppdragsgiver eller hjelper) | Beholdes; brukeren vises som «Slettet bruker», telefonnummeret vises ikke lenger, og oppdraget teller fortsatt i den andre partens profil |
+| Bilder på egne oppdrag som beholdes (Utført, eller Avbrutt fra Hjelper valgt) | Slettes (FR-27). Oppdrag som slettes, tar bildet med seg |
 | Interesser brukeren har meldt | Slettes |
 | Brukeren er valgt hjelper på oppdrag med status Hjelper valgt | Oppdraget går tilbake til Åpen som i FR-17, og oppdragsgiveren ser merket «Hjelperen trakk seg» (FR-18) |
 | Brukeren er valgt hjelper på oppdrag med status Avbrutt | Brukeren vises som «Slettet bruker» |
@@ -256,10 +257,26 @@ Hvem som ser detaljene i et oppdrag, avhenger av status og rolle.
 **Sporing:** UJ-2 · R9 · — · **Prioritet:** Må
 
 **Konsekvenser (testbare):**
-- Detaljene viser alle feltene i oppdraget og status. De viser også oppdragsgiverens navn, antall fullførte oppdrag og gjennomsnittlig vurdering (som i FR-21), med lenke til oppdragsgiverens profil.
+- Detaljene viser alle feltene i oppdraget, bildet med bildeteksten hvis det finnes (FR-27), og status. De viser også oppdragsgiverens navn, antall fullførte oppdrag og gjennomsnittlig vurdering (som i FR-21), med lenke til oppdragsgiverens profil.
 - Status Åpen: alle innloggede ser detaljene, men bare oppdragsgiveren ser lista over interesserte.
 - Andre statuser: bare oppdragsgiveren og valgt hjelper ser detaljene. Forespørsler fra andre brukere avvises.
 - Interesserte som ikke ble valgt, ser bare tittel og status under «Mine oppdrag» (FR-18).
+
+#### FR-27: Bilde av oppdraget
+Oppdragsgiveren kan legge ved ett bilde som viser oppdraget.
+**Sporing:** UJ-1, UJ-2 · — · — (tillegg fra Heidi 2026-11-27, §9.2) · **Prioritet:** Bør
+
+**Konsekvenser (testbare):**
+- Bildet er valgfritt, både når oppdraget legges ut (FR-5) og når det redigeres (FR-6). Ved redigering kan bildet byttes eller fjernes. Endring av bildet setter ikke «Meldt før endring».
+- Gyldig bilde: JPEG, PNG eller WebP, høyst 4 MB og høyst 40 megapiksler. Formatet avgjøres av innholdet i fila, ikke av navnet. Ugyldig fil avvises med melding ved feltet, og ingenting lagres.
+- Når et bilde er valgt, er «Hva viser bildet?» påkrevd (3–120 tegn, samme normalisering som andre tekstfelt). Teksten er bildets alternative tekst.
+- Bildet lagres uten metadata (EXIF, også GPS-posisjon) og skaleres ned til høyst 1 600 px på den lengste siden.
+- Hjelpeteksten ved bildet er «Ikke vis husnummer, bilskilt, navn eller ansikter.» (NFR-9).
+- Bildet vises i detaljene (FR-9) og øverst på kortet i oversikten (FR-10). Oppdrag uten bilde vises som før.
+- Bildet kan bare hentes av den som kan se detaljene (FR-9). Andre får samme svar som for et oppdrag som ikke finnes.
+- Finner serveren feil i andre felt, beholdes et gyldig bilde, og brukeren kan fjerne det.
+
+**Kjent begrensning:** Uten JavaScript kan et bilde over cirka 4,5 MB stoppes av Vercel før appen ser det. Da vises Vercels feilside. Med JavaScript skaleres bildet ned før innsending.
 
 ### 4.3 Finne oppdrag
 
@@ -272,7 +289,7 @@ En innlogget bruker ser som standard åpne oppdrag i sitt eget postnummer.
 **Konsekvenser (testbare):**
 - Bare oppdrag med status Åpen der tidspunktet ikke er passert, vises.
 - Sortering er etter tidspunkt, tidligste først. Oppdrag med samme tidspunkt sorteres etter når de ble lagt ut, eldste først.
-- Hvert oppdrag i oversikten viser tittel, kategori, tidspunkt og godtgjørelse.
+- Hvert oppdrag i oversikten viser tittel, kategori, tidspunkt og godtgjørelse, og bildet øverst hvis oppdraget har et (FR-27).
 - Brukerens egne oppdrag vises ikke i oversikten. De finnes under «Mine oppdrag» (FR-18).
 - Ingen treff gir en tomtilstand med forklaring og forslag (for eksempel å velge et annet postnummer).
 
@@ -611,10 +628,11 @@ All tekst i appen er på norsk bokmål, med enkelt språk.
 *Testes ved:* Manuell gjennomgang av kjerneflyten mot ordlisten, dokumentert.
 
 ### NFR-9: Personvern
-Appen lagrer bare navn, e-post, hashet passord, telefonnummer, postnummer, fødselsdato og innhold brukeren selv legger inn, pluss data appen trenger for å virke (innlogginger, mislykkede innloggingsforsøk, antall KI-forslag og tidligere valgte hjelpere). Appen ber aldri om eksakt adresse.
+Appen lagrer bare navn, e-post, hashet passord, telefonnummer, postnummer, fødselsdato og innhold brukeren selv legger inn (også bilde av oppdraget, lagret uten metadata), pluss data appen trenger for å virke (innlogginger, mislykkede innloggingsforsøk, antall KI-forslag og tidligere valgte hjelpere). Appen ber aldri om eksakt adresse.
 **Sporing:** briefen: «Personvern og sikkerhet i v1» · **Prioritet:** Må
 
 - Hjelpeteksten ved beskrivelsesfeltet ber brukeren ikke skrive adresse eller telefonnummer (FR-5).
+- Bilder lagres uten EXIF og GPS-posisjon, og hjelpeteksten ved bildet ber brukeren ikke vise husnummer, bilskilt, navn eller ansikter (FR-27).
 - Eksempeldata inneholder ingen ekte personopplysninger.
 
 *Testes ved:* Gjennomgang av databaseskjemaet mot lista over, dokumentert.
@@ -635,7 +653,9 @@ Etter innlogging har appen en fast meny med tre valg: Oppdrag, Mine oppdrag og P
 Tekst fra brukere og fra KI-tjenesten vises alltid som tekst, aldri som HTML, og handlinger som endrer data, kan ikke utløses fra andre nettsteder.
 **Sporing:** sensorveiledningen, kriterium 3 · **Prioritet:** Må
 
-*Testes ved:* En automatisk test sjekker at `<script>alert(1)</script>` i tittel, beskrivelse, melding, kommentar og «om meg» vises som tekst. Mekanismen mot forespørsler fra andre nettsteder velges i arkitekturen og testes der.
+- Opplastede filer åpnes og kodes om på serveren, og bare JPEG, PNG og WebP godtas (FR-27, AD-18).
+
+*Testes ved:* En automatisk test sjekker at `<script>alert(1)</script>` i tittel, beskrivelse, bildetekst, melding, kommentar og «om meg» vises som tekst. Mekanismen mot forespørsler fra andre nettsteder velges i arkitekturen og testes der.
 
 ## 6. Omfang og avgrensning
 
@@ -646,12 +666,13 @@ Alle FR-er og NFR-er i dette dokumentet er med i v1, prioritert slik:
 | Prioritet | Krav | Betyr |
 |---|---|---|
 | Må | FR-1–FR-21, NFR-1–NFR-12 | Kjerneflyten og kvalitetskravene. Bygges først; v1 er ikke ferdig uten dem. |
-| Bør | FR-22, FR-23–FR-26 | Bygges når kjerneflyten er ferdig og stabil. |
+| Bør | FR-22, FR-23–FR-26, FR-27 | Bygges når kjerneflyten er ferdig og stabil. |
 
 Blir tiden for knapp, kuttes Bør-krav før noe Må-krav, og hvert kutt føres i endringsloggen med begrunnelse. Et kutt endrer andre krav slik:
 
 - **Kuttes FR-22:** Ingen bruker får skrevet «om meg», og postnummer og telefonnummer kan ikke endres etter registrering. «Om meg» og redigering av profil tas da ut av FR-21, NFR-12 og SM-5.
 - **Kuttes FR-23–FR-26:** Appen har ingen KI-funksjon. R12 og SK10 gjelder ikke, NFR-5 og SM-2 gjelder da R1–R11 og R13, og SM-4 måler UJ-1 steg 1 og 3. Avviket føres i §9.2.
+- **Kuttes FR-27:** Oppdrag har ikke bilde. FR-4, FR-9, FR-10, NFR-9 og NFR-12 mister linjene om bildet, og «Hva viser bildet?» og bildet tas ut av SM-5.
 
 ### 6.2 Utsatt til senere trinn
 
@@ -673,13 +694,13 @@ Nabolagshelten har ingen betaling i appen. Den skal heller ikke være en jobbpor
 ## 7. Suksessmål
 
 **Primære**
-- **SM-1:** Alle krav FR-1–FR-26 og NFR-1–NFR-12 er dekket av akseptansekriterier i stories, og testene for dem passerer. Bør-krav som er kuttet etter §6.1, er unntatt. Dermed er også suksesskriteriene i briefen (SK1–SK10) oppfylt, med avvikene i §9.2 og bortsett fra det som er kuttet.
+- **SM-1:** Alle krav FR-1–FR-27 og NFR-1–NFR-12 er dekket av akseptansekriterier i stories, og testene for dem passerer. Bør-krav som er kuttet etter §6.1, er unntatt. Dermed er også suksesskriteriene i briefen (SK1–SK10) oppfylt, med avvikene i §9.2 og bortsett fra det som er kuttet.
 - **SM-2:** Hver regel R1–R13 har minst én automatisk test som passerer, unntatt R12 hvis KI-forslag er kuttet (§6.1). Validerer NFR-5.
 - **SM-3:** En person utenfor gruppen får appen i gang ved å følge README, uten hjelp. Validerer NFR-1, NFR-2.
 
 **Sekundære**
 - **SM-4:** I en brukertest med minst to testpersoner utenfor gruppen, der minst én er over 60 år eller lite vant med apper, klarer hver av dem å legge ut et oppdrag (UJ-1, steg 1–3) på under to minutter på mobil eller nettbrett. Tiden måles fra testpersonen trykker «Legg ut oppdrag» til oppdraget er publisert. Enhet, nettleser og tid dokumenteres som manuell test. Validerer FR-5, NFR-6, NFR-7.
-- **SM-5:** Automatisk tilgjengelighetstest (axe) finner ingen feil på nivåene «serious» eller «critical» på sidene og tilstandene i test T1 i [EXPERIENCE.md § Accessibility Floor](../../ux-designs/ux-G22-bernardo-kverno-moystad-nguyen-2026-11-07/EXPERIENCE.md#accessibility-floor). Lista dekker minst de fem viktigste skjermbildene i briefen (oppdragsoversikt, nytt oppdrag, oppdragsdetaljer, Mine oppdrag og profil), registrering, innlogging, redigering av profil, et skjema med valideringsfeil og hver bekreftelsesdialog, og i tillegg tomme tilstander (oversikt uten treff, tom fane i «Mine oppdrag» og detaljer uten interesserte), KI-forslag og KI-feil, tilbakemelding, feilside og slettet bruker. Den samme testen sjekker at det ikke er vannrett rulling ved 320 px. Validerer NFR-7, NFR-11.
+- **SM-5:** Automatisk tilgjengelighetstest (axe) finner ingen feil på nivåene «serious» eller «critical» på sidene og tilstandene i test T1 i [EXPERIENCE.md § Accessibility Floor](../../ux-designs/ux-G22-bernardo-kverno-moystad-nguyen-2026-11-07/EXPERIENCE.md#accessibility-floor). Lista dekker minst de fem viktigste skjermbildene i briefen (oppdragsoversikt, nytt oppdrag, oppdragsdetaljer, Mine oppdrag og profil), registrering, innlogging, redigering av profil, et skjema med valideringsfeil og hver bekreftelsesdialog, og i tillegg tomme tilstander (oversikt uten treff, tom fane i «Mine oppdrag» og detaljer uten interesserte), KI-forslag og KI-feil, tilbakemelding, oversikt og detaljer med bilde, feilside og slettet bruker. Den samme testen sjekker at det ikke er vannrett rulling ved 320 px. Validerer NFR-7, NFR-11.
 
 **Motmål (skal ikke optimeres)**
 - **SM-C1:** Andel oppdrag laget med KI-forslag. Skal ikke presses opp; KI-en er et valgfritt hjelpemiddel, og manuell utfylling skal være like enkel. Måles ikke, men brukes som retningslinje i UX-steget. Motvekt til SM-4.
@@ -718,6 +739,7 @@ Ingen åpne spørsmål blokkerer stories. Alle punktene under er løst (v1.2): U
 | R11 | 18-årsgrense | FR-1 |
 | R12 | KI endrer aldri oppdrag; bare beskrivelsen sendes | FR-23, FR-24, FR-25 |
 | R13 | Bare brukeren selv sletter konto | FR-4 |
+| — | Bilde av oppdraget: tillegg fra produkteier, ingen regel i briefen (§9.2) | FR-27 |
 
 | Suksesskriterium i briefen | Krav |
 |---|---|
@@ -784,6 +806,7 @@ Briefen v2.2 avgjør ikke alt. Tabellen viser hvor PRD-en presiserer, avviker el
 | Prioritering | Ikke sagt | Må / Bør (§6.1) | Fristen; KI er valgfritt ifølge faglæreren |
 | Universell utforming, robusthet og repo | Delvis | WCAG 2.1 AA (NFR-7), robust mot ugyldig input (NFR-10), navigasjon (NFR-11), `.gitignore` og testkommando i README (NFR-1, NFR-3) | Fra sensorveiledningen |
 | Beskyttelse av `main` | Ikke sagt | **Avvik fra arkitekturen (2026-11-24):** `main` kan ikke beskyttes teknisk. README har regelen i stedet: all kode går via PR med grønn CI før merge, mens logger (`.logs/`) og `sprint-status.yaml` kan pushes direkte til `main` | Ingen i gruppen har admin-rettighet på repoet i organisasjonen IBE160-2026, så GitHub sin beskyttelse av grener kan ikke slås på (beslutning av Heidi, story 1.1) |
+| Bilde av oppdraget | Ikke nevnt | **Tillegg (2026-11-27):** ett valgfritt bilde per oppdrag med påkrevd bildetekst, vist i oversikten og detaljene. Lagret uten metadata. Kjent begrensning for store bilder uten JavaScript (FR-27) | Gjør det lettere for hjelperen å anslå jobben. Ønsket av Heidi under Epic 2. Bør, så kjerneflyten avhenger ikke av det |
 
 ## Endringslogg
 
@@ -796,3 +819,4 @@ Briefen v2.2 avgjør ikke alt. Tabellen viser hvor PRD-en presiserer, avviker el
 | 2026-11-07 | 1.1 | Rettet etter review med fire linser (`review-prd-v1.0-2026-11-07.md`) og rubrikk-review av utkastet (`review-rubric-v1.1.md`). **Produktvalg:** oppdragsgiveren kan markere Utført når tidspunktet er passert (FR-19, avvik fra R7); interesser meldt før en endring merkes (FR-6); prioritet Må/Bør med følger av kutt (§6.1); telefonnummer kan endres (FR-22); postnummerliste med poststed; rolle på tilbakemeldinger (FR-21); passord ved sletting (FR-4). **Hull tettet:** statusmodellen og «Mine oppdrag» (FR-15, FR-7, FR-12, FR-17, FR-18); sletting (FR-4); felles regler (§4.0); sikkerhet (FR-2, FR-3, FR-23, ny NFR-12); KI-svar og mock-regler (FR-25, FR-26); egen profil (FR-21); eksempeldata med relative datoer (NFR-2); kjente begrensninger for profil og glemt passord. **Struktur:** sporing og prioritet per krav, «Testes ved» i alle NFR-er, ny NFR-11 Navigasjon, sporingen samlet i §9.1, §6 og §7 slått sammen (§8–§10 er nå §7–§9). |
 | 2026-11-23 | 1.2 | Avstemt mot UX-spinene og arkitekturspinen. **FR-18:** nytt merke «Velg hjelper»; flere merker på samme oppdrag vises alle; gruppene «Trenger handling», «Pågår» og «Ferdige» i begge faner; hjelper-fanen grupperes etter brukerens egen situasjon, ikke oppdragets status (endrer v1.1); tall ved «Mine oppdrag» i menyen (også NFR-11). **NFR-7:** flyter om ved 320 px (WCAG 1.4.10), og «Testes ved» viser til T1–T5 i EXPERIENCE.md. **SM-5:** viser til test T1 i EXPERIENCE.md, med flere tilstander (tomme tilstander, KI-feil, feilside, slettet bruker) og sjekk ved 320 px. **FR-5:** tid angis og vises i norsk tid, med testbare regler ved sommertid; lagringen avgjøres i arkitekturen (AD-9). **Etter rubrikk-review (`review-rubric-v1.2.md`):** «Merke» og «Situasjon» i ordlisten (§3), og UJ-2 bruker «står som» om situasjoner; merket «Oppdraget er endret …» vises bare ved «Venter på svar» (FR-6, FR-18); situasjonen «Tidspunktet er passert» står under «Ferdige»; avveiningen for «Hjelperen trakk seg» er skrevet inn. §8 markert som løst, ny rad i §9.2. |
 | 2026-11-24 | 1.2.1 | To rader i §9.2 fra story 1.1: postnumre bare for gateadresser (Brings kategori G og B), og regelen om PR med grønn CI i README i stedet for teknisk beskyttelse av `main`. |
+| 2026-11-27 | 1.3 | Ny FR-27 Bilde av oppdraget (Bør), fra Heidi under Epic 2. Linjer i FR-4, FR-9, FR-10, NFR-9, NFR-12, §6.1, SM-1, SM-5, §9.1 og §9.2. Se [sprint-change-proposal-2026-11-27.md](../../sprint-change-proposal-2026-11-27.md). |
