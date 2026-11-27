@@ -1,9 +1,16 @@
 """Rendring av sider og fragmenter med ett Jinja-miljø (AR-27, AD-11).
 
 Alle sider rendres med `render`, som legger til tittel, innlogget bruker,
-CSRF-nøkkelen, `tilbake_url`, kvitteringen, aktivt menyvalg og fokusmålet. Autoescape er
+CSRF-nøkkelen, `tilbake_url`, kvitteringen, aktivt menyvalg, fokusmålet og
+antallet ved «Mine oppdrag» i menyen (`meny_antall`). Autoescape er
 alltid på. Maler ligger i `app/<slice>/templates/<slice>/` og brukes som
-`"identity/logg_inn.html"`. Antallet i menyen kommer i story 2.4.
+`"identity/logg_inn.html"`.
+
+Antallet (NFR-11, AD-3) kommer fra menykroken `(db, bruker_id) -> int`, som
+`lag_app()` legger i `app.state.menykrok`. Kroken kalles bare når noen er
+innlogget, med forespørselens sesjon (`request.state.db`, fra `hent_db`), eller
+med en kort egen sesjon når ruta ikke har en. Feilsider (`med_menytall=False`)
+og `render_fragment` kaller den aldri.
 
 Undersider (nytt oppdrag, detaljer) gir `underside=True`. Da får menyvalget de
 hører til, `aria-current="true"` i stedet for `"page"` (EXPERIENCE.md § Information
@@ -151,6 +158,23 @@ def _kontekst(
     }
 
 
+def meny_antall(request: Request) -> int:
+    """Tallet ved «Mine oppdrag» fra menykroken, eller 0 uten innlogging (NFR-11, AD-3).
+
+    Bruker forespørselens sesjon når ruta har en (`request.state.db`), ellers en
+    kort egen sesjon fra `app.state.sesjonsfabrikk`.
+    """
+    innlogget = getattr(request.state, "innlogget", None)
+    if innlogget is None:
+        return 0
+    krok = request.app.state.menykrok
+    db = getattr(request.state, "db", None)
+    if db is not None:
+        return krok(db, innlogget.bruker_id)
+    with request.app.state.sesjonsfabrikk() as egen:
+        return krok(egen, innlogget.bruker_id)
+
+
 def render(
     request: Request,
     mal: str,
@@ -160,6 +184,7 @@ def render(
     fokus: str | None = None,
     underside: bool = False,
     feil_i_tittel: bool = False,
+    med_menytall: bool = True,
     status_code: int = 200,
     headers: dict[str, str] | None = None,
     **ctx: Any,
@@ -171,6 +196,8 @@ def render(
     `feil` (i `ctx`) er en liste med `(felt, melding)` til feiloppsummeringen.
     `feil_i_tittel=True` gir «Feil: » i `<title>` uten feiloppsummering, for en
     feil som bare vises ved feltet (filteret i oversikten, FR-11).
+    `med_menytall=False` (feilsider) gir `meny_antall=0` uten å kalle menykroken,
+    så feilsider rendres uten databasekall.
     """
     if aktiv_meny not in MENYVALG:
         raise ValueError(f"Ukjent menyvalg: {aktiv_meny!r}")
@@ -179,6 +206,7 @@ def render(
     kontekst.setdefault("kvittering", les_kvittering(request))
     kontekst.update(
         aktiv_meny=aktiv_meny,
+        meny_antall=meny_antall(request) if med_menytall else 0,
         fokus=fokus,
         underside=underside,
         fokusmal=fokusmal(
@@ -197,6 +225,6 @@ def render(
 def render_fragment(
     request: Request, mal: str, *, status_code: int = 200, **ctx: Any
 ) -> HTMLResponse:
-    """Rendrer et HTML-fragment uten sideramme (AD-15)."""
+    """Rendrer et HTML-fragment uten sideramme (AD-15). Kaller aldri menykroken."""
     kontekst = {"csrf_token": getattr(request.state, "csrf", ""), **ctx}
     return _maler.TemplateResponse(request, mal, kontekst, status_code=status_code)

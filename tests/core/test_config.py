@@ -143,6 +143,22 @@ def test_lag_app_uten_autentisering_stopper() -> None:
         lag_app(autentisering=object())
 
 
+@pytest.mark.parametrize("menykrok", [None, object(), 1], ids=["none", "objekt", "tall"])
+def test_lag_app_uten_menykrok_stopper(caplog: pytest.LogCaptureFixture, menykrok) -> None:
+    """AD-1, AD-3: lag_app() nekter å starte uten en menykrok som kan kalles."""
+    caplog.set_level(logging.CRITICAL, logger="app")
+    with pytest.raises(KonfigFeil, match="menykroken"):
+        lag_app(menykrok=menykrok)
+    assert "menykroken" in caplog.text
+
+
+def test_lag_app_kobler_inn_antall_trenger_handling() -> None:
+    """AD-1: standardkroken er `antall_trenger_handling` fra oppdrag, lagret i `app.state`."""
+    from app.oppdrag.service import antall_trenger_handling
+
+    assert lag_app().state.menykrok is antall_trenger_handling
+
+
 def test_ren_start_seed_og_oppstart_uten_env(
     monkeypatch: pytest.MonkeyPatch, tmp_path
 ) -> None:

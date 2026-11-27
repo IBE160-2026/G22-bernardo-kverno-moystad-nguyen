@@ -1,22 +1,53 @@
 {% extends "core/base.html" %}
 {% import "core/makroer.html" as m with context %}
-{# «Mine oppdrag», grunnversjon (FR-18 kommer i 2.4). Uten oppdrag: tomtilstanden med
-   lenken «Legg ut oppdrag». Ellers en enkel liste med titlene, nyeste først.
-   Fanene, gruppene og merkene kommer i story 2.4. #}
+{# «Mine oppdrag» (FR-8, FR-18, UX-DR9, UX-DR10, UX-DR21, UX-DR26, AD-16). Malen får bare
+   `OppdragRad`. Linja «N oppdrag trenger at du gjør noe.» forklarer tallet i menyen og
+   bruker samme tall (`meny_antall`); ved 0 vises den ikke.
+   «Oppdrag jeg har lagt ut» står som h2 til fanene kommer i 3.1. Hver rad er en lenkerad
+   (DESIGN.md § list-row): tittelen er eneste lenke, og navnet er bare tittelen. Lenken har
+   aria-describedby til merkelinja og tidspunktet, så skjermleseren leser «Status: …»,
+   «Må gjøres: …» og tidspunktet.
+   Lenkens ::after dekker `listerad__hoved`, og pila › er aria-hidden. I 2.5 kommer
+   `listerad__handlinger` med snarveiene etter `listerad__hoved`, utenfor lenken.
+   Uten oppdrag: tomtilstanden med lenken «Legg ut oppdrag». #}
 {% block innhold %}
-<h1>Mine oppdrag</h1>
-{{ m.meldinger() }}
-{% if oppdrag %}
-<ul class="oppdragsliste">
-  {% for rad in oppdrag %}
-  <li><a href="{{ url_for('oppdrag.detaljer', id=rad.id) }}">{{ rad.tittel }}</a></li>
-  {% endfor %}
-</ul>
-{% else %}
-<div class="tomtilstand">
-  <svg class="tomtilstand__ikon" aria-hidden="true" focusable="false" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2.8h6V4M9 10h6M9 14h6"/></svg>
-  <p>Du har ikke lagt ut noen oppdrag.</p>
-  <a class="tekstknapp tomtilstand__lenke" href="{{ url_for('oppdrag.ny') }}">Legg ut oppdrag</a>
+<div class="lesebredde">
+  <h1>Mine oppdrag</h1>
+  {% if meny_antall > 0 %}
+  <p class="handlingslinje">
+    <svg class="ikon" aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8h10M9 4.5 12.5 8 9 11.5"/></svg>
+    <span>{{ meny_antall }} oppdrag trenger at du gjør noe.</span>
+  </p>
+  {% endif %}
+  {{ m.meldinger() }}
+  <h2>Oppdrag jeg har lagt ut</h2>
+  {% if oppdrag %}
+  <ul class="listerader">
+    {% for rad in oppdrag %}
+    <li class="listerad listerad--lenke">
+      <div class="listerad__hoved">
+        <p class="listerad__tittel" id="rad-{{ rad.id }}-tittel"><a class="listerad__lenke" href="{{ url_for('oppdrag.detaljer', id=rad.id) }}" aria-describedby="rad-{{ rad.id }}-merker rad-{{ rad.id }}-tid">{{ rad.tittel }}</a></p>
+        <div class="merkelinje" id="rad-{{ rad.id }}-merker">
+          {{ m.statusmerke(rad.status) }}
+          {% for merke in rad.merker %}
+          {{ m.handlingsmerke(merke) }}
+          {% endfor %}
+        </div>
+        <p class="listerad__fakta">
+          <svg class="ikon" aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          <span class="listerad__tid" id="rad-{{ rad.id }}-tid">{{ rad.tidspunkt|tidspunkt }}</span>
+        </p>
+        <svg class="listerad__pil" aria-hidden="true" focusable="false" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5.5 15.5 12 9 18.5"/></svg>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <div class="tomtilstand">
+    <svg class="tomtilstand__ikon" aria-hidden="true" focusable="false" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2.8h6V4M9 10h6M9 14h6"/></svg>
+    <p>Du har ikke lagt ut noen oppdrag.</p>
+    <a class="tekstknapp tomtilstand__lenke" href="{{ url_for('oppdrag.ny') }}">Legg ut oppdrag</a>
+  </div>
+  {% endif %}
 </div>
-{% endif %}
 {% endblock %}

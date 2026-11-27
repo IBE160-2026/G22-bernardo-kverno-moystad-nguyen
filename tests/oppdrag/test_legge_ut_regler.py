@@ -332,8 +332,11 @@ def test_passert_apent_oppdrag_kan_ses_av_andre(db, kari, lag_bruker, lag_oppdra
     assert hent_for_visning(db, oppdrag.id, lag_bruker().id).status == "apen"
 
 
-def test_lagt_ut_av_gir_egne_nyeste_forst(db, kari, lag_oppdrag) -> None:
-    a = lag_oppdrag(oppdragsgiver=kari, tittel="A", opprettet=datetime(2026, 11, 1, tzinfo=timezone.utc))
-    b = lag_oppdrag(oppdragsgiver=kari, tittel="B", opprettet=datetime(2026, 11, 2, tzinfo=timezone.utc))
+def test_lagt_ut_av_gir_egne_etter_tidspunkt(db, kari, lag_oppdrag) -> None:
+    """FR-18 (story 2.4, snudd fra «nyeste først» i 2.1): tidligste tidspunkt først, uten andres."""
+    a = lag_oppdrag(oppdragsgiver=kari, tittel="A", tidspunkt=datetime(2026, 12, 2, tzinfo=timezone.utc),
+                    opprettet=datetime(2026, 11, 1, tzinfo=timezone.utc))
+    b = lag_oppdrag(oppdragsgiver=kari, tittel="B", tidspunkt=datetime(2026, 12, 1, tzinfo=timezone.utc),
+                    opprettet=datetime(2026, 11, 2, tzinfo=timezone.utc))
     lag_oppdrag(tittel="Andres")
     assert [(r.id, r.tittel) for r in lagt_ut_av(db, kari.id)] == [(b.id, "B"), (a.id, "A")]

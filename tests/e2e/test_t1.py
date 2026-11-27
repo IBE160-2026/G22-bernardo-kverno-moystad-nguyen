@@ -1,6 +1,6 @@
 """T1: universell utforming i ekte nettleser (SM-5, NFR-6, NFR-7, UX-DR5, UX-DR31).
 
-Hver side og tilstand fra Epic 1 og story 2.1–2.3 sjekkes
+Hver side og tilstand fra Epic 1 og story 2.1–2.4 sjekkes
 - med axe ved 360 og 1280 px: ingen brudd med `impact` «serious» eller «critical»,
 - for vannrett rulling ved 320 px: `scrollWidth <= clientWidth` på `<html>`.
 
@@ -111,9 +111,14 @@ def oppdrag_detaljer_andre(page: Page, h: dict) -> None:
 
 
 def mine_oppdrag(page: Page, h: dict) -> None:
+    """Kari med seks lenkerader, merket «Tidspunktet er passert» og tallet 1 i menyen (story 2.4)."""
     h["logg_inn_som_kari"](page)
     page.goto("/mine-oppdrag")
     expect(page.get_by_role("heading", level=1)).to_have_text("Mine oppdrag")
+    expect(page.locator(".listerad")).to_have_count(6)
+    expect(page.locator(".handlingsmerke")).to_have_count(1)
+    expect(page.locator(".handlingsmerke")).to_contain_text("Tidspunktet er passert")
+    expect(page.locator(".menytall:visible")).to_have_text("1")
 
 
 def min_profil(page: Page, h: dict) -> None:

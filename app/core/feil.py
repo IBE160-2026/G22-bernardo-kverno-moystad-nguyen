@@ -85,7 +85,8 @@ class Konflikt(Exception):
 
 
 def feilside(request: Request, status_code: int, headers: dict[str, str] | None = None) -> HTMLResponse:
-    """Vennlig feilside. Rendres uten databasekall."""
+    """Vennlig feilside. Rendres uten databasekall: menyen vises uten tall,
+    og menykroken kalles ikke (`med_menytall=False`)."""
     if status_code == 404:
         tittel = overskrift = FANT_IKKE_SIDEN
     else:
@@ -95,6 +96,7 @@ def feilside(request: Request, status_code: int, headers: dict[str, str] | None 
         "core/feil.html",
         tittel=tittel,
         aktiv_meny=None,
+        med_menytall=False,
         overskrift=overskrift,
         status_code=status_code,
         headers=headers,

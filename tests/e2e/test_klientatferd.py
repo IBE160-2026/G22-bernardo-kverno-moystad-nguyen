@@ -8,6 +8,8 @@ kom med T-1 (V3 i retro Epic 1): axe ser ikke en skjult `nav`. Telleren i
 og «Beløp i kr» med CSS `:has` kom med story 2.2 (FR-5, NFR-7, UX-DR13, UX-DR15,
 UX-DR16, UX-DR27, UX-DR28). Fokus i oversikten (`fokus.js`), klikk på kortflaten og
 kolonnene ved 360, 768 og 1280 px kom med story 2.3 (FR-10, FR-11, UX-DR5, UX-DR21, UX-DR24).
+Klikk på radflaten i «Mine oppdrag», merket som brytes, og tallet i menyen ved 360 og
+1280 px kom med story 2.4 (FR-18, NFR-6, NFR-7, NFR-11, UX-DR3, UX-DR9, UX-DR10).
 """
 
 from __future__ import annotations
@@ -139,7 +141,9 @@ def test_riktig_meny_ved_bredden(
     expect(page.locator(skjult)).to_be_hidden()
     hovedmeny = page.get_by_role("navigation", name="Hovedmeny")
     expect(hovedmeny).to_have_count(1)
-    expect(hovedmeny.get_by_role("link")).to_have_text(["Oppdrag", "Mine oppdrag", "Profil"])
+    # Fra story 2.4 har «Mine oppdrag» tallet og den skjulte teksten («, 1 trenger handling»).
+    expect(hovedmeny.get_by_role("link")).to_contain_text(["Oppdrag", "Mine oppdrag", "Profil"])
+    expect(hovedmeny.get_by_role("link")).to_have_count(3)
 
 
 def test_telleren_teller_tegn_og_varsler_ved_grensen(
@@ -710,3 +714,84 @@ def test_kortene_star_i_kolonner(page: Page, bredde: int, kolonner: int) -> None
         ".map((li) => Math.round(li.getBoundingClientRect().left)))].length"
     )
     assert venstre == kolonner
+
+
+# ---------- «Mine oppdrag» (story 2.4: FR-18, NFR-6, NFR-7, NFR-11, UX-DR3, UX-DR9) ----------
+
+
+@pytest.mark.parametrize("bredde", [360, 1280], ids=["360px", "1280px"])
+def test_klikk_pa_radflaten_apner_detaljene(page: Page, bredde: int) -> None:
+    """UX-DR9: hele lenkedelen av raden er lenken; et klikk på tidspunktet eller på pila ›,
+    utenfor tittelen, åpner detaljene. Lenken heter bare tittelen og beskrives av merkelinja
+    og tidspunktet."""
+    page.set_viewport_size({"width": bredde, "height": 800})
+    _logg_inn(page, KARI)
+    page.goto("/mine-oppdrag")
+    rad = page.locator(".listerad").filter(has_text="Bære ved opp til tredje etasje")
+    lenke = rad.get_by_role("link")
+    expect(lenke).to_have_accessible_name("Bære ved opp til tredje etasje")
+    expect(lenke).to_have_accessible_description(
+        # Skjult tekst er absolutt plassert, så navneberegningen legger mellomrom rundt den
+        # («passert .»). Det endrer ikke opplesningen.
+        re.compile(r"^Status:\s*Åpen\s*Må gjøres:\s*Tidspunktet er passert\s*\.\s*Søndag 22\. nov\. kl\. 10:00$")
+    )
+    # Musa trykker midt på tidspunktet og midt på pila. Lenkens ::after ligger over tidspunktet,
+    # og pila har pointer-events: none, så lenken får begge klikkene.
+    for del_ in (".listerad__tid", ".listerad__pil"):
+        page.goto("/mine-oppdrag")
+        boks = rad.locator(del_).bounding_box()
+        assert boks is not None, del_
+        page.mouse.click(boks["x"] + boks["width"] / 2, boks["y"] + boks["height"] / 2)
+        expect(page.get_by_role("heading", level=1)).to_have_text("Bære ved opp til tredje etasje")
+    mine = page.get_by_role("navigation", name="Hovedmeny").get_by_role("link", name=re.compile("^Mine oppdrag"))
+    expect(mine).to_have_attribute("aria-current", "true")
+
+
+def test_handlingsmerket_brytes_uten_a_klippes(page: Page) -> None:
+    """UX-DR10, NFR-7: ved 320 px og stor tekst brytes merket over flere linjer og holder seg i raden."""
+    page.set_viewport_size({"width": 320, "height": 800})
+    _logg_inn(page, KARI)
+    page.goto("/mine-oppdrag")
+    page.add_style_tag(content=".handlingsmerke { font-size: 2rem; }")
+    merke = page.locator(".handlingsmerke")
+    rad = page.locator(".listerad").filter(has=merke)
+    m, r = merke.bounding_box(), rad.bounding_box()
+    assert m is not None and r is not None
+    assert m["height"] > 60  # mer enn én linje
+    assert m["x"] >= r["x"] and m["x"] + m["width"] <= r["x"] + r["width"] + 0.5
+    bredde, klient = page.evaluate(RULLING_HTML)
+    assert bredde <= klient
+
+
+RULLING_HTML = "() => [document.documentElement.scrollWidth, document.documentElement.clientWidth]"
+
+
+@pytest.mark.parametrize(
+    ("bredde", "meny"), [(360, ".meny--bunn"), (1280, ".meny--topp")], ids=["360px-bunnmeny", "1280px-topplinje"]
+)
+def test_tallet_i_menyen_syns_og_leses_opp(page: Page, bredde: int, meny: str) -> None:
+    """NFR-11, UX-DR3, SM-5: «1» syns ved «Mine oppdrag», og lenken heter «Mine oppdrag, 1 trenger handling».
+
+    I bunnmenyen står tallet øverst til høyre på ikonet, i topplinjen etter teksten.
+    """
+    page.set_viewport_size({"width": bredde, "height": 800})
+    _logg_inn(page, KARI)
+    tall = page.locator(f"{meny} .menytall")
+    expect(tall).to_be_visible()
+    expect(tall).to_have_text("1")
+    hovedmeny = page.get_by_role("navigation", name="Hovedmeny")
+    # Mellomrommet før kommaet kommer fra navneberegningen rundt skjult tekst (se over).
+    lenke = hovedmeny.get_by_role("link", name=re.compile(r"^Mine oppdrag\s?, 1 trenger handling$"))
+    expect(lenke).to_have_count(1)
+    lenkeboks, tallboks = lenke.bounding_box(), tall.bounding_box()
+    assert lenkeboks is not None and tallboks is not None
+    assert tallboks["x"] + tallboks["width"] <= lenkeboks["x"] + lenkeboks["width"]
+    if meny == ".meny--bunn":
+        ikon = page.locator(".meny--bunn .meny__valg[href='/mine-oppdrag'] .meny__ikon").bounding_box()
+        assert ikon is not None
+        assert tallboks["y"] < ikon["y"] + ikon["height"] / 2  # øverst på ikonet
+        assert tallboks["x"] > ikon["x"] + ikon["width"] / 2  # til høyre på ikonet
+    else:
+        tekst = page.locator(".meny--topp .meny__valg[href='/mine-oppdrag'] > span").first.bounding_box()
+        assert tekst is not None
+        assert tallboks["x"] >= tekst["x"] + tekst["width"]  # etter teksten

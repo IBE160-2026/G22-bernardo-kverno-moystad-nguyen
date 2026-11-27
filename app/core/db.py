@@ -102,8 +102,14 @@ def hent_db(request: Request) -> Iterator[Session]:
     POST-ruter kjører service-kallene i `with db.begin():`. Services kaller aldri
     `commit()` eller `rollback()`. Sesjonen lukkes (og ruller tilbake det som
     ikke er committet) når forespørselen er ferdig.
+
+    Sesjonen legges også i `request.state.db`, så `render` kan gi menykroken den
+    samme sesjonen (AD-3). I SQLite starter hver transaksjon med `BEGIN
+    IMMEDIATE`, også lesing, så en egen sesjon i `render` ville ventet på låsen
+    som rutas sesjon holder, og fått «database is locked».
     """
     db: Session = request.app.state.sesjonsfabrikk()
+    request.state.db = db
     try:
         yield db
     finally:

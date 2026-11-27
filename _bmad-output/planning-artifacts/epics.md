@@ -684,6 +684,8 @@ slik at jeg finner dem igjen når de ikke vises i oversikten.
 **Gitt** en bruker med utgåtte egne oppdrag
 **Når** en hvilken som helst side lastes
 **Så** viser «Mine oppdrag» i menyen antall oppdrag med merket «Tidspunktet er passert», regnet ut gjennom menykroken, som `oppdrag` nå kobler inn i `lag_app()`. Tallet vises ikke ved 0. Story 3.5 utvider tellingen med de andre merkene (FR-18, NFR-11, AD-1, AD-3).
+**Og** tallet står i begge menyene som synlig tall (`aria-hidden`) med den skjulte teksten «, 1 trenger handling», så skjermleseren leser «Mine oppdrag, 1 trenger handling». Ved 0 vises verken tall eller skjult tekst (NFR-11, UX-DR3; flyttet fra story 3.5 i spec 2.4).
+**Og** øverst i «Mine oppdrag» står «1 oppdrag trenger at du gjør noe.» (eller «2 oppdrag …») når tallet er over 0, med samme tall som menyen. Linja vises ikke ved 0 (FR-18, UX-DR26; flyttet fra story 3.5 i spec 2.4, beslutning 2026-11-26).
 
 **Gitt** en bruker uten egne oppdrag
 **Når** «Mine oppdrag» åpnes
@@ -1002,9 +1004,9 @@ slik at jeg ikke går glipp av noe jeg må gjøre.
 
 **Gitt** en innlogget bruker
 **Når** en hvilken som helst side lastes
-**Så** viser «Mine oppdrag» i menyen antall oppdrag under «Trenger handling» i de to fanene til sammen. Et oppdrag med flere merker telles én gang, tallet vises ikke ved 0, og skjermleseren leser «Mine oppdrag, 2 trenger handling» (FR-18, NFR-11, UX-DR3)
+**Så** viser «Mine oppdrag» i menyen antall oppdrag under «Trenger handling» i de to fanene til sammen. Et oppdrag med flere merker telles én gang. Tallet med den skjulte teksten («Mine oppdrag, 2 trenger handling»), som ikke vises ved 0, finnes fra story 2.4, og 3.5 utvider bare tellingen (FR-18, NFR-11, UX-DR3)
 **Og** tallet regnes ut på nytt ved hver sidelasting gjennom menykroken, uten at noe lagres om hva brukeren har sett (AD-3)
-**Og** øverst i «Mine oppdrag» står «2 oppdrag trenger at du gjør noe.» når tallet er over 0.
+**Og** linja «2 oppdrag trenger at du gjør noe.» øverst i «Mine oppdrag» finnes fra story 2.4 og viser det utvidede tallet uten endring (akseptansekriteriet er flyttet til 2.4).
 
 **Gitt** at «Mine oppdrag» åpnes uten valgt fane
 **Når** siden vises
