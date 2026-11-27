@@ -82,3 +82,4 @@
 - [ ] 2026-11-27 [bilde-av-oppdrag-endring](981-2026-11-27-09-04-31-bilde-av-oppdrag-endring.md) — kjent begrensning: uten JS stopper Vercel bilder over cirka 4,5 MB med sin egen feilside (FR-27)
 - [ ] 2026-11-27 [story-2-2-to-steg-mobil](980-2026-11-27-09-04-31-story-2-2-to-steg-mobil.md) — tastatursjekk (cirka fem minutter) av «Nytt oppdrag» i to steg og på én skjerm, utsatt til 6.1
 - [ ] 2026-11-27 [story-2-3-oversikt-og-detaljer](979-2026-11-27-13-23-19-story-2-3-oversikt-og-detaljer.md) — tastatursjekk (cirka fem minutter) av oversikten, filtrene og detaljene, utsatt til 6.1
+- [ ] 2026-11-27 [story-2-4-mine-oppdrag](978-2026-11-27-14-04-38-story-2-4-mine-oppdrag.md) — tastatursjekk (cirka fem minutter) av «Mine oppdrag» og menyen med tall, utsatt til 6.1
