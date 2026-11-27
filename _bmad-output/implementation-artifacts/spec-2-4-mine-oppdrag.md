@@ -2,7 +2,7 @@
 title: 'Story 2.4: Se egne oppdrag under «Mine oppdrag»'
 type: 'feature'
 created: '2026-11-27'
-status: 'in-progress'
+status: 'done'
 baseline_commit: '8c538ebff15c405c8be6d13226a7d6ab6dc4e341'
 route: 'dispatch'
 review_loop_iteration: 0
@@ -82,17 +82,17 @@ Klokka står fast på tirsdag 24.11.2026 kl. 13:00 norsk tid (`FAST_KLOKKE`). Ka
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `app/oppdrag/templates/oppdrag/mine.html`, `app/oppdrag/routes.py`, `_bmad-output/planning-artifacts/epics.md` -- linja «N oppdrag trenger at du gjør noe.» under `h1` når `antall_trenger_handling` er over 0 (samme tall som menyen, én telling per forespørsel). Akseptansekriteriet («øverst i «Mine oppdrag» står …») flyttes fra story 3.5 til 2.4 i `epics.md`, med en merknad i 3.5 om at linja finnes fra 2.4 -- FR-18, UX-DR26
-- [ ] `app/oppdrag/service.py` -- `TIDSPUNKTET_ER_PASSERT`. `OppdragRad(id, tittel, status, tidspunkt, merker: tuple[str, ...])`. `merker_lagt_ut(status, tidspunkt, *, na) -> tuple[str, ...]`, som gir merket når status er `apen` og `utgatt(tidspunkt, na=na)`. `lagt_ut_av(db, bruker_id)` leser `klokke.na()` én gang og sorterer etter `tidspunkt`, `opprettet` og `id`. `antall_trenger_handling(db, bruker_id) -> int` teller radene fra `lagt_ut_av` som har merker -- FR-8, FR-18, AR-13, AD-3
-- [ ] `app/__init__.py` -- `lag_app(*, autentisering=..., menykrok=_STANDARD, settings=None)`. Standard er `antall_trenger_handling`. Med `None`, eller noe som ikke kan kalles, stopper oppstarten med `KonfigFeil`. Kroken lagres i `app.state.menykrok` -- AD-1, AR-3
-- [ ] `app/core/db.py`, `app/core/render.py`, `app/core/feil.py` -- `hent_db` legger sesjonen i `request.state.db`. `render` får `med_menytall=True` og gir `meny_antall` til malen: kroken kalles bare når noen er innlogget, med `request.state.db`, eller med en kort egen sesjon fra `sesjonsfabrikk` når ruta ikke har en. `feilside` sender `med_menytall=False`. Docstringene oppdateres -- NFR-11, AD-3, spinen § Feil
-- [ ] `app/core/templates/core/makroer.html` -- `_menyvalg` viser tallet ved «Mine oppdrag» når det er over 0, i begge menyene. Ny makro `handlingsmerke(tekst)` med pilikon og den skjulte teksten (se Design Notes) -- UX-DR3, UX-DR10
-- [ ] `app/oppdrag/routes.py`, `app/oppdrag/templates/oppdrag/mine.html` -- tittelen, `h2`, lenkeradene og tomtilstanden (se Design Notes). Docstringene oppdateres -- FR-18, UX-DR9, UX-DR21
-- [ ] `app/core/static/css/app.css` -- `.listerad`, `.handlingsmerke` og `.menytall` etter DESIGN.md (§ list-row, § action-tag, § nav-badge). `::after` på lenken dekker bare lenkedelen. Kanten ved hover er 2 px `--color-primary`, og fokus gir kanten og ringen. Merket brytes uten `line-clamp` eller ellipse. I forced-colors får merket og tallet kant. `.oppdragsliste` fjernes. Ingen vannrett rulling ved 320 px -- UX-DR9, UX-DR10, NFR-6, NFR-7
-- [ ] `README.md` -- l. 87 får en setning om at Kari ser seks oppdrag under «Mine oppdrag», ett med «Tidspunktet er passert» og tallet 1 i menyen -- NFR-2
-- [ ] `ARCHITECTURE-SPINE.md` -- én setning i konvensjonen Rendring: kroken får forespørselens `Session` (`request.state.db`) og kalles ikke fra feilsider -- planleggingsdokumentene holdes oppdatert
-- [ ] `tests/oppdrag/test_mine_oppdrag_regler.py` (ny), `tests/oppdrag/test_mine_oppdrag.py` (ny), `tests/oppdrag/test_grunnsider.py`, `tests/oppdrag/test_legge_ut.py`, `tests/oppdrag/test_legge_ut_regler.py`, `tests/core/test_config.py`, `tests/core/test_render.py` -- servicetester av sorteringen, grensen (`sett_na` på begge sider), de andre statusene, andres oppdrag og at antallet er lik antall rader med merker. HTTP-tester for hver rad i matrisen. Tallet testes med en kroken-spion gitt til `lag_app(menykrok=…)`, også at den ikke kalles på feilsiden. `lag_app(menykrok=None)` stopper. Testene som forutsatte 2.1, snus -- FR-8, FR-18, NFR-11, NFR-12, AD-1, AD-3, AD-16
-- [ ] `tests/e2e/test_t1.py`, `tests/e2e/test_klientatferd.py` -- `mine-oppdrag` (Kari) venter seks rader og merket. Klienttester: et klikk på radflaten utenfor tittelen åpner detaljene, og tallet «1» syns i bunnmenyen ved 360 px og i topplinjen ved 1280 px, med navnet «Mine oppdrag, 1 trenger handling». `test_riktig_meny_ved_bredden` sjekker navnene med `to_contain_text` eller tilgjengelig navn -- NFR-6, NFR-7, NFR-11, SM-5
+- [x] `app/oppdrag/templates/oppdrag/mine.html`, `app/oppdrag/routes.py`, `_bmad-output/planning-artifacts/epics.md` -- linja «N oppdrag trenger at du gjør noe.» under `h1` når `antall_trenger_handling` er over 0 (samme tall som menyen, én telling per forespørsel). Akseptansekriteriet («øverst i «Mine oppdrag» står …») flyttes fra story 3.5 til 2.4 i `epics.md`, med en merknad i 3.5 om at linja finnes fra 2.4 -- FR-18, UX-DR26
+- [x] `app/oppdrag/service.py` -- `TIDSPUNKTET_ER_PASSERT`. `OppdragRad(id, tittel, status, tidspunkt, merker: tuple[str, ...])`. `merker_lagt_ut(status, tidspunkt, *, na) -> tuple[str, ...]`, som gir merket når status er `apen` og `utgatt(tidspunkt, na=na)`. `lagt_ut_av(db, bruker_id)` leser `klokke.na()` én gang og sorterer etter `tidspunkt`, `opprettet` og `id`. `antall_trenger_handling(db, bruker_id) -> int` teller radene fra `lagt_ut_av` som har merker -- FR-8, FR-18, AR-13, AD-3
+- [x] `app/__init__.py` -- `lag_app(*, autentisering=..., menykrok=_STANDARD, settings=None)`. Standard er `antall_trenger_handling`. Med `None`, eller noe som ikke kan kalles, stopper oppstarten med `KonfigFeil`. Kroken lagres i `app.state.menykrok` -- AD-1, AR-3
+- [x] `app/core/db.py`, `app/core/render.py`, `app/core/feil.py` -- `hent_db` legger sesjonen i `request.state.db`. `render` får `med_menytall=True` og gir `meny_antall` til malen: kroken kalles bare når noen er innlogget, med `request.state.db`, eller med en kort egen sesjon fra `sesjonsfabrikk` når ruta ikke har en. `feilside` sender `med_menytall=False`. Docstringene oppdateres -- NFR-11, AD-3, spinen § Feil
+- [x] `app/core/templates/core/makroer.html` -- `_menyvalg` viser tallet ved «Mine oppdrag» når det er over 0, i begge menyene. Ny makro `handlingsmerke(tekst)` med pilikon og den skjulte teksten (se Design Notes) -- UX-DR3, UX-DR10
+- [x] `app/oppdrag/routes.py`, `app/oppdrag/templates/oppdrag/mine.html` -- tittelen, `h2`, lenkeradene og tomtilstanden (se Design Notes). Docstringene oppdateres -- FR-18, UX-DR9, UX-DR21
+- [x] `app/core/static/css/app.css` -- `.listerad`, `.handlingsmerke` og `.menytall` etter DESIGN.md (§ list-row, § action-tag, § nav-badge). `::after` på lenken dekker bare lenkedelen. Kanten ved hover er 2 px `--color-primary`, og fokus gir kanten og ringen. Merket brytes uten `line-clamp` eller ellipse. I forced-colors får merket og tallet kant. `.oppdragsliste` fjernes. Ingen vannrett rulling ved 320 px -- UX-DR9, UX-DR10, NFR-6, NFR-7
+- [x] `README.md` -- l. 87 får en setning om at Kari ser seks oppdrag under «Mine oppdrag», ett med «Tidspunktet er passert» og tallet 1 i menyen -- NFR-2
+- [x] `ARCHITECTURE-SPINE.md` -- én setning i konvensjonen Rendring: kroken får forespørselens `Session` (`request.state.db`) og kalles ikke fra feilsider -- planleggingsdokumentene holdes oppdatert
+- [x] `tests/oppdrag/test_mine_oppdrag_regler.py` (ny), `tests/oppdrag/test_mine_oppdrag.py` (ny), `tests/oppdrag/test_grunnsider.py`, `tests/oppdrag/test_legge_ut.py`, `tests/oppdrag/test_legge_ut_regler.py`, `tests/core/test_config.py`, `tests/core/test_render.py` -- servicetester av sorteringen, grensen (`sett_na` på begge sider), de andre statusene, andres oppdrag og at antallet er lik antall rader med merker. HTTP-tester for hver rad i matrisen. Tallet testes med en kroken-spion gitt til `lag_app(menykrok=…)`, også at den ikke kalles på feilsiden. `lag_app(menykrok=None)` stopper. Testene som forutsatte 2.1, snus -- FR-8, FR-18, NFR-11, NFR-12, AD-1, AD-3, AD-16
+- [x] `tests/e2e/test_t1.py`, `tests/e2e/test_klientatferd.py` -- `mine-oppdrag` (Kari) venter seks rader og merket. Klienttester: et klikk på radflaten utenfor tittelen åpner detaljene, og tallet «1» syns i bunnmenyen ved 360 px og i topplinjen ved 1280 px, med navnet «Mine oppdrag, 1 trenger handling». `test_riktig_meny_ved_bredden` sjekker navnene med `to_contain_text` eller tilgjengelig navn -- NFR-6, NFR-7, NFR-11, SM-5
 
 **Acceptance Criteria:**
 - Gitt Kari med seed ved 360 og 1280 px, når «Mine oppdrag» vises, så kan hver rad åpnes med et klikk hvor som helst over skillelinjen, merket brytes over flere linjer uten å klippes, og siden ruller ikke vannrett ved 320 px.
@@ -104,6 +104,26 @@ Klokka står fast på tirsdag 24.11.2026 kl. 13:00 norsk tid (`FAST_KLOKKE`). Ka
 ## Spec Change Log
 
 ## Review Triage Log
+
+Pass 1 (2026-11-27). Lag: Blind Hunter (BH), Edge Case Hunter (EC), Verification Gap (VG). VG fant ingen hull i testene.
+
+| # | Lag | Funn | Verdict | Begrunnelse | Rute |
+|---|---|---|---|---|---|
+| 1 | BH | Pila › ligger over lenkens `::after`, så et klikk på pila åpner ikke detaljene | medium | `.listerad__pil` er absolutt plassert etter lenken uten `pointer-events: none`. Pila er det tydeligste klikkmålet | patch |
+| 2 | BH | Lenken i raden beskriver ikke tidspunktet, bare merket | low | Skjermleserbrukere hører ikke sorteringsnøkkelen. Retten er en id og én ekstra referanse | patch |
+| 3 | BH, EC | Konstanten heter `TIDSPUNKT_ER_PASSERT` i koden og `TIDSPUNKTET_ER_PASSERT` i specen | low | Koden avviker fra specen. Retten er å endre navnet | patch |
+| 4 | BH | `epics.md` 2.4 nevner ikke tallet i menyen med teksten for skjermleser. 3.5 eier det fortsatt | low | Sporingen fra krav til kode og test brytes. Retten er én linje i 2.4 og en merknad i 3.5 | patch |
+| 5 | BH | README-setningen om merket og tallet 1 stemmer bare rett etter seed | low | «Måke snø» er satt til dagen etter. Retten er én setning | patch |
+| 6 | BH, EC, VG | Lista og tallet leser `klokke.na()` hver for seg, og `lagt_ut_av` kjøres to ganger på `/mine-oppdrag` | low | Vinduet er brøkdelen av et sekund rundt grensen, og spørringen er liten. Retten krever en ny parameter i `render` eller hurtiglager per forespørsel | reject |
+| 7 | BH | Reservesesjonen i `meny_antall` brukes ikke i noen rute | low | Den er defensiv, og alle innloggede ruter bruker `hent_db`. Ingen skade | reject |
+| 8 | BH, EC | `lag_app` sjekker bare `callable()`, ikke signaturen til kroken | low | Gjelder bare utviklere. Første innloggede side feiler høylytt | reject |
+| 9 | BH, EC | En kaster i kroken gjør alle innloggede sider til 500 | low | Kroken bruker samme database som siden. Feiler tellingen, feiler siden også | reject |
+| 10 | EC | En krok som gir noe annet enn int, gir TypeError i malen | false | Den eneste kroken (`antall_trenger_handling`) gir alltid `int` | reject |
+| 11 | EC | `request.state.db` peker på en lukket sesjon etter teardown | false | Alt som rendres etter teardown, går via `feilside` med `med_menytall=False` | reject |
+| 12 | BH | `test_riktig_meny_ved_bredden` er svakere med `to_contain_text` | low | Tre lenker og innholdet sjekkes fortsatt. Teksten er testet over HTTP | reject |
+| 13 | BH | `test_kroken_far_foresporselens_sesjon` låser antallet sesjoner til 2 | low | Testen fanger nettopp feilen den skal fange. Den må endres hvis mellomvaren endres | reject |
+| 14 | BH | Det tilgjengelige navnet får et ekstra mellomrom før komma og punktum | low | Det opplest påvirkes ikke. Retten krever ny markup for den skjulte teksten | reject |
+| 15 | EC | Sortering og grense testes bare på servicenivå, ikke over HTTP | low | Ruta sender radene uendret til malen, og rekkefølgen er testet over HTTP i `test_grunnsider.py` | reject |
 
 ## Design Notes
 
