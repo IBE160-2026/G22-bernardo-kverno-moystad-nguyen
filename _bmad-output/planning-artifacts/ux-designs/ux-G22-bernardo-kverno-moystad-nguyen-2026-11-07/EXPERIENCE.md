@@ -463,6 +463,7 @@ Også: én `h1` per side, overskrifter i riktig rekkefølge; landemerker `header
 | Nytt oppdrag, mobil | «Nytt oppdrag, steg 1 av 2 – Nabolagshelten» / «Nytt oppdrag, steg 2 av 2 – Nabolagshelten» |
 | Nytt oppdrag, fra 768 px | «Nytt oppdrag – Nabolagshelten» |
 | Rediger oppdrag | «Rediger «Måke snø i innkjørselen» – Nabolagshelten» |
+| Avbryte oppdrag uten JS (bekreftelsessiden, story 2.5) | «Avbryte «Måke snø i innkjørselen»? – Nabolagshelten» |
 | Oppdragsdetaljer | «Måke snø i innkjørselen – Nabolagshelten» |
 | Mine oppdrag | «Mine oppdrag: Oppdrag jeg har lagt ut – Nabolagshelten» / «Mine oppdrag: Oppdrag jeg hjelper med – Nabolagshelten» |
 | Profil | «Min profil – Nabolagshelten» / «Amir – profil – Nabolagshelten» |

@@ -31,3 +31,7 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-1-legge-ut-oppdrag.md`
   summary: `bytt_ut_eksempeloppdrag` i `app/seed.py` sletter testbrukernes oppdrag med en vanlig `DELETE`. Når `interesse` (Epic 3) får fremmednøkkel til `oppdrag`, feiler `python -m app.seed` nummer to med FK-feil.
   evidence: Funnet i reviewen av 2.1 (BH), og nevnt av spec-forfatteren. Ingen barnetabell finnes nå. Tas i story 3.1: slett barneradene til testbrukernes oppdrag først. README bør også si tydelig at oppdrag som er laget for hånd på testkontoene, forsvinner.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-5-redigere-og-avbryte.md`
+  summary: Detaljsiden ruller vannrett ved 320 px når rotstørrelsen er 200 % (366 px > 320 px), også før dialogen åpnes.
+  evidence: Funnet av implementeringen i 2.5 under testen av dialogen ved 200 % tekst. Det er ikke forårsaket av 2.5, og T1 sjekker 320 px med vanlig tekststørrelse. Bør sjekkes i story 6.1 (T3, 200 % tekst) og rettes der.
