@@ -85,3 +85,5 @@
 - [ ] 2026-11-27 [story-2-4-mine-oppdrag](978-2026-11-27-14-04-38-story-2-4-mine-oppdrag.md) — tastatursjekk (cirka fem minutter) av «Mine oppdrag» og menyen med tall, utsatt til 6.1
 - [ ] 2026-11-27 [story-2-5-redigere-og-avbryte](977-2026-11-27-18-42-01-story-2-5-redigere-og-avbryte.md) — tastatursjekk (cirka fem minutter) av redigering, dialogen og snarveiene, utsatt til 6.1
 - [ ] 2026-11-27 [story-2-5-redigere-og-avbryte](977-2026-11-27-18-42-01-story-2-5-redigere-og-avbryte.md) — detaljsiden ruller vannrett ved 320 px med 200 % tekst (`deferred-work.md`), ta i 6.1 (T3)
+- [ ] 2026-11-27 [story-2-7-bilde-av-oppdraget](976-2026-11-27-23-37-13-story-2-7-bilde-av-oppdraget.md) — prøv opplasting av bilde i produksjon (Pillow på Vercel, binærdata i Supabase) med en ekte konto før demo
+- [ ] 2026-11-27 [story-2-7-bilde-av-oppdraget](976-2026-11-27-23-37-13-story-2-7-bilde-av-oppdraget.md) — tastatursjekk (cirka fem minutter) av bildefeltet, «Fjern bildet» og bildet i kort og detaljer, utsatt til 6.1
