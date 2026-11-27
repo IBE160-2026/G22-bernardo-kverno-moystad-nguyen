@@ -411,7 +411,7 @@ class IdentityAutentisering:
             return None
         with request.app.state.sesjonsfabrikk() as db:
             rad = db.execute(
-                select(Sesjon.bruker_id, Bruker.navn)
+                select(Sesjon.bruker_id, Bruker.navn, Bruker.postnummer)
                 .join(Bruker, Bruker.id == Sesjon.bruker_id)
                 .where(
                     Sesjon.nokkel == hash_sesjonsnokkel(nokkel),
@@ -421,7 +421,9 @@ class IdentityAutentisering:
             ).first()
         if rad is None:
             return None
-        return Innlogget(bruker_id=rad.bruker_id, visningsnavn=rad.navn or "")
+        return Innlogget(
+            bruker_id=rad.bruker_id, visningsnavn=rad.navn or "", postnummer=rad.postnummer
+        )
 
     def logg_inn(
         self, db: Session, epost: str, passord: str, *, gammel_nokkel: str | None = None

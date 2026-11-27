@@ -32,8 +32,15 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 @dataclass(frozen=True)
 class Innlogget:
+    """Den innloggede brukeren, hentet med én spørring per forespørsel (AD-4).
+
+    `postnummer` er med, så oversikten og «Nytt oppdrag» ikke slår opp brukeren
+    på nytt (retro R7).
+    """
+
     bruker_id: int
     visningsnavn: str
+    postnummer: str | None
 
 
 class Innloggingsutfall(Enum):

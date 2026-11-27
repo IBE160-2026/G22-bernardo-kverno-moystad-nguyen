@@ -99,7 +99,7 @@ Pilene betyr «kan importere fra». Bare direkte piler gjelder.
 - **Binds:** FR-2, FR-3, FR-4, NFR-5, NFR-9
 - **Prevents:** at en ny rute glemmer tilgangskontroll, at det finnes to innlogginger, og at sesjoner eller tellere ligger i minnet (Vercel har ikke minne mellom kall).
 - **Rule:**
-  - **Grensesnittet:** `core/sesjon.py` definerer `Autentisering` med `finn_innlogget`, `logg_inn` og `logg_ut`, og dataklassen `Innlogget` (`bruker_id`, `visningsnavn`). `identity/service.py` er implementasjonen. Mellomvaren og FR-2-ruta kaller bare dette grensesnittet. `core` leser og skriver aldri `sesjon`, `bruker` eller `innloggingsforsok`.
+  - **Grensesnittet:** `core/sesjon.py` definerer `Autentisering` med `finn_innlogget`, `logg_inn` og `logg_ut`, og dataklassen `Innlogget` (`bruker_id`, `visningsnavn`, `postnummer`; postnummeret hentes i samme spørring, så sider som trenger det ikke slår opp brukeren på nytt, story 2.3). `identity/service.py` er implementasjonen. Mellomvaren og FR-2-ruta kaller bare dette grensesnittet. `core` leser og skriver aldri `sesjon`, `bruker` eller `innloggingsforsok`.
   - **Tilgang:** Mellomvaren setter `request.state.innlogget`, og ruter får brukeren bare gjennom avhengigheten `core.innlogget_bruker`. Alle ruter krever innlogging, unntatt dem som er merket offentlige på selve ruta (`/logg-inn`, `/registrer`, `/static`). FR-3-testen leser merkingen.
   - **Uten gyldig sesjon:**
     - GET gir 303 til `/logg-inn?neste=<sti>`. `neste` godtas bare når den begynner med `/` og ikke med `//`.
