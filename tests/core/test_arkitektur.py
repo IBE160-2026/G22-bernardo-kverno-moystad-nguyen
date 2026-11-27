@@ -137,6 +137,9 @@ def test_filer_leses_med_utf8() -> None:
             navn = getattr(node.func, "attr", None) or getattr(node.func, "id", None)
             if navn not in {"open", "read_text", "write_text"}:
                 continue
+            # `Image.open` i oppdrag/bilde.py leser bytes fra minnet, ikke en tekstfil (AD-18).
+            if isinstance(node.func, ast.Attribute) and getattr(node.func.value, "id", None) == "Image":
+                continue
             modus = [a.value for a in node.args if isinstance(a, ast.Constant)]
             if any(isinstance(m, str) and "b" in m for m in modus):
                 continue
@@ -160,6 +163,29 @@ def test_rutenavn_er_unike_og_folger_monsteret() -> None:
     assert stier["oppdrag.send_rediger"] == ("/oppdrag/{id:int}/rediger", ("POST",))
     assert stier["oppdrag.avbryt"] == ("/oppdrag/{id:int}/avbryt", ("GET",))
     assert stier["oppdrag.send_avbryt"] == ("/oppdrag/{id:int}/avbryt", ("POST",))
+    # Story 2.7: bilderutene (AD-18, unntak fra mønsteret `<handling>` med bekreftelsesside).
+    assert stier["oppdrag.bilde"] == ("/oppdrag/{id:int}/bilde", ("GET",))
+    assert stier["oppdrag.bilde_liten"] == ("/oppdrag/{id:int}/bilde/liten", ("GET",))
+
+
+def test_bare_bilde_og_seed_importerer_pil() -> None:
+    """AD-18: bare `oppdrag/bilde.py` åpner opplastede filer. `app/seed.py` tegner eksempelbildene."""
+    tillatt = {APP / "oppdrag" / "bilde.py", APP / "seed.py"}
+    importerer_pil = {
+        fil for fil in python_filer(APP)
+        if any(modul == "PIL" or modul.startswith("PIL.") for modul in importerte_moduler(fil))
+    }
+    assert importerer_pil == tillatt
+
+
+def test_bare_bilde_leser_bilde_beholdt() -> None:
+    """AD-18: `bilde_beholdt` dekodes bare i `oppdrag/bilde.py` (`fra_beholdt`), og ingen andre
+    filer i app/ bruker base64-dekoding."""
+    for fil in python_filer(APP):
+        if fil == APP / "oppdrag" / "bilde.py":
+            continue
+        tekst = fil.read_text(encoding="utf-8")
+        assert "b64decode" not in tekst, fil.relative_to(ROT).as_posix()
 
 
 def _testruter(app_env: str) -> dict[str, str]:
