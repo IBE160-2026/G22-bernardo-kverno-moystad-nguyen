@@ -29,6 +29,7 @@ from app.core.tid import (
     er_myndig,
     fyller_ar,
     seneste_tidspunkt,
+    skjemaverdier,
     tidligste_fodselsdato,
     tolk_fodselsdato,
     tolk_tidspunkt,
@@ -342,6 +343,34 @@ def test_rundtur_over_skiftene(
     tidspunkt = tolk_tidspunkt(dato, klokkeslett, na=NA)
     assert vis_tidspunkt(tidspunkt, na=NA) == for_skiftet
     assert vis_tidspunkt(tidspunkt, na=na_etter) == etter_skiftet
+
+
+# ---------- skjemaverdier (FR-6, AD-9, story 2.5) ----------
+
+
+@pytest.mark.parametrize(
+    ("utc", "dato", "klokkeslett"),
+    [
+        (datetime(2026, 11, 25, 8, 0, tzinfo=UTC), "25.11.2026", "09:00"),
+        (datetime(2027, 1, 4, 23, 30, tzinfo=UTC), "05.01.2027", "00:30"),  # dato i norsk tid
+        (datetime(2027, 3, 28, 0, 59, tzinfo=UTC), "28.03.2027", "01:59"),  # før vårskiftet
+        (datetime(2027, 3, 28, 1, 0, tzinfo=UTC), "28.03.2027", "03:00"),  # etter vårskiftet
+        (datetime(2027, 7, 15, 7, 0, tzinfo=UTC), "15.07.2027", "09:00"),  # sommertid
+        (datetime(2027, 10, 31, 0, 30, tzinfo=UTC), "31.10.2027", "02:30"),  # første 02:30 om høsten
+        (datetime(2027, 10, 31, 2, 0, tzinfo=UTC), "31.10.2027", "03:00"),  # etter høstskiftet
+    ],
+)
+def test_skjemaverdier_og_rundtur(utc: datetime, dato: str, klokkeslett: str) -> None:
+    """AD-9: lagret tidspunkt → «dd.mm.åååå» og «tt:mm» i norsk tid → `tolk_tidspunkt` gir det samme."""
+    assert skjemaverdier(utc) == (dato, klokkeslett)
+    assert tolk_tidspunkt(dato, klokkeslett, na=NA) == utc
+
+
+def test_skjemaverdier_andre_av_to_like_timer_tolkes_som_den_forste() -> None:
+    """AD-9: andre 02:30 om høsten (fold=1) vises som 02:30, og 02:30 tolkes alltid som den første."""
+    andre = datetime(2027, 10, 31, 1, 30, tzinfo=UTC)
+    assert skjemaverdier(andre) == ("31.10.2027", "02:30")
+    assert tolk_tidspunkt("31.10.2027", "02:30", na=NA) == andre - timedelta(hours=1)
 
 
 # ---------- visning (FR-5, EXPERIENCE.md § Formater) ----------

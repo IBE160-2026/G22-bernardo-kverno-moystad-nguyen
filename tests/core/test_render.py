@@ -433,3 +433,59 @@ def test_stilarket_bruker_rem_for_tekst() -> None:
     css = CSS.read_text(encoding="utf-8")
     assert "--text-body: 1.125rem;" in css
     assert not re.search(r"font-size:\s*\d+px", css)
+
+
+# ---------- story 2.5: feilmelding, dialog og fokus ----------
+
+
+def test_fokusmal_rekkefolge() -> None:
+    """UX-DR27: feiloppsummering > feilmelding > kvittering > sidens eget mål."""
+    from app.core.render import fokusmal
+
+    assert fokusmal(feil=True, kvittering=True, fokus="x", feilmelding=True) == "feiloppsummering"
+    assert fokusmal(feil=False, kvittering=True, fokus="x", feilmelding=True) == "feilmelding"
+    assert fokusmal(feil=False, kvittering=True, fokus="x", feilmelding=False) == "kvittering"
+    assert fokusmal(feil=False, kvittering=False, fokus="x") == "x"
+
+
+def test_feilmeldingen_har_last_siden_pa_nytt() -> None:
+    """§4.0, UX-DR22: `melding--feil` med teksten og lenken til siden selv (button-secondary)."""
+    mal = miljo.from_string('{% import "core/makroer.html" as m with context %}{{ m.meldinger() }}')
+    html = mal.render(feil=[], kvittering=None, feilmelding="Oppdraget er endret. Last siden på nytt.",
+                      fokusmal="feilmelding", gjeldende_url="/oppdrag/7")
+    assert '<div class="melding melding--feil" id="feilmelding" tabindex="-1" autofocus>' in html
+    assert "<span>Oppdraget er endret. Last siden på nytt.</span>" in html
+    assert '<a class="knapp knapp--sekundar melding__knapp" href="/oppdrag/7">Last siden på nytt</a>' in html
+    assert "role=" not in html
+
+
+def test_bekreft_dialog_makroen() -> None:
+    """NFR-8, UX-DR18: navn fra spørsmålet, beskrivelse, CSRF, skjulte felt, primær- og angreknapp."""
+    mal = miljo.from_string(
+        '{% import "core/makroer.html" as m with context %}'
+        '{{ m.bekreft_dialog("d1", sporsmal, "Det kan ikke angres.", "/oppdrag/1/avbryt", '
+        '"Ja, avbryt oppdraget", "Behold oppdraget", skjulte={"fra": "mine"}) }}'
+    )
+    html = mal.render(csrf_token="nokkel", sporsmal="Avbryte «<b>x</b>»?")
+    assert '<dialog class="dialog" id="d1" aria-labelledby="d1-sporsmal" aria-describedby="d1-forklaring">' in html
+    assert '<h2 class="dialog__sporsmal" id="d1-sporsmal" tabindex="-1">Avbryte «&lt;b&gt;x&lt;/b&gt;»?</h2>' in html
+    assert '<form method="post" action="/oppdrag/1/avbryt">' in html
+    assert '<input type="hidden" name="csrf_token" value="nokkel">' in html
+    assert '<input type="hidden" name="fra" value="mine">' in html
+    assert '<button class="knapp knapp--primar" type="submit">Ja, avbryt oppdraget</button>' in html
+    assert '<button class="tekstknapp" type="button" data-lukk-dialog>Behold oppdraget</button>' in html
+    assert "<a " not in html
+
+
+def test_stilarket_har_dialog_og_snarveier() -> None:
+    """UX-DR18, NFR-6: dialogen etter DESIGN.md § dialog, og snarveiene under en skillelinje."""
+    css = CSS.read_text(encoding="utf-8")
+    dialog = re.search(r"\n\.dialog \{(.*?)\n\}", css, re.S).group(1)
+    for regel in ("max-width: 480px;", "width: calc(100% - 32px);", "max-height: calc(100dvh - 32px);",
+                  "overflow-y: auto;", "box-shadow: var(--shadow-dialog);", "border-radius: var(--rounded-xl);"):
+        assert regel in dialog, regel
+    assert ".dialog::backdrop {\n  background: rgba(47, 48, 45, .55);" in css
+    handlinger = re.search(r"\n\.listerad__handlinger \{(.*?)\n\}", css, re.S).group(1)
+    assert "border-top: 1px solid var(--color-border);" in handlinger and "flex-wrap: wrap;" in handlinger
+    tvungne = re.findall(r"@media \(forced-colors: active\) \{(.*?)\n\}", css, re.S)
+    assert any(".dialog" in blokk and "border:" in blokk for blokk in tvungne)

@@ -24,8 +24,10 @@ erfaring på (AD-9, AD-10, FR-21).
 bygges (AR-27, FR-11).
 
 Fokus (UX-DR27): høyst ett fokusmål per side, i rekkefølgen
-feiloppsummering > kvittering > sidens eget mål (`fokus`). Malen setter
-`autofocus` der `fokusmal` sier.
+feiloppsummering > feilmelding > kvittering > sidens eget mål (`fokus`).
+Malen setter `autofocus` der `fokusmal` sier. Feilmeldingen er den faste
+teksten etter en `Konflikt` (story 2.5), og `gjeldende_url` er adressen til
+siden selv, som lenken «Last siden på nytt» går til.
 """
 
 from __future__ import annotations
@@ -41,7 +43,14 @@ from starlette.responses import HTMLResponse
 from starlette.templating import Jinja2Templates
 
 from app.core import domene
-from app.core.kvittering import har_kvitteringscookie, les_kvittering, slett_kvittering
+from app.core.kvittering import (
+    har_feilmeldingscookie,
+    har_kvitteringscookie,
+    les_feilmelding,
+    les_kvittering,
+    slett_feilmelding,
+    slett_kvittering,
+)
 
 APP_MAPPE = Path(__file__).resolve().parents[1]
 APPNAVN = "Nabolagshelten"
@@ -136,10 +145,14 @@ def tilbake_url(request: Request) -> str:
     return "/logg-inn"
 
 
-def fokusmal(*, feil: bool, kvittering: bool, fokus: str | None) -> str | None:
-    """Ett fokusmål: feiloppsummering > kvittering > sidens eget mål (UX-DR27)."""
+def fokusmal(
+    *, feil: bool, kvittering: bool, fokus: str | None, feilmelding: bool = False
+) -> str | None:
+    """Ett fokusmål: feiloppsummering > feilmelding > kvittering > sidens eget mål (UX-DR27)."""
     if feil:
         return "feiloppsummering"
+    if feilmelding:
+        return "feilmelding"
     if kvittering:
         return "kvittering"
     return fokus
@@ -154,6 +167,7 @@ def _kontekst(
         "innlogget": getattr(request.state, "innlogget", None),
         "csrf_token": getattr(request.state, "csrf", ""),
         "tilbake_url": tilbake_url(request),
+        "gjeldende_url": request.url.path + (f"?{request.url.query}" if request.url.query else ""),
         **ctx,
     }
 
@@ -204,13 +218,17 @@ def render(
     kontekst = _kontekst(request, tittel, ctx, feil_i_tittel=feil_i_tittel)
     kontekst.setdefault("feil", [])
     kontekst.setdefault("kvittering", les_kvittering(request))
+    kontekst.setdefault("feilmelding", les_feilmelding(request))
     kontekst.update(
         aktiv_meny=aktiv_meny,
         meny_antall=meny_antall(request) if med_menytall else 0,
         fokus=fokus,
         underside=underside,
         fokusmal=fokusmal(
-            feil=bool(kontekst["feil"]), kvittering=bool(kontekst["kvittering"]), fokus=fokus
+            feil=bool(kontekst["feil"]),
+            kvittering=bool(kontekst["kvittering"]),
+            fokus=fokus,
+            feilmelding=bool(kontekst["feilmelding"]),
         ),
     )
     svar = _maler.TemplateResponse(
@@ -219,6 +237,10 @@ def render(
     if har_kvitteringscookie(request):
         # Kvitteringen vises én gang og slettes i samme svar (UX-DR22).
         slett_kvittering(request, svar)
+    if har_feilmeldingscookie(request):
+        # Feilmeldingen etter en konflikt vises også én gang (§4.0). «Last siden på nytt»
+        # laster derfor siden uten meldingen.
+        slett_feilmelding(request, svar)
     return svar
 
 

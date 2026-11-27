@@ -11,8 +11,10 @@
   fanger den og viser skjemaet igjen med 422, alle feilene og verdiene (NFR-10).
 - `Duplikat` betyr at det samme skjemaet allerede er sendt (AD-2, NFR-5).
   Handleren sender brukeren med 303 til det som finnes, uten kvittering.
-- `Konflikt` betyr at raden er endret av noen andre (AD-2). Den har ingen
-  handler ennå; ruta som trenger den, får en i story 2.5.
+- `Konflikt` betyr at raden er endret av noen andre (AD-2, §4.0). Handleren
+  sender brukeren med 303 til `til_url` med feilmeldingen i den signerte
+  cookien `feilmelding` (bare faste nøkler, story 2.5). Siden der viser
+  meldingen i fokus med lenken «Last siden på nytt».
 """
 
 from __future__ import annotations
@@ -28,6 +30,7 @@ from starlette.responses import HTMLResponse, RedirectResponse, Response
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from app.core.headere import med_sikkerhetsheadere
+from app.core.kvittering import nokkel_for_feilmelding, sett_feilmelding
 from app.core.render import render
 
 logger = logging.getLogger(__name__)
@@ -122,12 +125,20 @@ async def _duplikat(request: Request, exc: Exception) -> Response:
     return RedirectResponse(exc.til_url, status_code=303)
 
 
+async def _konflikt(request: Request, exc: Exception) -> Response:
+    assert isinstance(exc, Konflikt)
+    svar = RedirectResponse(exc.til_url, status_code=303)
+    sett_feilmelding(request, svar, nokkel_for_feilmelding(exc.melding))
+    return svar
+
+
 def registrer_feilhandlere(app: FastAPI) -> None:
     app.add_exception_handler(StarletteHTTPException, _http_feil)
     app.add_exception_handler(RequestValidationError, _valideringsfeil)
     app.add_exception_handler(FinnesIkke, _finnes_ikke)
     app.add_exception_handler(IngenTilgang, _finnes_ikke)
     app.add_exception_handler(Duplikat, _duplikat)
+    app.add_exception_handler(Konflikt, _konflikt)
 
 
 def logg_uventet_feil(scope: Scope, exc: BaseException) -> None:

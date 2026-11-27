@@ -8,7 +8,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from app.core.feil import FinnesIkke, IngenTilgang, RegelBrudd
+from app.core.feil import FinnesIkke, IngenTilgang, Konflikt, RegelBrudd
 from app.core.sesjon import offentlig
 from app.core.headere import SIKKERHETSHEADERE
 
@@ -42,6 +42,11 @@ def feilruter(app: FastAPI) -> FastAPI:
     @offentlig
     def ingen_tilgang() -> None:
         raise IngenTilgang
+
+    @app.get("/_test/konflikt")
+    @offentlig
+    def konflikt() -> None:
+        raise Konflikt("Oppdraget er endret. Last siden på nytt.", "/logg-inn")
 
     @app.get("/_test/tall")
     @offentlig
@@ -159,3 +164,56 @@ def test_regelbrudd_barer_alle_feil_i_rekkefolge() -> None:
 def test_regelbrudd_krever_minst_en_feil() -> None:
     with pytest.raises(ValueError):
         RegelBrudd([])
+
+
+# ---------- Konflikt (AD-2, §4.0, story 2.5) ----------
+
+
+def test_konflikt_gir_303_med_feilmeldingen_i_cookien(klient: TestClient, feilruter) -> None:
+    """§4.0: `Konflikt` gir 303 til `til_url`, og siden der viser feilmeldingen én gang."""
+    svar = klient.get("/_test/konflikt", follow_redirects=False)
+    assert svar.status_code == 303
+    assert svar.headers["location"] == "/logg-inn"
+    cookie = svar.headers["set-cookie"]
+    assert cookie.startswith("feilmelding=") and "HttpOnly" in cookie and "Oppdraget" not in cookie
+    side = klient.get("/logg-inn")
+    assert "<span>Oppdraget er endret. Last siden på nytt.</span>" in side.text
+    assert 'href="/logg-inn">Last siden på nytt</a>' in side.text
+    assert 'id="feilmelding" tabindex="-1" autofocus' in side.text
+    assert side.text.count("autofocus") == 1  # feilmeldingen går foran «E-post»
+    assert "Last siden på nytt" not in klient.get("/logg-inn").text
+
+
+def test_forfalsket_feilmeldingscookie_ignoreres(klient: TestClient) -> None:
+    """Bare signerte, faste nøkler gir tekst, så cookien aldri kan vise annen tekst."""
+    klient.cookies.set("feilmelding", "konflikt")
+    assert 'id="feilmelding"' not in klient.get("/logg-inn").text
+
+
+def test_laas_gir_konflikt() -> None:
+    """AD-2: «database is locked» blir `Konflikt`; andre feil slipper gjennom uendret."""
+    import sqlite3
+
+    from sqlalchemy.exc import OperationalError
+
+    from app.core.db import laas_gir_konflikt
+
+    with pytest.raises(Konflikt) as konflikt:
+        with laas_gir_konflikt("Oppdraget er endret. Last siden på nytt.", "/oppdrag/1"):
+            raise OperationalError("BEGIN IMMEDIATE", {}, sqlite3.OperationalError("database is locked"))
+    assert konflikt.value.til_url == "/oppdrag/1"
+    with pytest.raises(OperationalError):
+        with laas_gir_konflikt("x", "/"):
+            raise OperationalError("SELECT 1", {}, sqlite3.OperationalError("disk I/O error"))
+    with pytest.raises(ValueError):
+        with laas_gir_konflikt("x", "/"):
+            raise ValueError("annen feil")
+
+
+def test_ukjent_feilmelding_gir_valueerror() -> None:
+    """Bare faste tekster kan bli feilmeldinger; en ukjent tekst er en programmeringsfeil."""
+    from app.core.kvittering import nokkel_for_feilmelding
+
+    assert nokkel_for_feilmelding("Oppdraget er endret. Last siden på nytt.") == "konflikt"
+    with pytest.raises(ValueError):
+        nokkel_for_feilmelding("Noe annet.")

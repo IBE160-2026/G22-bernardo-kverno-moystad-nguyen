@@ -2,19 +2,27 @@
 
 Samme kode kjører mot SQLite (lokalt og i test) og Postgres (CI og Supabase).
 Skjemaet endres bare med Alembic, aldri med `create_all` (AD-13).
+`laas_gir_konflikt` gjør «database is locked» fra SQLite om til `Konflikt` (AD-2).
 """
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import datetime, timezone
 
 from fastapi import Request
 from sqlalchemy import DateTime, Engine, MetaData, create_engine, event
 from sqlalchemy.engine import make_url
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from sqlalchemy.pool import NullPool
 from sqlalchemy.types import TypeDecorator
+
+from app.core.feil import Konflikt
+
+logger = logging.getLogger(__name__)
 
 NAVNEKONVENSJON = {
     "ix": "ix_%(column_0_label)s",
@@ -85,6 +93,25 @@ def lag_motor(url: str) -> Engine:
         return motor
 
     return create_engine(url, poolclass=NullPool, connect_args={"prepare_threshold": None})
+
+
+@contextmanager
+def laas_gir_konflikt(melding: str, til_url: str) -> Iterator[None]:
+    """Gjør «database is locked» fra SQLite om til `Konflikt(melding, til_url)` (AD-2).
+
+    Med `BEGIN IMMEDIATE` venter en skriving på låsen til en annen er ferdig. Går
+    ventetiden ut, er raden i praksis endret av noen andre, og brukeren skal få
+    «Oppdraget er endret. Last siden på nytt.», ikke en 500. Alle andre feil,
+    også andre `OperationalError`, slipper gjennom uendret.
+    """
+    try:
+        yield
+    except OperationalError as feil:
+        if "database is locked" not in str(feil.orig if feil.orig is not None else feil):
+            raise
+        # Bare stien, aldri SQL-en eller verdiene, som kan inneholde personopplysninger (AR-30).
+        logger.warning("Databasen var låst; Konflikt til %s", til_url)
+        raise Konflikt(melding, til_url) from feil
 
 
 def url_uten_passord(url: str) -> str:
