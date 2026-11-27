@@ -67,7 +67,7 @@
 - [x] 2026-11-25 [story-1-5-automatisk-test-uu](985-2026-11-25-11-58-32-story-1-5-automatisk-test-uu.md) — vakt i `Settings`: nekt `APP_ENV=test` og `local` når `VERCEL` er satt (B5, `deferred-work.md`) (løst 2026-11-26, T-1 `e22e9f4`)
 - [x] 2026-11-26 [retrospektiv-epic-1](984-2026-11-26-22-05-08-retrospektiv-epic-1.md) — T-1 herding før story 2.1: røyktesten tåler åpen registrering (seed-passordet står i README) med test av grønn sti, `registrer` sletter `innloggingsforsok`, deploy bare fra main, test som importerer `main.py`, E2E-sjekk av menyen ved 360/1280 px, B5-vakten og README-status (løst 2026-11-26, branch `story/t-1-herding`, se [t-1-herding](983-2026-11-26-22-28-43-t-1-herding.md))
 - [ ] 2026-11-26 [retrospektiv-epic-1](984-2026-11-26-22-05-08-retrospektiv-epic-1.md) — T-2 story 2.3: akseptansekriterium om at `neste` bæres gjennom «Registrer deg» og registreringen
-- [ ] 2026-11-26 [retrospektiv-epic-1](984-2026-11-26-22-05-08-retrospektiv-epic-1.md) — T-3 story 2.1: `last_eksempeldata` tømmer alle tabeller unntatt `postnummer`, med test
+- [x] 2026-11-26 [retrospektiv-epic-1](984-2026-11-26-22-05-08-retrospektiv-epic-1.md) — T-3 story 2.1: `last_eksempeldata` tømmer alle tabeller unntatt `postnummer`, med test (løst 2026-11-27, c6009e8, se [story-2-1-legge-ut-oppdrag](982-2026-11-27-08-21-44-story-2-1-legge-ut-oppdrag.md))
 - [ ] 2026-11-26 [retrospektiv-epic-1](984-2026-11-26-22-05-08-retrospektiv-epic-1.md) — T-4 story 5.1: `app.state.ki_utgave` settes alltid i `lag_app()`
 - [ ] 2026-11-26 [retrospektiv-epic-1](984-2026-11-26-22-05-08-retrospektiv-epic-1.md) — T-5 DoD: senere stories settes ikke `done` før tastatursjekken er gjort eller eksplisitt utsatt til 6.1
 - [ ] 2026-11-26 [retrospektiv-epic-1](984-2026-11-26-22-05-08-retrospektiv-epic-1.md) — T-6 specer for stories som endrer en flyt en tidligere story eide, lister den storyens invarianter i I/O-matrisen
@@ -75,3 +75,6 @@
 - [ ] 2026-11-26 [retrospektiv-epic-1](984-2026-11-26-22-05-08-retrospektiv-epic-1.md) — avgjør om reviewen for små stories skal begrenses (bare medium og høyere, eller færre linser) når 21 stories gjenstår
 - [x] 2026-11-26 [t-1-herding](983-2026-11-26-22-28-43-t-1-herding.md) — etter merge av T-1: sjekk at Deploy på `main` er grønn med den nye røyktesten, og sett `epic-1-retro-T1-herding` til `done` i sprint-status (løst 2026-11-26, Deploy 45899388775 grønn)
 - [ ] 2026-11-26 [t-1-herding](983-2026-11-26-22-28-43-t-1-herding.md) — GitHub Environment `production` (bare `main`, med hemmelighetene) som ekte vern for deploy; krever admin (`deferred-work.md`)
+- [ ] 2026-11-27 [story-2-1-legge-ut-oppdrag](982-2026-11-27-08-21-44-story-2-1-legge-ut-oppdrag.md) — tastatursjekk (cirka fem minutter) av «Nytt oppdrag» og detaljsiden, utsatt til 6.1
+- [ ] 2026-11-27 [story-2-1-legge-ut-oppdrag](982-2026-11-27-08-21-44-story-2-1-legge-ut-oppdrag.md) — Epic 3: `endre_status` gir misvisende `Konflikt` når tidspunktet er passert (`deferred-work.md`)
+- [ ] 2026-11-27 [story-2-1-legge-ut-oppdrag](982-2026-11-27-08-21-44-story-2-1-legge-ut-oppdrag.md) — story 3.1: tømmingen i seed må ta hensyn til FK fra `interesse` (`deferred-work.md`)
