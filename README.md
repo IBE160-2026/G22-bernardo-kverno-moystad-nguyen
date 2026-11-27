@@ -21,7 +21,7 @@ Prosjektet er i implementasjonsfasen: Epic 1 (konto og innlogging) er ferdig, og
 | UX-design | Ferdig: designsystem, atferd, mockups og tilgjengelighetsgjennomgang |
 | Arkitektur | Ferdig: FastAPI + Jinja, SQLite lokalt og Supabase Postgres på Vercel (AD-1–AD-17) |
 | Epics og stories | Ferdig: [epics.md](_bmad-output/planning-artifacts/epics.md) og [sprint-status.yaml](_bmad-output/implementation-artifacts/sprint-status.yaml) |
-| Implementasjon og testing | Pågår: Epic 1 ferdig (story 1.1–1.5: skjelett, innlogging, publisering i produksjon, registrering og automatisk test av universell utforming), med retrospektiv og herding. Epic 2 pågår: story 2.1 (legge ut oppdrag) |
+| Implementasjon og testing | Pågår: Epic 1 ferdig (story 1.1–1.5: skjelett, innlogging, publisering i produksjon, registrering og automatisk test av universell utforming), med retrospektiv og herding. Epic 2 pågår: story 2.1 (legge ut oppdrag) og 2.2 (nytt oppdrag i to steg på mobil, med forhåndsvisning) |
 
 ## Kom i gang
 

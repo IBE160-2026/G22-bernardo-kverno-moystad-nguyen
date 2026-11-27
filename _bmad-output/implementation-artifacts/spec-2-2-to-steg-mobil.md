@@ -2,7 +2,7 @@
 title: 'Story 2.2: Nytt oppdrag i to steg på mobil, med forhåndsvisning'
 type: 'feature'
 created: '2026-11-27'
-status: 'in-progress'
+status: 'done'
 baseline_commit: 'acfb9692bf1132cb3d7136eb5d0e33d395b0c5fb'
 route: 'dispatch'
 review_loop_iteration: 0
@@ -82,16 +82,16 @@ Klokka står fast på tirsdag 24.11.2026 kl. 13:00 norsk tid (`FAST_KLOKKE`). «
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `app/core/templates/core/makroer.html` -- makroen `oppdragskort(kategori, tittel, tid, sted, pris, forhandsvisning=False)`: kategorimerke, tittel, fakta med klokke- og stedikon, og pris. Med `forhandsvisning=True` er tittelen en `p` med samme stil som `h2`, og hver verdi har `data-felt`. 2.3 bruker makroen med lenke og `h2` -- UX-DR15
-- [ ] `app/oppdrag/templates/oppdrag/ny.html`, `app/oppdrag/routes.py` -- to `section` med `data-steg="1"` og `"2"`, og hver sin `h2`. Knappene «Neste» (`type="button"`, primær) og «Tilbake til steg 1» (`button-text`) rendres med `hidden`. Overskriftene og titlene for stegene, både med og uten «Feil: », legges i `data-`-attributter og lages med `sidetittel`. Tekstene for tomme felt ligger på feltene. Forhåndsvisningen er en `section` med `aria-labelledby` til teksten «Slik vises oppdraget for andre.» og `oppdragskort(..., forhandsvisning=True)`, rett over knappene. Ruta lager startverdiene til forhåndsvisningen fra `verdier` med de samme reglene som JS (se Design Notes) -- FR-5, UX-DR15, UX-DR16
-- [ ] `app/core/static/js/steg.js` (ny), `base.html` -- `matchMedia("(max-width: 47.99em)")` med lytter på `change`. Skriptet bytter `hidden` på seksjonene, `h2` og knappene, og setter `h1`-tekst, `tabindex="-1"` og `document.title` fra `data-`-attributtene. Det har også sjekken av tomme felt ved «Neste». Enter i steg 1 kaller `preventDefault()` og virker som «Neste». Ved sidelasting med feil vises steget som har feltet i den første lenken i oppsummeringen. Et klikk på en lenke til et felt i det andre steget bytter steg og gir feltet fokus -- AR-28, UX-DR16, UX-DR22, UX-DR27
-- [ ] `app/core/static/js/skjema.js` -- forhåndsvisningen oppdateres ved `input` og `change` i skjemaet, ved endring i `#postnummer-sted` (`MutationObserver`), ved oppstart og ved `pageshow`. Kategoriikonet klones fra den valgte kategoriknappen -- UX-DR15, AR-28
-- [ ] `app/core/static/js/sending.js` -- returnerer straks når `hendelse.defaultPrevented` er sann -- UX-DR28
-- [ ] `app/core/static/css/app.css` -- `[hidden] { display: none !important; }`. `.belopfelt` skjules når «Beløp» ikke er valgt (`fieldset:has(#tilbud-belop:not(:checked))`). Forhåndsvisningskortet får `card`-tokens med 1,5 px stiplet `--color-border`, uten skygge for hover. Seksjonene får samme avstand som `.skjema` -- UX-DR13, UX-DR15, DESIGN.md § Forhåndsvisning
-- [ ] `tests/oppdrag/test_to_steg.py` (ny), `tests/oppdrag/test_legge_ut.py` -- HTTP-tester av HTML-en uten JS: `h1` og to `h2` i rekkefølge, hvilke felt som ligger i hvert `data-steg`, «Neste» og «Tilbake til steg 1» med `hidden`, at tekstene i `data-` er lik konstantene i `service.py` og titlene lik `sidetittel`, og forhåndsvisningen tom, etter 422 og med XSS escaped. Rekkefølgetesten oppdateres, og invariantradene fra 2.1 består -- FR-5, NFR-5, NFR-12, UX-DR15, UX-DR16
-- [ ] `tests/e2e/conftest.py`, `tests/e2e/test_t1.py` -- `fyll_ut_nytt_oppdrag` og hjelperne i T1 trykker «Neste» når knappen er synlig. Nye sider i `SIDER`: `nytt-oppdrag-steg-2`, og `nytt-oppdrag-feil` med feil i begge steg. En egen T1-test kjører «Nytt oppdrag» på én skjerm ved 768 px -- NFR-6, NFR-7, SM-5
-- [ ] `tests/e2e/test_klientatferd.py` -- klienttester for radene i matrisen som trenger nettleser: «Neste» med tomme felt (ingen POST, fokus på oppsummeringen), «Neste» og «Tilbake» (fokus på `h1`, `document.title`), Enter i steg 1, steget med første serverfeil og lenken som bytter steg, endring av bredde, forhåndsvisningen (også poststed, beløp og at den ikke har `aria-live`), «Beløp i kr» (fokus og verdi), én skjerm i en kontekst med `java_script_enabled=False`, og `aria-disabled` på innloggingsknappen -- NFR-7, UX-DR13, UX-DR15, UX-DR16, UX-DR27, UX-DR28
-- [ ] `README.md` -- statuslinja (l. 24) nevner 2.2 -- NFR-2
+- [x] `app/core/templates/core/makroer.html` -- makroen `oppdragskort(kategori, tittel, tid, sted, pris, forhandsvisning=False)`: kategorimerke, tittel, fakta med klokke- og stedikon, og pris. Med `forhandsvisning=True` er tittelen en `p` med samme stil som `h2`, og hver verdi har `data-felt`. 2.3 bruker makroen med lenke og `h2` -- UX-DR15
+- [x] `app/oppdrag/templates/oppdrag/ny.html`, `app/oppdrag/routes.py` -- to `section` med `data-steg="1"` og `"2"`, og hver sin `h2`. Knappene «Neste» (`type="button"`, primær) og «Tilbake til steg 1» (`button-text`) rendres med `hidden`. Overskriftene og titlene for stegene, både med og uten «Feil: », legges i `data-`-attributter og lages med `sidetittel`. Tekstene for tomme felt ligger på feltene. Forhåndsvisningen er en `section` med `aria-labelledby` til teksten «Slik vises oppdraget for andre.» og `oppdragskort(..., forhandsvisning=True)`, rett over knappene. Ruta lager startverdiene til forhåndsvisningen fra `verdier` med de samme reglene som JS (se Design Notes) -- FR-5, UX-DR15, UX-DR16
+- [x] `app/core/static/js/steg.js` (ny), `base.html` -- `matchMedia("(max-width: 47.99em)")` med lytter på `change`. Skriptet bytter `hidden` på seksjonene, `h2` og knappene, og setter `h1`-tekst, `tabindex="-1"` og `document.title` fra `data-`-attributtene. Det har også sjekken av tomme felt ved «Neste». Enter i steg 1 kaller `preventDefault()` og virker som «Neste». Ved sidelasting med feil vises steget som har feltet i den første lenken i oppsummeringen. Et klikk på en lenke til et felt i det andre steget bytter steg og gir feltet fokus -- AR-28, UX-DR16, UX-DR22, UX-DR27
+- [x] `app/core/static/js/skjema.js` -- forhåndsvisningen oppdateres ved `input` og `change` i skjemaet, ved endring i `#postnummer-sted` (`MutationObserver`), ved oppstart og ved `pageshow`. Kategoriikonet klones fra den valgte kategoriknappen -- UX-DR15, AR-28
+- [x] `app/core/static/js/sending.js` -- returnerer straks når `hendelse.defaultPrevented` er sann -- UX-DR28
+- [x] `app/core/static/css/app.css` -- `[hidden] { display: none !important; }`. `.belopfelt` skjules når «Beløp» ikke er valgt (`fieldset:has(#tilbud-belop:not(:checked))`). Forhåndsvisningskortet får `card`-tokens med 1,5 px stiplet `--color-border`, uten skygge for hover. Seksjonene får samme avstand som `.skjema` -- UX-DR13, UX-DR15, DESIGN.md § Forhåndsvisning
+- [x] `tests/oppdrag/test_to_steg.py` (ny), `tests/oppdrag/test_legge_ut.py` -- HTTP-tester av HTML-en uten JS: `h1` og to `h2` i rekkefølge, hvilke felt som ligger i hvert `data-steg`, «Neste» og «Tilbake til steg 1» med `hidden`, at tekstene i `data-` er lik konstantene i `service.py` og titlene lik `sidetittel`, og forhåndsvisningen tom, etter 422 og med XSS escaped. Rekkefølgetesten oppdateres, og invariantradene fra 2.1 består -- FR-5, NFR-5, NFR-12, UX-DR15, UX-DR16
+- [x] `tests/e2e/conftest.py`, `tests/e2e/test_t1.py` -- `fyll_ut_nytt_oppdrag` og hjelperne i T1 trykker «Neste» når knappen er synlig. Nye sider i `SIDER`: `nytt-oppdrag-steg-2`, og `nytt-oppdrag-feil` med feil i begge steg. En egen T1-test kjører «Nytt oppdrag» på én skjerm ved 768 px -- NFR-6, NFR-7, SM-5
+- [x] `tests/e2e/test_klientatferd.py` -- klienttester for radene i matrisen som trenger nettleser: «Neste» med tomme felt (ingen POST, fokus på oppsummeringen), «Neste» og «Tilbake» (fokus på `h1`, `document.title`), Enter i steg 1, steget med første serverfeil og lenken som bytter steg, endring av bredde, forhåndsvisningen (også poststed, beløp og at den ikke har `aria-live`), «Beløp i kr» (fokus og verdi), én skjerm i en kontekst med `java_script_enabled=False`, og `aria-disabled` på innloggingsknappen -- NFR-7, UX-DR13, UX-DR15, UX-DR16, UX-DR27, UX-DR28
+- [x] `README.md` -- statuslinja (l. 24) nevner 2.2 -- NFR-2
 
 **Acceptance Criteria:**
 - Gitt mobil med JS, når Kari fyller ut steg 1, trykker «Neste», fyller ut steg 2 og trykker «Publiser», så havner hun på detaljene med «Oppdraget er lagt ut.» i fokus, og databasen har én rad.
@@ -100,9 +100,42 @@ Klokka står fast på tirsdag 24.11.2026 kl. 13:00 norsk tid (`FAST_KLOKKE`). «
 
 ## Implementation Notes
 
+- Tekstene for steg.js står som `data-`-attributter på `<form data-steg-skjema>`, ikke på `h1`, så `<h1>Nytt oppdrag</h1>` er uendret uten JS. `data-tittel[-n][-feil]` lages med `sidetittel` i `stegdata()` i `routes.py`.
+- Synlighet styres av tre merker: `data-kun-en-skjerm` (de to `h2`), `data-kun-steg` («Neste», «Tilbake til steg 1», rendret med `hidden`) og `data-vis-i-steg="1"` («Tilbake» øverst).
+- `data-tom` står på beskrivelsen, tittelen og `fieldset` for kategori. Feilene som «Neste» legger til, er merket `data-klientfeil` og `data-klientugyldig` og fjernes ved neste trykk. En feiloppsummering fra serveren står urørt når ingen felt er tomme.
+- `<title>` får «Feil: » foran så lenge siden har `#feiloppsummering`.
+- `forhandsvisning()` i `routes.py` og `skjema.js` har de samme reglene. En kategori som ikke finnes (POST rett mot serveren), vises som «–» i stedet for å krasje i `kategori_tekst`. Beløp med bare sifre formateres rett fra sifrene i begge (`_kr_fra_sifre` og `kr()` i skjema.js): nuller foran fjernes, og sifrene grupperes tre og tre med NBSP. Det brukes ingen `int()`, som feiler ved over 4300 sifre, og ingen `Intl`, som kan mangle norske data.
+- `steg.js` lastes uten `defer` rett etter `</form>` i `ny.html`, ikke i `base.html`, så stegvisningen er satt før første opptegning. Bredden avgjøres med `not all and (min-width: 48em)`, det motsatte av CSS-en. Havner fokus i en skjult del når bredden endres, får `h1` fokus.
+- Kortet bruker de nye klassene `.kort`, `.kort--forhandsvisning` og `.kort__tittel`. 2.3 kan bruke `oppdragskort` uten `forhandsvisning`. Da blir tittelen en `h2`, og lenken legges til i 2.3.
+- T1: `nytt-oppdrag-feil` har nå feil i begge steg (4 feil) i stedet for en tom innsending. Den tomme innsendingen er fortsatt dekket over HTTP (`test_tom_innsending_gir_seks_feil_og_beholder_verdiene`).
+
 ## Spec Change Log
 
 ## Review Triage Log
+
+Pass 1 (2026-11-27). Lag: Blind Hunter (BH), Edge Case Hunter (EC), Verification Gap (VG).
+
+| # | Lag | Funn | Verdict | Begrunnelse | Rute |
+|---|---|---|---|---|---|
+| 1 | EC | `_pris` gir `ValueError` i `int()` for et beløp med over 4 300 sifre ved gjenvisning etter 422, og svaret blir 500 (bryter invarianten fra 2.1) | high | Bekreftet: `int('1'*4301)` gir ValueError. `forhandsvisning()` kalles for hver gjenvisning | patch |
+| 2 | EC | `kr()` i `skjema.js` krever `nb-NO` i `Intl`. Uten den blir det «1,000 kr», og siden hopper | low | Sjelden, men retten er en direkte erstatning med samme algoritme som serveren | patch |
+| 3 | EC, BH | Fokus faller til `<body>` når bredden krysser 768 px mens fokus står i et felt i steget som skjules | medium | `vis()` setter `hidden` på seksjonen med fokus. WCAG 2.4.3 | patch |
+| 4 | EC | `max-width: 47.99em` gir et gap mot CSS `min-width: 48em` ved brøkdelsbredder (zoom) | low | Direkte retting: `not all and (min-width: 48em)` | patch |
+| 5 | BH | Mobil viser hele skjemaet et øyeblikk før `steg.js` (defer) deler det | low | Skjer ved hver lasting på mobil. Retten er å laste skriptet synkront rett etter skjemaet | patch |
+| 6 | BH | `<h1>Nytt oppdrag</h1>` står hardkodet ved siden av `NYTT_OPPDRAG` | low | Teksten står to steder. Direkte retting | patch |
+| 7 | BH | NBSP i `test_to_steg.py` er et usynlig U+00A0 | low | Direkte retting til `" "` | patch |
+| 8 | VG | Forhåndsvisningens regler utenom normaltilfellet (annen tekst i beløp, mellomrom, bare dato) og likhet etter 422 har ingen nettlesertest | medium | Forhåndsverifisert av VG: en endring i `pris()` eller tid-regelen ville ikke blitt fanget | patch |
+| 9 | VG, BH | Feiltilstanden fra «Neste» (markup fra klienten) og steg 2 med serverfeil ved 360 px er ikke med i T1 | medium | Forhåndsverifisert av VG. DoD i T1 krever nye tilstander i `SIDER` | patch |
+| 10 | BH, EC | Serverfeil i steg 2 (feltfeil, `aria-invalid`) blir stående når «Neste» erstatter oppsummeringen | low | Krever 422 og deretter at et felt i steg 1 tømmes. Serveren validerer igjen ved «Publiser». Retten krever ny logikk. Specen valgte å erstatte oppsummeringen | reject |
+| 11 | BH | Gamle serverfeil står igjen etter en vellykket «Neste» | low | Bevisst i Design Notes («står urørt til neste innsending»). Lenkene bytter steg og virker | reject |
+| 12 | BH | Tekstene «Skjemaet har N feil», «Uten betaling», « kl. », «kr» og «–» er kopiert i JS | low | Ingen tekst avviker i dag. Retten krever nye `data-`-attributter for hver tekst | reject |
+| 13 | BH | `button.tekstknapp` mangler fokusstil | false | `:focus-visible` gjelder globalt (`app.css` l. 185) | reject |
+| 14 | BH | Testmoduler importerer fixtures fra andre testmoduler | low | Bare utviklere merker det, og først ved omdøping. Retten er refaktorering | reject |
+| 15 | BH | Grenen uten forhåndsvisning i `oppdragskort` har ingen test | low | Brukes og testes i 2.3, som legger til lenken | reject |
+| 16 | BH | Den utsatte tastatursjekken står bare i specen | low | Føres i `issues.md` i sesjonsloggen, som for 2.1 | reject |
+| 17 | BH | `settKategori()` kloner SVG-en ved hver `input` | low | Ubetydelig kostnad | reject |
+| 18 | BH | `poststed()` får postnummeret uten strip, så « 5006» mister poststedet | false | `poststed()` kaller `normaliser_postnummer` (`core/postnummer.py` l. 101) | reject |
+| 19 | EC | Python og JS regner ulike tegn som mellomrom (``–``, ``, `﻿`) | low | Bare med kontrolltegn ingen skriver. Retten krever egen normalisering | reject |
 
 ## Design Notes
 
