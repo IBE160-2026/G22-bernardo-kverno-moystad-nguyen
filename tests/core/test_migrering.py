@@ -17,9 +17,11 @@ from sqlalchemy.orm import Session
 from sqlalchemy.pool import NullPool
 
 import app.identity.models  # noqa: F401  (registrerer tabellene i metadataen)
+import app.oppdrag.models  # noqa: F401
 from app.core.db import Base, UtcDateTime, lag_motor
 from app.core.postnummer import les_tsv, postnummer_tabell
 from app.identity.models import Bruker
+from app.oppdrag.models import Oppdrag
 
 from ..conftest import alembic_config
 
@@ -48,6 +50,97 @@ def test_tabellene_bruker_og_sesjon_finnes(tilkobling: Connection) -> None:
     assert {k["name"] for k in inspektor.get_columns("sesjon")} == {
         "nokkel", "bruker_id", "opprettet", "utloper",
     }
+
+
+def test_tabellen_oppdrag(tilkobling: Connection) -> None:
+    """AR-12, NFR-9: kolonnene i `oppdrag`, uten adresse, og indeksene på eier og tidspunkt."""
+    inspektor = inspect(tilkobling)
+    kolonner = {k["name"]: k for k in inspektor.get_columns("oppdrag")}
+    assert set(kolonner) == {
+        "id", "oppdragsgiver_id", "tittel", "beskrivelse", "kategori", "postnummer", "tidspunkt",
+        "belop", "status", "valgt_hjelper_id", "versjon", "skjema_id", "opprettet", "vesentlig_endret",
+    }
+    assert not any("adresse" in navn for navn in kolonner)  # NFR-9
+    for valgfri in ("belop", "valgt_hjelper_id", "vesentlig_endret"):
+        assert kolonner[valgfri]["nullable"], valgfri
+    for pakrevd in set(kolonner) - {"id", "belop", "valgt_hjelper_id", "vesentlig_endret"}:
+        assert not kolonner[pakrevd]["nullable"], pakrevd
+    assert {i["name"] for i in inspektor.get_indexes("oppdrag")} >= {
+        "ix_oppdrag_oppdragsgiver_id", "ix_oppdrag_tidspunkt",
+    }
+    # AD-2: ingen ON DELETE CASCADE
+    for fremmednokkel in inspektor.get_foreign_keys("oppdrag"):
+        assert (fremmednokkel.get("options") or {}).get("ondelete") is None, fremmednokkel
+
+
+def _oppdrag(eier_id: int, **felt) -> Oppdrag:
+    na = datetime(2026, 11, 24, tzinfo=timezone.utc)
+    verdier = {
+        "oppdragsgiver_id": eier_id, "tittel": "Tittel", "beskrivelse": "Beskrivelse her",
+        "kategori": "hage", "postnummer": "0571", "tidspunkt": na + timedelta(days=1), "belop": 200,
+        "status": "apen", "versjon": 1, "skjema_id": f"skjema-{len(felt)}-{sorted(felt)}", "opprettet": na,
+        **felt,
+    }
+    return Oppdrag(**verdier)
+
+
+@pytest.fixture
+def eier(db: Session) -> Bruker:
+    bruker = Bruker(navn="Eier", opprettet=datetime(2026, 11, 24, tzinfo=timezone.utc))
+    db.add(bruker)
+    db.flush()
+    return bruker
+
+
+def test_skjema_id_er_unik(db: Session, eier: Bruker) -> None:
+    """AD-2, NFR-5: samme `skjema_id` to ganger avvises av databasen."""
+    db.add(_oppdrag(eier.id, skjema_id="samme-skjema-id-123"))
+    db.flush()
+    with pytest.raises(IntegrityError):
+        with db.begin_nested():
+            db.add(_oppdrag(eier.id, skjema_id="samme-skjema-id-123"))
+            db.flush()
+
+
+@pytest.mark.parametrize(
+    "felt",
+    [
+        {"status": "open"},
+        {"status": "utgatt"},
+        {"kategori": "Snømåking"},
+        {"kategori": "hagearbeid"},
+        {"belop": 0},
+        {"belop": 10001},
+        {"belop": -5},
+        {"postnummer": "0000"},
+    ],
+    ids=["status-engelsk", "status-utgatt", "kategori-tekst", "kategori-ukjent", "belop-0",
+         "belop-10001", "belop-negativt", "postnummer-ukjent"],
+)
+def test_databasen_avviser_ugyldige_verdier(db: Session, eier: Bruker, felt: dict) -> None:
+    """AD-10, AR-12: CHECK-constraintene og fremmednøkkelen avviser i både SQLite og Postgres."""
+    with pytest.raises(IntegrityError):
+        with db.begin_nested():
+            db.add(_oppdrag(eier.id, **felt))
+            db.flush()
+
+
+def test_databasen_godtar_alle_koder_i_domene(db: Session, eier: Bruker) -> None:
+    """AD-10: CHECK-listene i migreringene er skrevet for hånd, og `compare_metadata` sammenligner
+    dem ikke. En ny kode i `core/domene.py` uten migrering skal feile her, ikke i produksjon."""
+    from app.core.domene import KATEGORIKODER, STATUSKODER
+
+    for kode in sorted(KATEGORIKODER):
+        db.add(_oppdrag(eier.id, kategori=kode, skjema_id=f"kategori-{kode}"))
+    for kode in sorted(STATUSKODER):
+        db.add(_oppdrag(eier.id, status=kode, skjema_id=f"status-{kode}"))
+    db.flush()
+
+
+@pytest.mark.parametrize("belop", [None, 1, 10000])
+def test_databasen_godtar_belop_grensene(db: Session, eier: Bruker, belop: int | None) -> None:
+    db.add(_oppdrag(eier.id, belop=belop))
+    db.flush()
 
 
 def test_epost_er_unik(db: Session) -> None:
