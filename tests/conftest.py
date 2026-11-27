@@ -23,7 +23,7 @@ import tempfile
 import itertools
 import secrets
 from collections.abc import Callable, Iterator
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 os.environ["APP_ENV"] = "test"
@@ -50,6 +50,7 @@ from app.core.config import hent_settings  # noqa: E402
 from app.core.db import lag_motor  # noqa: E402
 from app.core.sesjon import SESJON_COOKIE  # noqa: E402
 from app.identity.models import Bruker, Sesjon  # noqa: E402
+from app.oppdrag.models import Oppdrag  # noqa: E402
 from app.identity.service import (  # noqa: E402
     SESJON_VARIGHET,
     hash_passord,
@@ -186,3 +187,38 @@ def logg_inn_som(db: Session) -> Callable[[TestClient, Bruker], str]:
         return nokkel
 
     return _logg_inn
+
+
+@pytest.fixture
+def lag_oppdrag(db: Session, lag_bruker: Callable[..., Bruker]) -> Callable[..., Oppdrag]:
+    """Lager et oppdrag med gyldige standardverdier. Feltene kan overstyres (AR-29).
+
+    Standard: ny oppdragsgiver, i morgen på samme klokkeslett, 0571, 200 kr,
+    status `apen` og unik `skjema_id`. `oppdragsgiver=<Bruker>` er en snarvei
+    for `oppdragsgiver_id`. Committer bare sin egen SAVEPOINT, som `lag_bruker`.
+    """
+
+    def _lag(**felt) -> Oppdrag:
+        oppdragsgiver = felt.pop("oppdragsgiver", None)
+        if "oppdragsgiver_id" not in felt:
+            felt["oppdragsgiver_id"] = (oppdragsgiver or lag_bruker()).id
+        na = klokke.na()
+        verdier = {
+            "tittel": "Måke snø i innkjørselen",
+            "beskrivelse": "Trenger noen som kan måke snø i innkjørselen min i morgen.",
+            "kategori": "snomaking",
+            "postnummer": "0571",
+            "tidspunkt": na + timedelta(days=1),
+            "belop": 200,
+            "status": "apen",
+            "versjon": 1,
+            "skjema_id": secrets.token_urlsafe(16),
+            "opprettet": na,
+            **felt,
+        }
+        oppdrag = Oppdrag(**verdier)
+        db.add(oppdrag)
+        db.commit()
+        return oppdrag
+
+    return _lag
