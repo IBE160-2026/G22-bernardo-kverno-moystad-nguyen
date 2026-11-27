@@ -9,7 +9,10 @@
 - `hent_for_visning`: det malene får vite om et oppdrag, etter tilgangsregelen
   i FR-9. Aldri telefon, e-post eller fødselsdato (AD-16).
 - `utgatt`: eneste definisjon av «tidspunktet er passert» (FR-8, AD-3). Brukes
-  av `endre_status`, `ledige_oppdrag` og merket i «Mine oppdrag» (2.4).
+  av `endre_status`, `ledige_oppdrag` og `merker_lagt_ut`.
+- `lagt_ut_av`: radene i «Mine oppdrag» med merkene fra `merker_lagt_ut`, og
+  `antall_trenger_handling`: menykroken, som teller radene med minst ett merke
+  (FR-8, FR-18, NFR-11, AD-3). Ingenting av dette lagres.
 - `ledige_oppdrag`: kortene i oversikten (FR-10, FR-11). `erfaring`: fullførte
   oppdrag som hjelper, til oppdragsgiverblokken og profilen (FR-9, FR-21, AR-13).
 
@@ -45,6 +48,8 @@ VELG_KATEGORI = "Velg en kategori."
 VELG_TILBUD = "Velg beløp eller uten betaling."
 BELOP_FEIL = "Skriv et beløp fra 1 til 10 000 kr, i hele kroner."
 KONFLIKT = "Oppdraget er endret. Last siden på nytt."
+# Handlingsmerket på egne utgåtte oppdrag, ordrett fra FR-18 (EXPERIENCE.md § Merker).
+TIDSPUNKTET_ER_PASSERT = "Tidspunktet er passert"
 
 TILBUD = frozenset({"belop", "uten"})
 
@@ -272,10 +277,16 @@ class OppdragVisning:
 
 @dataclass(frozen=True)
 class OppdragRad:
-    """En rad i «Mine oppdrag» før story 2.4: bare id og tittel."""
+    """En rad i «Oppdrag jeg har lagt ut» (FR-18). Ingen personfelt (AD-16).
+
+    `merker` er handlingsmerkene fra `merker_lagt_ut`, i visningsrekkefølge.
+    """
 
     id: int
     tittel: str
+    status: str
+    tidspunkt: datetime
+    merker: tuple[str, ...]
 
 
 def hent_for_visning(db: Session, oppdrag_id: int, bruker_id: int) -> OppdragVisning:
@@ -308,14 +319,53 @@ def hent_for_visning(db: Session, oppdrag_id: int, bruker_id: int) -> OppdragVis
     )
 
 
+# ---------- «Mine oppdrag» (FR-8, FR-18, NFR-11, AD-3) ----------
+
+
+def merker_lagt_ut(status: str, tidspunkt: datetime, *, na: datetime) -> tuple[str, ...]:
+    """Handlingsmerkene på et eget oppdrag, beregnet ved lesing (FR-8, FR-18, AD-3).
+
+    Foreløpig bare «Tidspunktet er passert»: status `apen` og `utgatt(tidspunkt)`.
+    Story 3.5 legger de andre merkene til her, så lista og tallet i menyen alltid
+    bruker samme definisjon.
+    """
+    if status == "apen" and utgatt(tidspunkt, na=na):
+        return (TIDSPUNKTET_ER_PASSERT,)
+    return ()
+
+
 def lagt_ut_av(db: Session, bruker_id: int) -> list[OppdragRad]:
-    """Oppdragene brukeren har lagt ut, nyeste først (grunnversjon til story 2.4)."""
+    """Oppdragene brukeren har lagt ut, med merker (FR-18, AD-3).
+
+    Sortert etter tidspunkt, tidligste først, så etter når oppdraget ble lagt ut,
+    eldste først, og til sist etter id, så rekkefølgen alltid er fast (som FR-10).
+    `klokke.na()` leses én gang, så alle radene bruker samme grense.
+    """
+    na = klokke.na()
     rader = db.execute(
-        select(Oppdrag.id, Oppdrag.tittel)
+        select(Oppdrag.id, Oppdrag.tittel, Oppdrag.status, Oppdrag.tidspunkt)
         .where(Oppdrag.oppdragsgiver_id == bruker_id)
-        .order_by(Oppdrag.opprettet.desc(), Oppdrag.id.desc())
+        .order_by(Oppdrag.tidspunkt, Oppdrag.opprettet, Oppdrag.id)
     ).all()
-    return [OppdragRad(id=rad.id, tittel=rad.tittel) for rad in rader]
+    return [
+        OppdragRad(
+            id=rad.id,
+            tittel=rad.tittel,
+            status=rad.status,
+            tidspunkt=rad.tidspunkt,
+            merker=merker_lagt_ut(rad.status, rad.tidspunkt, na=na),
+        )
+        for rad in rader
+    ]
+
+
+def antall_trenger_handling(db: Session, bruker_id: int) -> int:
+    """Menykroken `(db, bruker_id) -> int`: antall egne oppdrag med minst ett merke (NFR-11, AD-3).
+
+    Regnes fra `lagt_ut_av`, ikke med en egen `COUNT`, så lista og tallet aldri
+    kan vise forskjellig. Et oppdrag med flere merker telles én gang.
+    """
+    return sum(1 for rad in lagt_ut_av(db, bruker_id) if rad.merker)
 
 
 # ---------- oversikten (FR-10, FR-11) ----------
