@@ -8,7 +8,7 @@
   tilkoblingen (`join_transaction_mode="create_savepoint"`).
 - `sett_na` stiller klokka.
 - Fabrikkene kommer i storyene som lager tabellene: `lag_bruker` og
-  `logg_inn_som` i 1.2, `lag_oppdrag` i 2.1, `lag_interesse` i 3.1 og
+  `logg_inn_som` i 1.2, `lag_oppdrag` i 2.1, `lag_bilde` i 2.7, `lag_interesse` i 3.1 og
   `lag_tilbakemelding` i 4.2. Fabrikkene committer bare sin egen SAVEPOINT, så
   alt rulles tilbake etter testen.
 - bcrypt kjører med kostnad 4 fordi `APP_ENV=test` (AR-29).
@@ -50,7 +50,8 @@ from app.core.config import hent_settings  # noqa: E402
 from app.core.db import lag_motor  # noqa: E402
 from app.core.sesjon import SESJON_COOKIE  # noqa: E402
 from app.identity.models import Bruker, Sesjon  # noqa: E402
-from app.oppdrag.models import Oppdrag  # noqa: E402
+from app.oppdrag.bilde import behandle  # noqa: E402
+from app.oppdrag.models import Oppdrag, Oppdragsbilde  # noqa: E402
 from app.identity.service import (  # noqa: E402
     SESJON_VARIGHET,
     hash_passord,
@@ -220,5 +221,33 @@ def lag_oppdrag(db: Session, lag_bruker: Callable[..., Bruker]) -> Callable[...,
         db.add(oppdrag)
         db.commit()
         return oppdrag
+
+    return _lag
+
+
+@pytest.fixture
+def lag_bilde(db: Session) -> Callable[..., Oppdragsbilde]:
+    """Gir et oppdrag et bilde, behandlet av `oppdrag/bilde.py` (FR-27, story 2.7).
+
+    Standard: en JPEG på 800 × 600 fra `tests/bilder.py` og bildeteksten
+    «Snødekt innkjørsel med en spade». Committer bare sin egen SAVEPOINT.
+    """
+    from tests import bilder
+
+    def _lag(oppdrag: Oppdrag, *, bildetekst: str = "Snødekt innkjørsel med en spade",
+             data: bytes | None = None) -> Oppdragsbilde:
+        bilde = behandle(data if data is not None else bilder.jpeg())
+        rad = Oppdragsbilde(
+            oppdrag_id=oppdrag.id,
+            bilde=bilde.bilde,
+            miniatyr=bilde.miniatyr,
+            bildetekst=bildetekst,
+            bredde=bilde.bredde,
+            hoyde=bilde.hoyde,
+            opprettet=klokke.na(),
+        )
+        db.add(rad)
+        db.commit()
+        return rad
 
     return _lag

@@ -3,7 +3,8 @@
 FR-6, FR-8, NFR-5, NFR-10, NFR-12, AD-2, AD-3, UX-DR7, UX-DR22, UX-DR27, §4.0. Klokka
 står fast på tirsdag 24.11.2026 kl. 13:00 norsk tid, og databasen har testbrukerne og
 eksempeloppdragene fra seed: Kari eier «Måke snø i innkjørselen» (Åpen, i morgen kl.
-09:00, 200 kr) og det utgåtte «Bære ved opp til tredje etasje». Ola bor i 0571.
+09:00, 200 kr, med bilde fra story 2.7) og det utgåtte «Bære ved opp til tredje etasje»
+(uten bilde). Ola bor i 0571.
 Også `Konflikt`-handleren med feilmeldingen og «Last siden på nytt», og at «Tilbake» i
 detaljene aldri går til skjemaet (invariant 2.3/2.4).
 """
@@ -108,6 +109,8 @@ def post_rediger(klient: TestClient, oppdrag_id: int, **data: str):
 
 GYLDIG = {
     "beskrivelse": "Trenger noen som kan måke snø i innkjørselen min i morgen tidlig.",
+    # «Måke snø» har bilde i seed (story 2.7), så bildeteksten er med i skjemaet (FR-27).
+    "bildetekst": "Snødekt innkjørsel med en spade",
     "tittel": MAKE,
     "kategori": "snomaking",
     "postnummer": "0571",
@@ -136,8 +139,10 @@ def test_skjemaet_er_utfylt_med_de_lagrede_verdiene(som, make) -> None:
     assert ">Slik vises oppdraget for andre.</p>" in html
     assert ">Lagre endringer</button>" in html
     for fravaer in ("Få forslag", "skjema_id", "Publiser", "Neste", "Tilbake til steg 1",
-                    "data-steg-skjema", "steg.js", "autofocus", 'type="file"', "Bytt bilde"):
+                    "data-steg-skjema", "steg.js", "autofocus"):
         assert fravaer not in html, fravaer
+    # Story 2.7: «Måke snø» har bilde i seed, så filfeltet heter «Bytt bilde» (FR-27).
+    assert 'type="file"' in html and ">Bytt bilde</label>" in html
     # Én skjerm med de to h2 (spec 2.5: ingen steg).
     assert ">Hva trenger du hjelp til?</h2>" in html and ">Når og hvor?</h2>" in html
     form = attrs(html, "form", method="post")

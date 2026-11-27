@@ -103,7 +103,7 @@ def test_opprett_oppdrag_oppforer_seg_som_for(db: Session, lag_bruker) -> None:
 
 def test_skjemaverdier_for_gir_de_lagrede_verdiene(db: Session, lagret) -> None:
     oppdrag = hent_eget_oppdrag(db, lagret.id, lagret.oppdragsgiver_id, statuser={"apen"})
-    assert skjemaverdier_for(oppdrag) == SAMME
+    assert skjemaverdier_for(oppdrag) == {**SAMME, "bildetekst": ""}  # uten bilde (story 2.7)
 
 
 def test_skjemaverdier_for_uten_betaling(db: Session, lag_oppdrag) -> None:

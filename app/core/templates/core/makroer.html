@@ -138,9 +138,18 @@
    som `h2`, så den ikke forveksles med sidens overskrifter, og hver verdi har `data-felt`,
    som skjema.js oppdaterer. Kortet har da ingen lenke. Oversikten (2.3) bruker `h2`, og med
    `href` er tittelen lenken til detaljene. Trykkflaten er lenkens ::after, som dekker kortet,
-   så kortet ikke har andre lenker eller knapper (EXPERIENCE.md § card, UX-DR5). #}
-{% macro oppdragskort(kategori, tittel, tid, sted, pris, forhandsvisning=False, href=None) %}
+   så kortet ikke har andre lenker eller knapper (EXPERIENCE.md § card, UX-DR5).
+   Med `bilde_url` (story 2.7, FR-27, UX-DR33) står miniatyren øverst i kortet, med `alt=""`,
+   fordi lenken allerede har tittelen. Kort uten bilde har ingen plassholder. I
+   forhåndsvisningen står `<img data-felt="bilde">` alltid, skjult uten bilde, så bilde.js kan
+   vise bildet brukeren velger. #}
+{% macro oppdragskort(kategori, tittel, tid, sted, pris, forhandsvisning=False, href=None, bilde_url=None) %}
 <div class="kort{% if forhandsvisning %} kort--forhandsvisning{% endif %}{% if href %} kort--lenke{% endif %}"{% if forhandsvisning %} data-forhandsvisning{% endif %}>
+  {% if forhandsvisning %}
+  <img class="kort__bilde" data-felt="bilde" alt="" width="640" height="360"{% if bilde_url %} src="{{ bilde_url }}"{% else %} hidden{% endif %}>
+  {% elif bilde_url %}
+  <img class="kort__bilde" src="{{ bilde_url }}" alt="" loading="lazy" width="640" height="360">
+  {% endif %}
   <span class="kategorimerke"{% if forhandsvisning %} data-felt="kategori"{% endif %}>
     {%- if kategori %}{{ kategoriikon(kategori, 18) }}<span>{{ kategori|kategori_tekst }}</span>{% else %}<span>–</span>{% endif -%}
   </span>

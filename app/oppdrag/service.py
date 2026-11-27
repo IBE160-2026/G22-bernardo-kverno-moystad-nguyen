@@ -1,25 +1,37 @@
 """Regler for oppdrag (FR-5–FR-9, AD-2, AD-3, AD-16).
 
 - `valider_oppdrag`: feltreglene for både utlegging og redigering. Alle
-  feltfeil samles i én `RegelBrudd`, i feltrekkefølgen beskrivelse, tittel,
-  kategori, postnummer, dato, klokkeslett, tilbud, beløp (NFR-10).
-- `opprett_oppdrag`: innsettingen kjører i `begin_nested()`, og en `skjema_id`
-  som finnes fra før, gir `Duplikat` til oppdraget som finnes (AD-2, NFR-5).
+  feltfeil samles i én `RegelBrudd`, i feltrekkefølgen beskrivelse, bilde,
+  bildetekst, tittel, kategori, postnummer, dato, klokkeslett, tilbud, beløp
+  (NFR-10).
+- `tolk_bildevalg` (FR-27, AD-18): ny fil, beholdt bilde (`bilde_beholdt`) og
+  «Fjern bildet» blir et `Bildevalg`. Ruta kaller den før transaksjonen, så et
+  stort bilde ikke dekodes mens databasen er låst. Den kaster aldri; en ugyldig
+  fil blir `feil`, som `valider_oppdrag` legger inn ved `bilde`.
+- `opprett_oppdrag`: innsettingen kjører i `begin_nested()`, også bildet, og en
+  `skjema_id` som finnes fra før, gir `Duplikat` til oppdraget som finnes
+  (AD-2, NFR-5).
 - `rediger_oppdrag` (FR-6, FR-8): bare oppdragsgiveren og bare ved `apen`. Én
   betinget `UPDATE` lagrer endringen, øker `versjon` og setter
   `vesentlig_endret` når tidspunkt, beløp eller postnummer faktisk endres
-  (AD-2, AD-3). `hent_eget_oppdrag` og `skjemaverdier_for` gir skjemaet.
+  (AD-2, AD-3). Etter den lagres, byttes eller slettes bildet, eller
+  bildeteksten oppdateres. Bildet setter aldri `vesentlig_endret` (FR-27).
+  `hent_eget_oppdrag` og `skjemaverdier_for` gir skjemaet.
+- `slett_bilde` sletter bildet til et oppdrag (fjerning nå, sletting av oppdrag
+  og konto i 4.5). `hent_bilde` gir én av JPEG-ene etter tilgangsregelen i FR-9.
 - `avbryt_oppdrag` (FR-7): `endre_status` fra `apen` eller `hjelper_valgt`.
 - `endre_status`: eneste sted `oppdrag.status` endres (AD-2). Én betinget
   `UPDATE` som også øker `versjon`.
 - `hent_for_visning`: det malene får vite om et oppdrag, etter tilgangsregelen
-  i FR-9. Aldri telefon, e-post eller fødselsdato (AD-16).
+  i FR-9, med `BildeInfo` når oppdraget har bilde. Aldri telefon, e-post eller
+  fødselsdato (AD-16), og aldri binærdata.
 - `utgatt`: eneste definisjon av «tidspunktet er passert» (FR-8, AD-3). Brukes
   av `endre_status`, `ledige_oppdrag` og `merker_lagt_ut`.
 - `lagt_ut_av`: radene i «Mine oppdrag» med merkene fra `merker_lagt_ut`, og
   `antall_trenger_handling`: menykroken, som teller radene med minst ett merke
   (FR-8, FR-18, NFR-11, AD-3). Ingenting av dette lagres.
-- `ledige_oppdrag`: kortene i oversikten (FR-10, FR-11). `erfaring`: fullførte
+- `ledige_oppdrag`: kortene i oversikten (FR-10, FR-11), med `bildeversjon` når
+  oppdraget har bilde, uten å lese binærkolonnene. `erfaring`: fullførte
   oppdrag som hjelper, til oppdragsgiverblokken og profilen (FR-9, FR-21, AR-13).
 
 Funksjonene her committer aldri. Ruta eier transaksjonen (AD-17).
@@ -33,7 +45,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import ColumnElement, case, func, literal, not_, or_, select, update
+from sqlalchemy import ColumnElement, case, delete, func, literal, not_, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -43,7 +55,14 @@ from app.core.feil import Duplikat, FinnesIkke, IngenTilgang, Konflikt, RegelBru
 from app.core.postnummer import finnes as postnummer_finnes
 from app.core.postnummer import normaliser_postnummer, poststed
 from app.identity.service import POSTNUMMER_UKJENT, SKRIV_POSTNUMMER
-from app.oppdrag.models import Oppdrag
+from app.oppdrag import bilde as bildebehandling
+from app.oppdrag.bilde import (
+    BILDETEKST_FOR_KORT,
+    BILDETEKST_FOR_LANG,
+    SKRIV_BILDETEKST,
+    Bilde,
+)
+from app.oppdrag.models import Oppdrag, Oppdragsbilde
 
 # Feiltekstene står ordrett i EXPERIENCE.md § Feiltekster ved felt (FR-5).
 SKRIV_BESKRIVELSE = "Skriv hva du trenger hjelp til."
@@ -163,9 +182,128 @@ def _sjekk_belop(tekst: str | None) -> int | None:
     return belop if domene.BELOP_MIN <= belop <= domene.BELOP_MAKS else None
 
 
+# ---------- bilde (FR-27, AD-18) ----------
+
+
+@dataclass(frozen=True)
+class Bildevalg:
+    """Det brukeren valgte for bildet i én innsending (FR-27).
+
+    `ny` er et gyldig bilde som skal lagres: en ny fil, eller det beholdte fra
+    forrige innsending. `fjern` er «Fjern bildet». `feil` er feilteksten for en
+    ugyldig fil (eller et ugyldig beholdt bilde), som vises ved `bilde`.
+    """
+
+    ny: Bilde | None = None
+    fjern: bool = False
+    feil: str | None = None
+
+
+INGEN_BILDEVALG = Bildevalg()
+
+
+def _beholdt(tekst: str | None) -> Bilde | None:
+    try:
+        return bildebehandling.fra_beholdt(tekst) if (tekst or "").strip() else None
+    except RegelBrudd:
+        return None
+
+
+def tolk_bildevalg(fil: bytes | None, beholdt: str | None, fjern: str | None) -> Bildevalg:
+    """Filfeltet, `bilde_beholdt` og `fjern_bilde` som ett `Bildevalg` (FR-27, AD-18). Kaster aldri.
+
+    En ny fil går foran det beholdte bildet. Er den nye fila ugyldig, gir det
+    `feil`, og et gyldig beholdt bilde står fortsatt i `ny`, så det vises igjen.
+    Med «Fjern bildet» og uten ny fil brukes ikke det beholdte bildet. All
+    behandling skjer i `oppdrag/bilde.py`.
+    """
+    fjern_ = bool((fjern or "").strip())
+    if fil:
+        try:
+            return Bildevalg(ny=bildebehandling.behandle(fil), fjern=fjern_)
+        except RegelBrudd as brudd:
+            return Bildevalg(
+                ny=None if fjern_ else _beholdt(beholdt), fjern=fjern_, feil=brudd.feil[0][1]
+            )
+    if fjern_ or not (beholdt or "").strip():
+        return Bildevalg(fjern=fjern_)
+    try:
+        return Bildevalg(ny=bildebehandling.fra_beholdt(beholdt or ""))
+    except RegelBrudd as brudd:
+        return Bildevalg(feil=brudd.feil[0][1])
+
+
+def _sjekk_bildetekst(tekst: str | None, feil: list[tuple[str, str]]) -> str:
+    bildetekst = domene.normaliser_tekst(tekst)
+    if not bildetekst:
+        feil.append(("bildetekst", SKRIV_BILDETEKST))
+    elif len(bildetekst) < domene.BILDETEKST_MIN:
+        feil.append(("bildetekst", BILDETEKST_FOR_KORT))
+    elif len(bildetekst) > domene.BILDETEKST_MAKS:
+        feil.append(("bildetekst", BILDETEKST_FOR_LANG))
+    return bildetekst
+
+
+def slett_bilde(db: Session, oppdrag_id: int) -> None:
+    """Sletter bildet til et oppdrag, om det har ett (FR-27, AD-2, AD-18).
+
+    Brukes når bildet fjernes ved redigering, og av slettingen av oppdrag og
+    konto (4.5), før `oppdrag`-raden slettes. Committer ikke.
+    """
+    db.execute(delete(Oppdragsbilde).where(Oppdragsbilde.oppdrag_id == oppdrag_id))
+
+
+def _lagre_bilde(db: Session, oppdrag_id: int, nytt: Bilde, bildetekst: str, na: datetime) -> None:
+    """Setter inn eller bytter bildet til oppdraget."""
+    verdier = {
+        "bilde": nytt.bilde,
+        "miniatyr": nytt.miniatyr,
+        "bildetekst": bildetekst,
+        "bredde": nytt.bredde,
+        "hoyde": nytt.hoyde,
+        "opprettet": na,
+    }
+    resultat = db.execute(
+        update(Oppdragsbilde).where(Oppdragsbilde.oppdrag_id == oppdrag_id).values(**verdier)
+    )
+    if resultat.rowcount == 0:
+        db.add(Oppdragsbilde(oppdrag_id=oppdrag_id, **verdier))
+        db.flush()
+
+
+def _har_bilde(db: Session, oppdrag_id: int) -> bool:
+    return (
+        db.scalar(select(Oppdragsbilde.oppdrag_id).where(Oppdragsbilde.oppdrag_id == oppdrag_id))
+        is not None
+    )
+
+
+def hent_bilde(db: Session, oppdrag_id: int, bruker_id: int, *, liten: bool) -> bytes:
+    """Den store JPEG-en, eller miniatyren med `liten=True` (FR-9, FR-27, AD-18).
+
+    `hent_for_visning` først, så tilgangsregelen og 404 er de samme som for
+    detaljene. Et oppdrag uten bilde gir også `FinnesIkke`. Bare denne
+    funksjonen leser en binærkolonne, og bare én.
+    """
+    oppdrag = hent_for_visning(db, oppdrag_id, bruker_id)
+    if oppdrag.bilde is None:
+        raise FinnesIkke
+    kolonne = Oppdragsbilde.miniatyr if liten else Oppdragsbilde.bilde
+    data = db.scalar(select(kolonne).where(Oppdragsbilde.oppdrag_id == oppdrag_id))
+    if data is None:
+        raise FinnesIkke
+    return data
+
+
+# ---------- valider (FR-5, FR-6, FR-27) ----------
+
+
 @dataclass(frozen=True)
 class GyldigOppdrag:
-    """Feltene etter `valider_oppdrag`: normalisert og klare til å lagres."""
+    """Feltene etter `valider_oppdrag`: normalisert og klare til å lagres.
+
+    `bildetekst` er `None` når oppdraget ikke får eller har et bilde.
+    """
 
     tittel: str
     beskrivelse: str
@@ -173,11 +311,15 @@ class GyldigOppdrag:
     postnummer: str
     tidspunkt: datetime
     belop: int | None
+    bildetekst: str | None = None
 
 
 def valider_oppdrag(
     *,
     beskrivelse: str | None,
+    bildevalg: Bildevalg = INGEN_BILDEVALG,
+    bildetekst: str | None = None,
+    har_lagret_bilde: bool = False,
     tittel: str | None,
     kategori: str | None,
     postnummer: str | None,
@@ -194,6 +336,11 @@ def valider_oppdrag(
     betaling» ignoreres beløpet og blir `None`. Tidspunktet må være fram i tid
     regnet fra `na` (uten `na`: `klokke.na()`), så et passert tidspunkt gir
     «Velg et nytt tidspunkt fram i tid» også ved redigering.
+
+    Bildet (FR-27): `bildevalg.feil` står ved `bilde`, rett etter beskrivelsen.
+    «Hva viser bildet?» sjekkes bare når det finnes et gyldig bilde: nytt,
+    beholdt, eller lagret (`har_lagret_bilde`) uten «Fjern bildet». Ellers
+    ignoreres teksten.
     """
     feil: list[tuple[str, str]] = []
 
@@ -204,6 +351,12 @@ def valider_oppdrag(
         feil.append(("beskrivelse", BESKRIVELSE_FOR_KORT))
     elif len(beskrivelse_) > domene.BESKRIVELSE_MAKS:
         feil.append(("beskrivelse", beskrivelse_for_lang(len(beskrivelse_))))
+
+    if bildevalg.feil:
+        feil.append(("bilde", bildevalg.feil))
+    bildetekst_: str | None = None
+    if bildevalg.ny is not None or (har_lagret_bilde and not bildevalg.fjern):
+        bildetekst_ = _sjekk_bildetekst(bildetekst, feil)
 
     tittel_ = domene.normaliser_tekst(tittel)
     if not tittel_:
@@ -246,6 +399,7 @@ def valider_oppdrag(
         postnummer=postnummer_,
         tidspunkt=tidspunkt,
         belop=belop_,
+        bildetekst=bildetekst_,
     )
 
 
@@ -262,16 +416,21 @@ def opprett_oppdrag(
     tilbud: str | None,
     belop: str | None,
     skjema_id: str,
+    bildetekst: str | None = None,
+    bildevalg: Bildevalg = INGEN_BILDEVALG,
 ) -> int:
-    """Legger ut et oppdrag med status `apen` og gir id-en (FR-5, AD-2, AD-17).
+    """Legger ut et oppdrag med status `apen` og gir id-en (FR-5, FR-27, AD-2, AD-17).
 
     Feltene sjekkes av `valider_oppdrag` før innsettingen, så en ny innsending
     med feil viser feilene. Finnes `skjema_id` fra før, gir det `Duplikat` til
-    det oppdraget.
+    det oppdraget. Bildet settes inn i samme `begin_nested()`, så en dobbel
+    innsending gir én rad i `oppdrag` og én i `oppdragsbilde`.
     """
     na = klokke.na()
     gyldig = valider_oppdrag(
         beskrivelse=beskrivelse,
+        bildevalg=bildevalg,
+        bildetekst=bildetekst,
         tittel=tittel,
         kategori=kategori,
         postnummer=postnummer,
@@ -298,6 +457,8 @@ def opprett_oppdrag(
         with db.begin_nested():
             db.add(oppdrag)
             db.flush()
+            if bildevalg.ny is not None and gyldig.bildetekst is not None:
+                _lagre_bilde(db, oppdrag.id, bildevalg.ny, gyldig.bildetekst, na)
     except IntegrityError:
         # Samme skjema sendt to ganger (AD-2). Brukeren sendes til oppdraget som
         # finnes; tilgangsregelen avgjør hva hen får se.
@@ -309,6 +470,30 @@ def opprett_oppdrag(
 
 
 # ---------- vise (FR-9, AD-16) ----------
+
+
+def bildeversjon(versjon: int, opprettet: datetime) -> str:
+    """`?v=` i URL-en til bildet: `oppdrag.versjon` og når bildet ble lagret (AD-18).
+
+    `versjon` endres ved hver redigering. Tidspunktet skiller bilder på et oppdrag
+    med samme id og versjon, for eksempel når SQLite gjenbruker en id etter ny seed,
+    så nettleseren aldri viser et bilde fra bufferen (`immutable`) som hører til et
+    slettet oppdrag.
+    """
+    return f"{versjon}-{int(opprettet.timestamp())}"
+
+
+@dataclass(frozen=True)
+class BildeInfo:
+    """Det malene får vite om bildet til et oppdrag, uten binærdata (FR-27, AD-16).
+
+    `versjon` er `bildeversjon(...)` og blir `?v=` i URL-en, så et nytt bilde får ny URL.
+    """
+
+    bildetekst: str
+    bredde: int
+    hoyde: int
+    versjon: str
 
 
 @dataclass(frozen=True)
@@ -326,6 +511,7 @@ class OppdragVisning:
     status: str
     oppdragsgiver_id: int
     er_eier: bool
+    bilde: BildeInfo | None = None
 
     @property
     def sted(self) -> str:
@@ -352,11 +538,24 @@ def hent_for_visning(db: Session, oppdrag_id: int, bruker_id: int) -> OppdragVis
 
     Åpne oppdrag kan ses av alle innloggede. Andre statuser kan bare ses av
     oppdragsgiveren og valgt hjelper. Finnes ikke gir `FinnesIkke`, ingen
-    tilgang gir `IngenTilgang`. Begge vises som samme 404.
+    tilgang gir `IngenTilgang`. Begge vises som samme 404. Bildet hentes med
+    `outerjoin`, uten binærkolonnene (FR-27).
     """
-    oppdrag = db.get(Oppdrag, oppdrag_id)
-    if oppdrag is None:
+    rad = db.execute(
+        select(
+            Oppdrag,
+            Oppdragsbilde.oppdrag_id.label("bilde_id"),
+            Oppdragsbilde.bildetekst,
+            Oppdragsbilde.bredde,
+            Oppdragsbilde.hoyde,
+            Oppdragsbilde.opprettet.label("bilde_opprettet"),
+        )
+        .outerjoin(Oppdragsbilde, Oppdragsbilde.oppdrag_id == Oppdrag.id)
+        .where(Oppdrag.id == oppdrag_id)
+    ).first()
+    if rad is None:
         raise FinnesIkke
+    oppdrag = rad.Oppdrag
     if oppdrag.status != "apen" and bruker_id not in (
         oppdrag.oppdragsgiver_id,
         oppdrag.valgt_hjelper_id,
@@ -374,6 +573,14 @@ def hent_for_visning(db: Session, oppdrag_id: int, bruker_id: int) -> OppdragVis
         status=oppdrag.status,
         oppdragsgiver_id=oppdrag.oppdragsgiver_id,
         er_eier=oppdrag.oppdragsgiver_id == bruker_id,
+        bilde=None
+        if rad.bilde_id is None
+        else BildeInfo(
+            bildetekst=rad.bildetekst,
+            bredde=rad.bredde,
+            hoyde=rad.hoyde,
+            versjon=bildeversjon(oppdrag.versjon, rad.bilde_opprettet),
+        ),
     )
 
 
@@ -408,10 +615,12 @@ def skjemaverdier_for(oppdrag: OppdragVisning) -> dict[str, str]:
 
     Tidspunktet blir «25.11.2026» og «09:00» i norsk tid, også når det er passert
     (FR-8). «Uten betaling» (`belop` er `None`) gir `tilbud="uten"` og tomt beløp.
+    `bildetekst` er teksten til det lagrede bildet, eller tom (FR-27).
     """
     dato, klokkeslett = tid.skjemaverdier(oppdrag.tidspunkt)
     return {
         "beskrivelse": oppdrag.beskrivelse,
+        "bildetekst": oppdrag.bilde.bildetekst if oppdrag.bilde else "",
         "tittel": oppdrag.tittel,
         "kategori": oppdrag.kategori,
         "postnummer": oppdrag.postnummer,
@@ -435,8 +644,10 @@ def rediger_oppdrag(
     klokkeslett: str | None,
     tilbud: str | None,
     belop: str | None,
+    bildetekst: str | None = None,
+    bildevalg: Bildevalg = INGEN_BILDEVALG,
 ) -> None:
-    """Lagrer endringene i et åpent oppdrag (FR-6, FR-8, NFR-5, AD-2, AD-3).
+    """Lagrer endringene i et åpent oppdrag (FR-6, FR-8, FR-27, NFR-5, AD-2, AD-3).
 
     Feltene sjekkes først med `valider_oppdrag`, så tekstene og rekkefølgen er de
     samme som ved utlegging. Ved feil sjekkes tilgangen før `RegelBrudd`, så 404
@@ -450,13 +661,22 @@ def rediger_oppdrag(
     for `NULL` («Uten betaling»). Endres ingen rad, gir det `FinnesIkke` (finnes
     ikke eller annen eier) eller `Konflikt` (status er endret), og ingenting
     lagres. «database is locked» i SQLite gir også `Konflikt`.
+
+    Bildet skrives etter `UPDATE`-en (AD-2): et nytt bilde lagres eller bytter
+    det gamle, «Fjern bildet» sletter det, og ellers oppdateres bildeteksten på
+    et lagret bilde. Ingenting av dette rører `vesentlig_endret` (FR-27), men
+    `versjon` øker alltid, så bildet får ny URL (`?v=`).
     """
     url = detaljer_url(oppdrag_id)
     na = klokke.na()
     with laas_gir_konflikt(KONFLIKT, url):
+        har_lagret_bilde = _har_bilde(db, oppdrag_id)
         try:
             ny = valider_oppdrag(
                 beskrivelse=beskrivelse,
+                bildevalg=bildevalg,
+                bildetekst=bildetekst,
+                har_lagret_bilde=har_lagret_bilde,
                 tittel=tittel,
                 kategori=kategori,
                 postnummer=postnummer,
@@ -497,6 +717,16 @@ def rediger_oppdrag(
             .execution_options(synchronize_session="fetch")
         )
         if resultat.rowcount == 1:
+            if bildevalg.ny is not None and ny.bildetekst is not None:
+                _lagre_bilde(db, oppdrag_id, bildevalg.ny, ny.bildetekst, na)
+            elif bildevalg.fjern:
+                slett_bilde(db, oppdrag_id)
+            elif har_lagret_bilde and ny.bildetekst is not None:
+                db.execute(
+                    update(Oppdragsbilde)
+                    .where(Oppdragsbilde.oppdrag_id == oppdrag_id)
+                    .values(bildetekst=ny.bildetekst)
+                )
             return
         eier = db.scalar(select(Oppdrag.oppdragsgiver_id).where(Oppdrag.id == oppdrag_id))
     if eier is None or eier != oppdragsgiver_id:
@@ -585,6 +815,8 @@ class OppdragKort:
     poststed: str | None
     tidspunkt: datetime
     belop: int | None
+    # `bildeversjon(...)` når oppdraget har bilde (`?v=` i URL-en til miniatyren), ellers None.
+    bildeversjon: str | None = None
 
     @property
     def sted(self) -> str:
@@ -599,7 +831,8 @@ def ledige_oppdrag(
 
     Brukerens egne vises ikke. `kategori=None` gir alle kategorier. Sortert
     etter tidspunkt, så etter når oppdraget ble lagt ut, eldste først, og til
-    sist etter id, så rekkefølgen alltid er fast.
+    sist etter id, så rekkefølgen alltid er fast. Bildet finnes med `outerjoin`
+    på `oppdragsbilde`, uten binærkolonnene (FR-27).
     """
     vilkar = [
         Oppdrag.status == "apen",
@@ -617,7 +850,11 @@ def ledige_oppdrag(
             Oppdrag.postnummer,
             Oppdrag.tidspunkt,
             Oppdrag.belop,
+            Oppdrag.versjon,
+            Oppdragsbilde.oppdrag_id.label("bilde_id"),
+            Oppdragsbilde.opprettet.label("bilde_opprettet"),
         )
+        .outerjoin(Oppdragsbilde, Oppdragsbilde.oppdrag_id == Oppdrag.id)
         .where(*vilkar)
         .order_by(Oppdrag.tidspunkt, Oppdrag.opprettet, Oppdrag.id)
     ).all()
@@ -631,6 +868,7 @@ def ledige_oppdrag(
             poststed=sted,
             tidspunkt=rad.tidspunkt,
             belop=rad.belop,
+            bildeversjon=None if rad.bilde_id is None else bildeversjon(rad.versjon, rad.bilde_opprettet),
         )
         for rad in rader
     ]

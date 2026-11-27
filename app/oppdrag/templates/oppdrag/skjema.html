@@ -13,7 +13,15 @@
    `data-kun-en-skjerm` skjules, `data-kun-steg` vises, og `data-vis-i-steg` vises bare
    i det steget. «Neste» og «Tilbake til steg 1» har `hidden`,
    så de aldri vises uten JS. Overskriftene, titlene (`stegdata`) og tekstene for tomme
-   felt (`data-tom`) kommer fra ruta, og `h1` er `tittel` fra ruta. KI kommer i Epic 5. #}
+   felt (`data-tom`) kommer fra ruta, og `h1` er `tittel` fra ruta. KI kommer i Epic 5.
+   Bildet (story 2.7, FR-27, AD-18): skjemaet er `multipart/form-data`. Filfeltet «Bilde
+   (valgfritt)» står i steg 1 rett etter beskrivelsen, og heter «Bytt bilde» når det finnes et
+   bilde. `bildefelt` fra ruta har miniatyren (`src`, en `data:`-URL for et beholdt bilde eller
+   `/bilde/liten` for det lagrede, med `alt="Valgt bilde"`), `beholdt` (det skjulte feltet
+   `bilde_beholdt`) og `fjern_valgt`. Med «Fjern bildet» krysset av får forhåndsvisningen ikke bildet. «Hva viser bildet?» rendres alltid synlig. Uten bilde har det
+   `data-uten-bilde`, og bilde.js skjuler det til en fil er valgt, så uten JS står det alltid
+   synlig. Feltet har ingen `data-tom`, så «Neste» krever ikke bilde. Forhåndsvisningen har en
+   `<img data-felt="bilde">`, som bilde.js fyller når en fil velges. #}
 {% macro beskrevet_av(ider) %}
 {%- set ider = ider | select | list -%}
 {%- if ider %} aria-describedby="{{ ider | join(' ') }}"{% endif -%}
@@ -25,7 +33,7 @@
   <a class="tekstknapp" href="{{ tilbake_url }}"{% if to_steg %} data-vis-i-steg="1"{% endif %}>Tilbake</a>
   <h1>{{ tittel }}</h1>
   {{ m.meldinger(lenker=gruppelenker) }}
-  <form class="skjema" method="post" action="{{ skjema_handling }}" novalidate
+  <form class="skjema" method="post" action="{{ skjema_handling }}" enctype="multipart/form-data" novalidate
     {%- if to_steg %} data-steg-skjema{% for navn, verdi in stegdata %} {{ navn }}="{{ verdi }}"{% endfor %}{% endif %}>
     {{ m.csrf_felt() }}
     {% if skjema_id is not none %}
@@ -45,6 +53,37 @@
         <p class="teller" id="beskrivelse-teller">{{ antall_tegn }} av {{ beskrivelse_maks }} tegn</p>
         <p class="skjult-tekst" id="beskrivelse-varsel" aria-live="polite"></p>
         {{ m.feltfeil("beskrivelse-feil", feltfeil.get("beskrivelse")) }}
+      </div>
+
+      <div class="felt bildefelt">
+        <label for="bilde">{{ "Bytt bilde" if bildefelt.finnes else "Bilde (valgfritt)" }}</label>
+        <p class="hjelpetekst" id="bilde-personvern">Ikke vis husnummer, bilskilt, navn eller ansikter.</p>
+        <p class="hjelpetekst" id="bilde-format">JPEG, PNG eller WebP, høyst 4 MB.</p>
+        <input class="filfelt" id="bilde" name="bilde" type="file" accept="image/jpeg,image/png,image/webp" data-bilde data-bildetekst="bildetekst-felt"
+          {{- ugyldig("bilde") }}{{ beskrevet_av(["bilde-personvern", "bilde-format", feilid("bilde")]) }}>
+        {{ m.feltfeil("bilde-feil", feltfeil.get("bilde")) }}
+        {% if bildefelt.src %}
+        <div class="beholdt-bilde">
+          <img class="beholdt-bilde__miniatyr" src="{{ bildefelt.src }}" alt="Valgt bilde">
+          <div class="radiovalg">
+            <input type="checkbox" id="fjern_bilde" name="fjern_bilde" value="1"
+              {%- if bildefelt.fjern_valgt %} checked{% endif %}>
+            <label for="fjern_bilde">Fjern bildet</label>
+          </div>
+          {% if bildefelt.beholdt %}
+          <input type="hidden" name="bilde_beholdt" value="{{ bildefelt.beholdt }}">
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="felt" id="bildetekst-felt"{% if not bildefelt.finnes %} data-uten-bilde{% endif %}>
+        <label for="bildetekst">Hva viser bildet?</label>
+        <input id="bildetekst" name="bildetekst" type="text" autocomplete="off" value="{{ verdier.bildetekst }}" data-maks="{{ bildetekst_maks }}" data-teller="bildetekst-teller" data-varsel="bildetekst-varsel"
+          {{- ugyldig("bildetekst") }}{{ beskrevet_av(["bildetekst-teller", feilid("bildetekst")]) }}>
+        <p class="teller" id="bildetekst-teller">{{ bildetekst_antall }} av {{ bildetekst_maks }} tegn</p>
+        <p class="skjult-tekst" id="bildetekst-varsel" aria-live="polite"></p>
+        {{ m.feltfeil("bildetekst-feil", feltfeil.get("bildetekst")) }}
       </div>
 
       <div class="felt">
@@ -138,7 +177,7 @@
 
       <section class="forhandsvisning" aria-labelledby="forhandsvisning-etikett">
         <p class="forhandsvisning__etikett" id="forhandsvisning-etikett">Slik vises oppdraget for andre.</p>
-        {{ m.oppdragskort(forhandsvisning.kategori, forhandsvisning.tittel, forhandsvisning.tid, forhandsvisning.sted, forhandsvisning.pris, forhandsvisning=True) }}
+        {{ m.oppdragskort(forhandsvisning.kategori, forhandsvisning.tittel, forhandsvisning.tid, forhandsvisning.sted, forhandsvisning.pris, forhandsvisning=True, bilde_url=none if bildefelt.fjern_valgt else bildefelt.src) }}
       </section>
 
       <div class="skjema__knapper">
@@ -154,5 +193,6 @@
   {% if to_steg %}
   <script src="{{ url_for('static', path='js/steg.js') }}"></script>
   {% endif %}
+  <script src="{{ url_for('static', path='js/bilde.js') }}" defer></script>
 </div>
 {% endblock %}
