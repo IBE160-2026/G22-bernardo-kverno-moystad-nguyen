@@ -1,9 +1,15 @@
-"""Regler for oppdrag (FR-5, FR-9, AD-2, AD-3, AD-16).
+"""Regler for oppdrag (FR-5–FR-9, AD-2, AD-3, AD-16).
 
-- `opprett_oppdrag`: alle feltfeil samles i én `RegelBrudd`, i feltrekkefølgen
-  beskrivelse, tittel, kategori, postnummer, dato, klokkeslett, tilbud, beløp
-  (NFR-10). Innsettingen kjører i `begin_nested()`, og en `skjema_id` som
-  finnes fra før, gir `Duplikat` til oppdraget som finnes (AD-2, NFR-5).
+- `valider_oppdrag`: feltreglene for både utlegging og redigering. Alle
+  feltfeil samles i én `RegelBrudd`, i feltrekkefølgen beskrivelse, tittel,
+  kategori, postnummer, dato, klokkeslett, tilbud, beløp (NFR-10).
+- `opprett_oppdrag`: innsettingen kjører i `begin_nested()`, og en `skjema_id`
+  som finnes fra før, gir `Duplikat` til oppdraget som finnes (AD-2, NFR-5).
+- `rediger_oppdrag` (FR-6, FR-8): bare oppdragsgiveren og bare ved `apen`. Én
+  betinget `UPDATE` lagrer endringen, øker `versjon` og setter
+  `vesentlig_endret` når tidspunkt, beløp eller postnummer faktisk endres
+  (AD-2, AD-3). `hent_eget_oppdrag` og `skjemaverdier_for` gir skjemaet.
+- `avbryt_oppdrag` (FR-7): `endre_status` fra `apen` eller `hjelper_valgt`.
 - `endre_status`: eneste sted `oppdrag.status` endres (AD-2). Én betinget
   `UPDATE` som også øker `versjon`.
 - `hent_for_visning`: det malene får vite om et oppdrag, etter tilgangsregelen
@@ -27,11 +33,12 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import ColumnElement, func, not_, select, update
+from sqlalchemy import ColumnElement, case, func, literal, not_, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core import domene, klokke, tid
+from app.core.db import UtcDateTime, laas_gir_konflikt
 from app.core.feil import Duplikat, FinnesIkke, IngenTilgang, Konflikt, RegelBrudd
 from app.core.postnummer import finnes as postnummer_finnes
 from app.core.postnummer import normaliser_postnummer, poststed
@@ -156,10 +163,20 @@ def _sjekk_belop(tekst: str | None) -> int | None:
     return belop if domene.BELOP_MIN <= belop <= domene.BELOP_MAKS else None
 
 
-def opprett_oppdrag(
-    db: Session,
+@dataclass(frozen=True)
+class GyldigOppdrag:
+    """Feltene etter `valider_oppdrag`: normalisert og klare til å lagres."""
+
+    tittel: str
+    beskrivelse: str
+    kategori: str
+    postnummer: str
+    tidspunkt: datetime
+    belop: int | None
+
+
+def valider_oppdrag(
     *,
-    oppdragsgiver_id: int,
     beskrivelse: str | None,
     tittel: str | None,
     kategori: str | None,
@@ -168,15 +185,15 @@ def opprett_oppdrag(
     klokkeslett: str | None,
     tilbud: str | None,
     belop: str | None,
-    skjema_id: str,
-) -> int:
-    """Legger ut et oppdrag med status `apen` og gir id-en (FR-5, AD-2, AD-17).
+    na: datetime | None = None,
+) -> GyldigOppdrag:
+    """Feltreglene for et oppdrag, felles for utlegging og redigering (FR-5, FR-6, NFR-10).
 
     Alle feltfeil samles i én `RegelBrudd`. Gruppene «Når?», kategori og «Hva
     tilbyr du?» har egne nøkler (`nar`, `kategori`, `tilbud`). Med «Uten
-    betaling» ignoreres beløpet og lagres som NULL. Valideringen kjører før
-    innsettingen, så en ny innsending med feil viser feilene. Finnes
-    `skjema_id` fra før, gir det `Duplikat` til det oppdraget.
+    betaling» ignoreres beløpet og blir `None`. Tidspunktet må være fram i tid
+    regnet fra `na` (uten `na`: `klokke.na()`), så et passert tidspunkt gir
+    «Velg et nytt tidspunkt fram i tid» også ved redigering.
     """
     feil: list[tuple[str, str]] = []
 
@@ -205,10 +222,9 @@ def opprett_oppdrag(
     elif postnummer_ is None or not postnummer_finnes(postnummer_):
         feil.append(("postnummer", POSTNUMMER_UKJENT))
 
-    na = klokke.na()
     tidspunkt: datetime | None = None
     try:
-        tidspunkt = tid.tolk_tidspunkt(dato, klokkeslett, na=na)
+        tidspunkt = tid.tolk_tidspunkt(dato, klokkeslett, na=klokke.na() if na is None else na)
     except RegelBrudd as brudd:
         feil.extend(brudd.feil)
 
@@ -222,15 +238,57 @@ def opprett_oppdrag(
 
     if feil:
         raise RegelBrudd(feil)
-
-    oppdrag = Oppdrag(
-        oppdragsgiver_id=oppdragsgiver_id,
+    assert tidspunkt is not None and postnummer_ is not None and kategori is not None
+    return GyldigOppdrag(
         tittel=tittel_,
         beskrivelse=beskrivelse_,
         kategori=kategori,
         postnummer=postnummer_,
         tidspunkt=tidspunkt,
         belop=belop_,
+    )
+
+
+def opprett_oppdrag(
+    db: Session,
+    *,
+    oppdragsgiver_id: int,
+    beskrivelse: str | None,
+    tittel: str | None,
+    kategori: str | None,
+    postnummer: str | None,
+    dato: str | None,
+    klokkeslett: str | None,
+    tilbud: str | None,
+    belop: str | None,
+    skjema_id: str,
+) -> int:
+    """Legger ut et oppdrag med status `apen` og gir id-en (FR-5, AD-2, AD-17).
+
+    Feltene sjekkes av `valider_oppdrag` før innsettingen, så en ny innsending
+    med feil viser feilene. Finnes `skjema_id` fra før, gir det `Duplikat` til
+    det oppdraget.
+    """
+    na = klokke.na()
+    gyldig = valider_oppdrag(
+        beskrivelse=beskrivelse,
+        tittel=tittel,
+        kategori=kategori,
+        postnummer=postnummer,
+        dato=dato,
+        klokkeslett=klokkeslett,
+        tilbud=tilbud,
+        belop=belop,
+        na=na,
+    )
+    oppdrag = Oppdrag(
+        oppdragsgiver_id=oppdragsgiver_id,
+        tittel=gyldig.tittel,
+        beskrivelse=gyldig.beskrivelse,
+        kategori=gyldig.kategori,
+        postnummer=gyldig.postnummer,
+        tidspunkt=gyldig.tidspunkt,
+        belop=gyldig.belop,
         status="apen",
         versjon=1,
         skjema_id=skjema_id,
@@ -317,6 +375,151 @@ def hent_for_visning(db: Session, oppdrag_id: int, bruker_id: int) -> OppdragVis
         oppdragsgiver_id=oppdrag.oppdragsgiver_id,
         er_eier=oppdrag.oppdragsgiver_id == bruker_id,
     )
+
+
+# ---------- redigere og avbryte (FR-6, FR-7, FR-8, AD-2, AD-3) ----------
+
+REDIGERBAR = frozenset({"apen"})  # FR-6: bare mens oppdraget er Åpent
+AVBRYTBAR = frozenset({"apen", "hjelper_valgt"})  # FR-7, OVERGANGER
+
+
+def hent_eget_oppdrag(
+    db: Session, oppdrag_id: int, bruker_id: int, *, statuser: Iterable[str]
+) -> OppdragVisning:
+    """Brukerens eget oppdrag til redigering eller avbrudd (FR-6, FR-7).
+
+    Finnes ikke, ingen tilgang eller en annen eier gir `FinnesIkke`, altså samme
+    404 som for et oppdrag som ikke finnes. En status som ikke står i `statuser`,
+    gir `Konflikt` til detaljene, som viser gjeldende status (§4.0).
+    """
+    try:
+        oppdrag = hent_for_visning(db, oppdrag_id, bruker_id)
+    except IngenTilgang:
+        raise FinnesIkke from None
+    if not oppdrag.er_eier:
+        raise FinnesIkke
+    if oppdrag.status not in frozenset(statuser):
+        raise Konflikt(KONFLIKT, detaljer_url(oppdrag_id))
+    return oppdrag
+
+
+def skjemaverdier_for(oppdrag: OppdragVisning) -> dict[str, str]:
+    """De lagrede verdiene som feltene i redigeringsskjemaet (FR-6, AD-9).
+
+    Tidspunktet blir «25.11.2026» og «09:00» i norsk tid, også når det er passert
+    (FR-8). «Uten betaling» (`belop` er `None`) gir `tilbud="uten"` og tomt beløp.
+    """
+    dato, klokkeslett = tid.skjemaverdier(oppdrag.tidspunkt)
+    return {
+        "beskrivelse": oppdrag.beskrivelse,
+        "tittel": oppdrag.tittel,
+        "kategori": oppdrag.kategori,
+        "postnummer": oppdrag.postnummer,
+        "dato": dato,
+        "klokkeslett": klokkeslett,
+        "tilbud": "uten" if oppdrag.belop is None else "belop",
+        "belop": "" if oppdrag.belop is None else str(oppdrag.belop),
+    }
+
+
+def rediger_oppdrag(
+    db: Session,
+    oppdrag_id: int,
+    *,
+    oppdragsgiver_id: int,
+    beskrivelse: str | None,
+    tittel: str | None,
+    kategori: str | None,
+    postnummer: str | None,
+    dato: str | None,
+    klokkeslett: str | None,
+    tilbud: str | None,
+    belop: str | None,
+) -> None:
+    """Lagrer endringene i et åpent oppdrag (FR-6, FR-8, NFR-5, AD-2, AD-3).
+
+    Feltene sjekkes først med `valider_oppdrag`, så tekstene og rekkefølgen er de
+    samme som ved utlegging. Ved feil sjekkes tilgangen før `RegelBrudd`, så 404
+    (`FinnesIkke`) og `Konflikt` går foran 422.
+
+    Så kommer én betinget `UPDATE`, første skriving i transaksjonen: `WHERE` har
+    id, status `apen` og eier, men ikke `tidspunkt > nå`, fordi et utgått oppdrag
+    skal kunne endres (FR-8). Den lagrer feltene, øker `versjon` og setter
+    `vesentlig_endret` til `klokke.na()` bare når tidspunkt, beløp eller
+    postnummer faktisk endres (AD-3). `IS DISTINCT FROM` gir riktig svar også
+    for `NULL` («Uten betaling»). Endres ingen rad, gir det `FinnesIkke` (finnes
+    ikke eller annen eier) eller `Konflikt` (status er endret), og ingenting
+    lagres. «database is locked» i SQLite gir også `Konflikt`.
+    """
+    url = detaljer_url(oppdrag_id)
+    na = klokke.na()
+    with laas_gir_konflikt(KONFLIKT, url):
+        try:
+            ny = valider_oppdrag(
+                beskrivelse=beskrivelse,
+                tittel=tittel,
+                kategori=kategori,
+                postnummer=postnummer,
+                dato=dato,
+                klokkeslett=klokkeslett,
+                tilbud=tilbud,
+                belop=belop,
+                na=na,
+            )
+        except RegelBrudd:
+            hent_eget_oppdrag(db, oppdrag_id, oppdragsgiver_id, statuser=REDIGERBAR)
+            raise
+
+        vesentlig = or_(
+            Oppdrag.tidspunkt != ny.tidspunkt,
+            Oppdrag.belop.is_distinct_from(ny.belop),
+            Oppdrag.postnummer != ny.postnummer,
+        )
+        resultat = db.execute(
+            update(Oppdrag)
+            .where(
+                Oppdrag.id == oppdrag_id,
+                Oppdrag.status.in_(REDIGERBAR),
+                Oppdrag.oppdragsgiver_id == oppdragsgiver_id,
+            )
+            .values(
+                tittel=ny.tittel,
+                beskrivelse=ny.beskrivelse,
+                kategori=ny.kategori,
+                postnummer=ny.postnummer,
+                tidspunkt=ny.tidspunkt,
+                belop=ny.belop,
+                versjon=Oppdrag.versjon + 1,
+                vesentlig_endret=case(
+                    (vesentlig, literal(na, UtcDateTime())), else_=Oppdrag.vesentlig_endret
+                ),
+            )
+            .execution_options(synchronize_session="fetch")
+        )
+        if resultat.rowcount == 1:
+            return
+        eier = db.scalar(select(Oppdrag.oppdragsgiver_id).where(Oppdrag.id == oppdrag_id))
+    if eier is None or eier != oppdragsgiver_id:
+        raise FinnesIkke
+    raise Konflikt(KONFLIKT, url)
+
+
+def avbryt_oppdrag(db: Session, oppdrag_id: int, *, oppdragsgiver_id: int) -> None:
+    """Avbryter et oppdrag fra `apen` eller `hjelper_valgt` (FR-7, AD-2).
+
+    Går gjennom `endre_status`, så en annen eier gir `FinnesIkke` og en annen
+    status (`utfort`, `avbrutt`) gir `Konflikt`. `valgt_hjelper_id` beholdes.
+    Ingen `ikke_passert`: et utgått oppdrag kan også avbrytes (FR-8).
+    «database is locked» i SQLite gir `Konflikt`.
+    """
+    with laas_gir_konflikt(KONFLIKT, detaljer_url(oppdrag_id)):
+        endre_status(
+            db,
+            oppdrag_id,
+            fra=tuple(sorted(AVBRYTBAR)),
+            til="avbrutt",
+            oppdragsgiver_id=oppdragsgiver_id,
+        )
 
 
 # ---------- «Mine oppdrag» (FR-8, FR-18, NFR-11, AD-3) ----------

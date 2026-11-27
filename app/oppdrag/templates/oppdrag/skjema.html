@@ -1,6 +1,10 @@
 {% extends "core/base.html" %}
 {% import "core/makroer.html" as m with context %}
-{# «Nytt oppdrag» (FR-5, NFR-9, NFR-10, UX-DR10–UX-DR16, UX-DR22, UX-DR27).
+{# Skjemaet for «Nytt oppdrag» og redigering (FR-5, FR-6, NFR-9, NFR-10, UX-DR10–UX-DR16, UX-DR22, UX-DR27).
+   Parametrene fra ruta: `skjema_handling` (action), `knappetekst` («Publiser» eller «Lagre
+   endringer»), `skjema_id` (bare «Nytt oppdrag», ellers None) og `to_steg` (steg.js, bare
+   «Nytt oppdrag»). Redigering (story 2.5) står på én skjerm på alle bredder, med de to `h2`,
+   uten KI og uten `skjema_id`. «Endre tidspunkt» gir `autofocus` på «Dato» (`fokusmal == "dato"`).
    Etiketter, hjelpetekster og feltrekkefølge er fra EXPERIENCE.md § Skjemafelt og
    mockupene key-nytt-oppdrag.html og key-nytt-oppdrag-steg2.html.
    Serveren rendrer alltid ett skjema på én skjerm, med to `section` (`data-steg`) og hver
@@ -18,13 +22,15 @@
 {% macro feilid(felt) %}{{ felt ~ "-feil" if feltfeil.get(felt) else "" }}{% endmacro %}
 {% block innhold %}
 <div class="skjemabredde">
-  <a class="tekstknapp" href="{{ tilbake_url }}" data-vis-i-steg="1">Tilbake</a>
+  <a class="tekstknapp" href="{{ tilbake_url }}"{% if to_steg %} data-vis-i-steg="1"{% endif %}>Tilbake</a>
   <h1>{{ tittel }}</h1>
   {{ m.meldinger(lenker=gruppelenker) }}
-  <form class="skjema" method="post" action="{{ url_for('oppdrag.send_ny') }}" novalidate data-steg-skjema
-    {%- for navn, verdi in stegdata %} {{ navn }}="{{ verdi }}"{% endfor %}>
+  <form class="skjema" method="post" action="{{ skjema_handling }}" novalidate
+    {%- if to_steg %} data-steg-skjema{% for navn, verdi in stegdata %} {{ navn }}="{{ verdi }}"{% endfor %}{% endif %}>
     {{ m.csrf_felt() }}
-    <input type="hidden" name="skjema_id" value="{{ verdier.skjema_id }}">
+    {% if skjema_id is not none %}
+    <input type="hidden" name="skjema_id" value="{{ skjema_id }}">
+    {% endif %}
 
     <section class="skjema__steg" data-steg="1">
       <h2 class="skjema__overskrift" data-kun-en-skjerm>Hva trenger du hjelp til?</h2>
@@ -66,7 +72,9 @@
         {{ m.feltfeil("kategori-feil", feltfeil.get("kategori")) }}
       </fieldset>
 
+      {% if to_steg %}
       <button class="knapp knapp--primar" type="button" data-neste data-kun-steg hidden>Neste</button>
+      {% endif %}
     </section>
 
     <section class="skjema__steg" data-steg="2">
@@ -89,7 +97,8 @@
             <label for="dato">Dato</label>
             <p class="hjelpetekst" id="dato-hjelp">dd.mm.åååå, for eksempel 14.11.2026</p>
             <input class="felt--kort" id="dato" name="dato" type="text" autocomplete="off" required value="{{ verdier.dato }}"
-              {{- ugyldig("dato", "nar") }}{{ beskrevet_av(["dato-hjelp", feilid("dato"), feilid("nar")]) }}>
+              {{- ugyldig("dato", "nar") }}{{ beskrevet_av(["dato-hjelp", feilid("dato"), feilid("nar")]) }}
+              {%- if fokusmal == "dato" %} autofocus{% endif %}>
             {{ m.feltfeil("dato-feil", feltfeil.get("dato")) }}
           </div>
           <div class="felt">
@@ -133,13 +142,17 @@
       </section>
 
       <div class="skjema__knapper">
-        <button class="knapp knapp--primar" type="submit">Publiser</button>
+        <button class="knapp knapp--primar" type="submit">{{ knappetekst }}</button>
+        {% if to_steg %}
         <button class="tekstknapp" type="button" data-tilbake-steg data-kun-steg hidden>Tilbake til steg 1</button>
+        {% endif %}
       </div>
     </section>
   </form>
   {# Uten defer, rett etter skjemaet: stegvisningen settes før første opptegning, så
      skjemaet ikke vises på én skjerm og så faller sammen på mobil. #}
+  {% if to_steg %}
   <script src="{{ url_for('static', path='js/steg.js') }}"></script>
+  {% endif %}
 </div>
 {% endblock %}

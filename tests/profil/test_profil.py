@@ -127,9 +127,15 @@ def test_ar24_ingen_get_rute_viser_telefon_epost_eller_fodselsdato(
     app: FastAPI, klient: TestClient, kari, amir, logg_inn_som, lag_oppdrag
 ) -> None:
     """AR-24, AD-16: alle GET-ruter rendret for innlogget bruker, også `/profil/{annen id}`
-    og detaljene for et oppdrag Amir har lagt ut (story 2.1)."""
+    og detaljene for et oppdrag Amir har lagt ut (story 2.1). Redigering og bekreftelsessiden
+    for avbrudd (story 2.5) rendres for et oppdrag Kari eier, fordi andre får 404."""
     amirs_oppdrag = lag_oppdrag(oppdragsgiver=amir)
-    id_for_rute = {"oppdrag.detaljer": amirs_oppdrag.id}
+    karis_oppdrag = lag_oppdrag(oppdragsgiver=kari)
+    id_for_rute = {
+        "oppdrag.detaljer": amirs_oppdrag.id,
+        "oppdrag.rediger": karis_oppdrag.id,
+        "oppdrag.avbryt": karis_oppdrag.id,
+    }
     logg_inn_som(klient, kari)
     sider = 0
     for rute in alle_ruter(app.routes):

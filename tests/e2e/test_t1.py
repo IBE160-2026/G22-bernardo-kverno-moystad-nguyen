@@ -1,12 +1,16 @@
 """T1: universell utforming i ekte nettleser (SM-5, NFR-6, NFR-7, UX-DR5, UX-DR31).
 
-Hver side og tilstand fra Epic 1 og story 2.1–2.4 sjekkes
+Hver side og tilstand fra Epic 1 og story 2.1–2.5 sjekkes
 - med axe ved 360 og 1280 px: ingen brudd med `impact` «serious» eller «critical»,
 - for vannrett rulling ved 320 px: `scrollWidth <= clientWidth` på `<html>`.
 
 «Nytt oppdrag» står i to steg under 768 px og på én skjerm fra 768 px (story 2.2).
 Ved 320 og 360 px sjekkes derfor steg 1, steg 2 og feil i begge steg, og en egen
 test sjekker én skjerm ved 768 px (nettbrett, EXPERIENCE.md § T1).
+
+Story 2.5 la til redigering, «Endre tidspunkt», detaljene for et utgått oppdrag,
+bekreftelsesdialogen (åpen, fra detaljene og fra raden), bekreftelsessiden uten JS,
+kvitteringen etter avbrudd og feilmeldingen etter en konflikt.
 
 Ingen regler slås av, og ingen side utelates. Senere stories legger sine nye
 sider og tilstander inn i `SIDER` (Definition of Done).
@@ -221,6 +225,91 @@ def mine_oppdrag_tom(page: Page, h: dict) -> None:
     expect(page.get_by_text("Du har ikke lagt ut noen oppdrag.")).to_be_visible()
 
 
+MAKE = "Måke snø i innkjørselen"
+BAERE = "Bære ved opp til tredje etasje"
+
+
+def _kari_detaljer(page: Page, h: dict, tittel: str) -> None:
+    h["logg_inn_som_kari"](page)
+    page.goto("/mine-oppdrag")
+    page.get_by_role("link", name=tittel, exact=True).click()
+    expect(page.get_by_role("heading", level=1)).to_have_text(tittel)
+
+
+def rediger_oppdrag(page: Page, h: dict) -> None:
+    """Story 2.5: «Rediger» i detaljene gir skjemaet med de lagrede verdiene."""
+    _kari_detaljer(page, h, MAKE)
+    page.get_by_role("link", name="Rediger", exact=True).click()
+    expect(page.get_by_role("heading", level=1)).to_have_text(f"Rediger «{MAKE}»")
+
+
+def rediger_oppdrag_feil(page: Page, h: dict) -> None:
+    """Tom tittel og beløp «abc»: feiloppsummeringen med to feil."""
+    rediger_oppdrag(page, h)
+    page.get_by_label("Tittel").fill("")
+    page.get_by_label("Beløp i kr").fill("abc")
+    page.get_by_role("button", name="Lagre endringer").click()
+    expect(page.locator("#feiloppsummering")).to_contain_text("Skjemaet har 2 feil")
+
+
+def endre_tidspunkt(page: Page, h: dict) -> None:
+    """«Endre tidspunkt» i raden under «Mine oppdrag» gir skjemaet med fokus i «Dato»."""
+    h["logg_inn_som_kari"](page)
+    page.goto("/mine-oppdrag")
+    page.get_by_role("link", name="Endre tidspunkt").click()
+    expect(page.get_by_label("Dato")).to_be_focused()
+
+
+def oppdrag_detaljer_passert(page: Page, h: dict) -> None:
+    """Merket «Tidspunktet er passert», «Endre tidspunkt» (primær) og «Avbryt oppdrag»."""
+    _kari_detaljer(page, h, BAERE)
+    expect(page.get_by_role("link", name="Endre tidspunkt")).to_be_visible()
+
+
+def avbryt_dialog_detaljer(page: Page, h: dict) -> None:
+    """Dialogen «Avbryte «…»?» åpen over detaljene."""
+    _kari_detaljer(page, h, MAKE)
+    page.get_by_role("link", name="Avbryt oppdrag").click()
+    expect(page.get_by_role("dialog", name=f"Avbryte «{MAKE}»?")).to_be_visible()
+
+
+def avbryt_dialog_rad(page: Page, h: dict) -> None:
+    """Dialogen åpnet fra snarveien i raden under «Mine oppdrag»."""
+    h["logg_inn_som_kari"](page)
+    page.goto("/mine-oppdrag")
+    page.get_by_role("link", name="Avbryt oppdrag").click()
+    expect(page.get_by_role("dialog", name=f"Avbryte «{BAERE}»?")).to_be_visible()
+
+
+def avbryt_bekreftelse(page: Page, h: dict) -> None:
+    """Bekreftelsessiden uten JS (GET), åpnet direkte fra lenken."""
+    _kari_detaljer(page, h, MAKE)
+    page.goto(page.get_by_role("link", name="Avbryt oppdrag").get_attribute("href"))
+    expect(page.get_by_role("heading", level=1)).to_have_text(f"Avbryte «{MAKE}»?")
+
+
+def oppdrag_avbrutt(page: Page, h: dict) -> None:
+    """«Ja, avbryt oppdraget» i dialogen: detaljene med kvitteringen og status Avbrutt."""
+    avbryt_dialog_detaljer(page, h)
+    page.get_by_role("button", name="Ja, avbryt oppdraget").click()
+    expect(page.locator("#kvittering")).to_contain_text("Oppdraget er avbrutt.")
+
+
+def konflikt(page: Page, h: dict) -> None:
+    """To faner: avbrutt i den andre, så «Ja, avbryt oppdraget» i den første gir feilmeldingen."""
+    avbryt_dialog_detaljer(page, h)
+    fane_2 = page.context.new_page()
+    try:
+        fane_2.goto(page.url)
+        fane_2.get_by_role("link", name="Avbryt oppdrag").click()
+        fane_2.get_by_role("button", name="Ja, avbryt oppdraget").click()
+        expect(fane_2.locator("#kvittering")).to_contain_text("Oppdraget er avbrutt.")
+    finally:
+        fane_2.close()
+    page.get_by_role("button", name="Ja, avbryt oppdraget").click()
+    expect(page.locator("#feilmelding")).to_contain_text("Oppdraget er endret. Last siden på nytt.")
+
+
 SIDER: dict[str, Callable[[Page, dict], None]] = {
     "logg-inn": logg_inn_tom,
     "logg-inn-tom-innsending": logg_inn_tom_innsending,
@@ -248,6 +337,16 @@ SIDER: dict[str, Callable[[Page, dict], None]] = {
     "oversikt-tom": oversikt_tom,
     "oversikt-postnummer-feil": oversikt_postnummer_feil,
     "oppdrag-detaljer-andre": oppdrag_detaljer_andre,
+    # Story 2.5
+    "rediger-oppdrag": rediger_oppdrag,
+    "rediger-oppdrag-feil": rediger_oppdrag_feil,
+    "endre-tidspunkt": endre_tidspunkt,
+    "oppdrag-detaljer-passert": oppdrag_detaljer_passert,
+    "avbryt-dialog-detaljer": avbryt_dialog_detaljer,
+    "avbryt-dialog-rad": avbryt_dialog_rad,
+    "avbryt-bekreftelse": avbryt_bekreftelse,
+    "oppdrag-avbrutt": oppdrag_avbrutt,
+    "konflikt": konflikt,
 }
 
 # «Nytt oppdrag» på én skjerm ved 768 px (nettbrett): de samme tilstandene som i to steg.

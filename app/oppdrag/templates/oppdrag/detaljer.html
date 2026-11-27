@@ -3,7 +3,12 @@
 {# Detaljene for et oppdrag (FR-9, AD-16, UX-DR14, UX-DR25). Malen får bare `OppdragVisning`,
    `OffentligBruker` og `Erfaring`, aldri ORM-objekter, så telefon, e-post og fødselsdato aldri
    havner i HTML. Oppdragsgiverblokken «Lagt ut av …» står etter beskrivelsen for alle andre
-   enn oppdragsgiveren. Handlingene kommer i 2.5 og Epic 3. #}
+   enn oppdragsgiveren.
+   Handlingene (story 2.5, FR-6, FR-7, FR-8, UX-DR18) står etter beskrivelsen for oppdragsgiveren
+   når status er Åpen (`kan_endres`): «Rediger» og «Avbryt oppdrag» (sekundære), eller, når
+   `passert` (fra `utgatt`), merkene fra `merker_lagt_ut`, «Endre tidspunkt» (primær) og «Avbryt
+   oppdrag». «Avbryt oppdrag» er en lenke til bekreftelsessiden, som dialog.js åpner som
+   `<dialog>` fra `bekreft_dialog`. Knappene for Hjelper valgt kommer i Epic 3. #}
 {% block innhold %}
 <div class="lesebredde">
   <a class="tekstknapp" href="{{ tilbake_url }}">Tilbake</a>
@@ -25,6 +30,25 @@
     <li class="pris">{{ oppdrag.belop|kr }}</li>
   </ul>
   <p class="beskrivelse">{{ oppdrag.beskrivelse }}</p>
+  {% if kan_endres %}
+  {% if merker %}
+  <p class="merkelinje handlinger__merker">
+    {% for merke in merker %}
+    {{ m.handlingsmerke(merke) }}
+    {% endfor %}
+  </p>
+  {% endif %}
+  <div class="handlinger">
+    {% if passert %}
+    <a class="knapp knapp--primar" href="{{ url_for('oppdrag.rediger', id=oppdrag.id) }}?fokus=tidspunkt">Endre tidspunkt</a>
+    {% else %}
+    <a class="knapp knapp--sekundar" href="{{ url_for('oppdrag.rediger', id=oppdrag.id) }}">Rediger</a>
+    {% endif %}
+    <a class="knapp knapp--sekundar" href="{{ url_for('oppdrag.avbryt', id=oppdrag.id) }}" data-dialog="avbryt-dialog">Avbryt oppdrag</a>
+  </div>
+  {{ m.bekreft_dialog("avbryt-dialog", "Avbryte «" ~ oppdrag.tittel ~ "»?", "Det kan ikke angres.",
+                      url_for('oppdrag.send_avbryt', id=oppdrag.id), "Ja, avbryt oppdraget", "Behold oppdraget") }}
+  {% endif %}
   {% if oppdragsgiver %}
   <section class="oppdragsgiver" aria-labelledby="oppdragsgiver-overskrift">
     <h2 class="oppdragsgiver__overskrift" id="oppdragsgiver-overskrift">Lagt ut av {{ oppdragsgiver.visningsnavn }}</h2>

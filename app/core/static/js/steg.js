@@ -5,7 +5,7 @@
 // dette skriptet ett steg om gangen, og fra 768 px (og uten JS) står alt på én
 // skjerm. Det finnes ingen egne URL-er eller POST per steg.
 //
-// Skriptet lastes uten `defer` rett etter skjemaet i oppdrag/ny.html, så
+// Skriptet lastes uten `defer` rett etter skjemaet i oppdrag/skjema.html (bare når `to_steg`), så
 // stegvisningen er satt før første opptegning (ingen blink og layoutskift).
 //
 // - `data-kun-en-skjerm` (de to `h2`) skjules i to steg, og `data-kun-steg`

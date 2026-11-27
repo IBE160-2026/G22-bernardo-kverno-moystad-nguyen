@@ -1,0 +1,24 @@
+{% extends "core/base.html" %}
+{% import "core/makroer.html" as m with context %}
+{# Bekreftelsessiden for «Avbryt oppdrag» uten JS (FR-7, NFR-8, AR-28, UX-DR18). Samme innhold
+   som dialogen fra `bekreft_dialog`: overskriften «Avbryte «…»?» (her `h1`, `tittel` fra ruta),
+   «Det kan ikke angres.» som egen linje, POST-knappen «Ja, avbryt oppdraget» (primær) og
+   «Behold oppdraget» som lenke tilbake (`behold_url`). `fra=mine` følger med som skjult felt,
+   så Kari havner i «Mine oppdrag» etterpå. Angre-valget heter aldri «Avbryt». #}
+{% block innhold %}
+<div class="lesebredde">
+  <h1>{{ tittel }}</h1>
+  {{ m.meldinger() }}
+  <p>Det kan ikke angres.</p>
+  <form method="post" action="{{ url_for('oppdrag.send_avbryt', id=oppdrag.id) }}">
+    {{ m.csrf_felt() }}
+    {% if fra %}
+    <input type="hidden" name="fra" value="{{ fra }}">
+    {% endif %}
+    <div class="skjema__knapper">
+      <button class="knapp knapp--primar" type="submit">Ja, avbryt oppdraget</button>
+      <a class="tekstknapp" href="{{ behold_url }}">Behold oppdraget</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

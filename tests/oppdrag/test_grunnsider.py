@@ -3,6 +3,7 @@
 Invariantene fra story 1.2, oppdatert i story 2.1: «+ Legg ut oppdrag» på
 oversikten og lenken «Legg ut oppdrag» i tomtilstanden i «Mine oppdrag» (FR-5).
 Oppdatert i story 2.3: oversikten har lista, filtrene og tomtilstandene (FR-10, FR-11).
+Oppdatert i story 2.5: redigeringsskjemaet og bekreftelsessiden har samme sideramme (FR-6, FR-7).
 """
 
 from __future__ import annotations
@@ -154,3 +155,22 @@ def test_sideramme_for_innlogget(kari_klient: TestClient, sti: str) -> None:
     assert (tag, attrs.get("href"), tekst) == ("a", "#innhold", "Hopp til innholdet")
     assert html.count("autofocus") <= 1
     assert 'class="har-meny"' in html
+
+
+@pytest.mark.parametrize("del_", ["", "/rediger", "/rediger?fokus=tidspunkt", "/avbryt", "/avbryt?fra=mine"])
+def test_sideramme_for_redigering_og_avbrudd(
+    klient: TestClient, lag_bruker, logg_inn_som, lag_oppdrag, del_: str
+) -> None:
+    """UX-DR2/UX-DR27 (story 2.5): én h1, «Hopp til innholdet» først, høyst ett autofocus, og
+    «Mine oppdrag» markert som underside på detaljene, skjemaet og bekreftelsessiden."""
+    kari = lag_bruker()
+    oppdrag = lag_oppdrag(oppdragsgiver=kari)
+    logg_inn_som(klient, kari)
+    html = klient.get(f"/oppdrag/{oppdrag.id}{del_}").text
+    side = les_side(html)
+    assert [t for t, _ in side.tagger].count("h1") == 1
+    assert side.forste_fokuserbare[2] == "Hopp til innholdet"
+    assert html.count("autofocus") <= 1
+    assert [(h, c) for h, c, _ in menyvalg(html, "topp")] == [
+        ("/", None), ("/mine-oppdrag", "true"), ("/profil", None),
+    ]

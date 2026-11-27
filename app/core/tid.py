@@ -13,6 +13,8 @@
   klokka stilles fram, avvises. Et som finnes to ganger, tolkes som det første.
 - `vis_tidspunkt` er eneste visning av tidspunkt: «I dag kl. 07:00», «I morgen
   kl. 07:00» eller «Lørdag 14. nov. kl. 12:00», med år når det ikke er i år.
+- `skjemaverdier` gjør et lagret tidspunkt om til feltene i redigeringsskjemaet
+  («25.11.2026», «09:00»), så `tolk_tidspunkt` gir det samme tilbake (FR-6).
 
 `tzdata` er en direkte avhengighet, så `zoneinfo` finner Europe/Oslo også der
 operativsystemet ikke har tidssonedata (Vercel, Windows).
@@ -197,6 +199,18 @@ def tolk_tidspunkt(dato: str | None, klokkeslett: str | None, *, na: datetime) -
     if tidspunkt > seneste_tidspunkt(na):
         raise RegelBrudd([("nar", TIDSPUNKT_FOR_LANGT_FRAM)])
     return tidspunkt
+
+
+def skjemaverdier(tidspunkt: datetime) -> tuple[str, str]:
+    """Et lagret tidspunkt som feltene «Dato» og «Klokkeslett»: «25.11.2026» og «09:00» (AD-9).
+
+    Alltid i norsk tid, så `tolk_tidspunkt` gir det samme tidspunktet tilbake. Det
+    gjelder også over sommertidsskiftene, bortsett fra den andre av to like timer om
+    høsten (`fold=1`): feltene har ingen tidssone, og et slikt klokkeslett tolkes
+    alltid som det første (FR-5).
+    """
+    lokal = tidspunkt.astimezone(OSLO)
+    return f"{lokal:%d.%m.%Y}", f"{lokal:%H:%M}"
 
 
 def vis_tidspunkt(tidspunkt: datetime, *, na: datetime | None = None) -> str:

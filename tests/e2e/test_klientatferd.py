@@ -10,6 +10,9 @@ UX-DR16, UX-DR27, UX-DR28). Fokus i oversikten (`fokus.js`), klikk på kortflate
 kolonnene ved 360, 768 og 1280 px kom med story 2.3 (FR-10, FR-11, UX-DR5, UX-DR21, UX-DR24).
 Klikk på radflaten i «Mine oppdrag», merket som brytes, og tallet i menyen ved 360 og
 1280 px kom med story 2.4 (FR-18, NFR-6, NFR-7, NFR-11, UX-DR3, UX-DR9, UX-DR10).
+Bekreftelsesdialogen (`dialog.js`), bekreftelsessiden uten JS, «Endre tidspunkt» med fokus i
+«Dato», to faner med feilmeldingen og akseptansekriteriene kom med story 2.5 (FR-6, FR-7,
+FR-8, NFR-7, NFR-8, AR-28, UX-DR18, §4.0).
 """
 
 from __future__ import annotations
@@ -728,7 +731,8 @@ def test_klikk_pa_radflaten_apner_detaljene(page: Page, bredde: int) -> None:
     _logg_inn(page, KARI)
     page.goto("/mine-oppdrag")
     rad = page.locator(".listerad").filter(has_text="Bære ved opp til tredje etasje")
-    lenke = rad.get_by_role("link")
+    # Lenkedelen; snarveiene under skillelinja (story 2.5) er egne lenker utenfor den.
+    lenke = rad.locator(".listerad__hoved").get_by_role("link")
     expect(lenke).to_have_accessible_name("Bære ved opp til tredje etasje")
     expect(lenke).to_have_accessible_description(
         # Skjult tekst er absolutt plassert, så navneberegningen legger mellomrom rundt den
@@ -795,3 +799,189 @@ def test_tallet_i_menyen_syns_og_leses_opp(page: Page, bredde: int, meny: str) -
         tekst = page.locator(".meny--topp .meny__valg[href='/mine-oppdrag'] > span").first.bounding_box()
         assert tekst is not None
         assert tallboks["x"] >= tekst["x"] + tekst["width"]  # etter teksten
+
+
+# ---------- redigere og avbryte (story 2.5: FR-6, FR-7, FR-8, NFR-7, NFR-8, UX-DR18, §4.0) ----------
+
+MAKE = "Måke snø i innkjørselen"
+BAERE = "Bære ved opp til tredje etasje"
+
+
+def _detaljer(page: Page, tittel: str) -> None:
+    page.goto("/mine-oppdrag")
+    page.get_by_role("link", name=tittel, exact=True).click()
+    expect(page.get_by_role("heading", level=1)).to_have_text(tittel)
+
+
+@pytest.mark.parametrize("bredde", [360, 1280], ids=["360px", "1280px"])
+def test_dialogen_holder_fokus_og_gir_det_tilbake(page: Page, bredde: int) -> None:
+    """UX-DR18, NFR-7: fokus på spørsmålet, Tab og Shift+Tab går rundt i dialogen, og Esc og
+    «Behold oppdraget» lukker og gir fokus tilbake til lenken. Et klikk på sløret lukker ikke."""
+    page.set_viewport_size({"width": bredde, "height": 800})
+    _logg_inn(page, KARI)
+    _detaljer(page, MAKE)
+    lenke = page.get_by_role("link", name="Avbryt oppdrag")
+    lenke.click()
+    dialog = page.get_by_role("dialog", name=f"Avbryte «{MAKE}»?")
+    expect(dialog).to_be_visible()
+    expect(dialog).to_have_accessible_description("Det kan ikke angres.")
+    sporsmal = dialog.get_by_role("heading", level=2)
+    expect(sporsmal).to_be_focused()
+    ja = dialog.get_by_role("button", name="Ja, avbryt oppdraget")
+    behold = dialog.get_by_role("button", name="Behold oppdraget")
+    page.keyboard.press("Tab")
+    expect(ja).to_be_focused()
+    page.keyboard.press("Tab")
+    expect(behold).to_be_focused()
+    page.keyboard.press("Tab")
+    expect(ja).to_be_focused()  # rundt til første
+    page.keyboard.press("Shift+Tab")
+    expect(behold).to_be_focused()  # rundt til siste
+    page.keyboard.press("Escape")
+    expect(dialog).to_be_hidden()
+    expect(lenke).to_be_focused()
+
+    lenke.click()
+    expect(sporsmal).to_be_focused()
+    page.keyboard.press("Shift+Tab")
+    expect(behold).to_be_focused()  # fra spørsmålet bakover til siste knapp
+    page.mouse.click(5, 5)  # sløret
+    expect(dialog).to_be_visible()
+    behold.click()
+    expect(dialog).to_be_hidden()
+    expect(lenke).to_be_focused()
+    expect(page.get_by_role("heading", level=1)).to_have_text(MAKE)  # ingenting er avbrutt
+
+
+def test_dialogen_ruller_inne_i_seg_ved_lav_skjerm(page: Page) -> None:
+    """UX-DR18, NFR-6: ved 320 × 240 px og stor tekst kan begge knappene nås, og dialogen gjør ikke siden bredere."""
+    page.set_viewport_size({"width": 320, "height": 240})
+    _logg_inn(page, KARI)
+    _detaljer(page, MAKE)
+    page.add_style_tag(content="html { font-size: 200%; }")
+    for_dialog = page.evaluate(RULLING_HTML)
+    page.get_by_role("link", name="Avbryt oppdrag").click()
+    dialog = page.get_by_role("dialog")
+    boks = dialog.bounding_box()
+    assert boks is not None and boks["height"] <= 240 and boks["x"] >= 0 and boks["x"] + boks["width"] <= 320
+    behold = dialog.get_by_role("button", name="Behold oppdraget")
+    behold.scroll_into_view_if_needed()
+    expect(behold).to_be_in_viewport()
+    assert page.evaluate(RULLING_HTML) == for_dialog  # dialogen gjør ikke siden bredere
+
+
+def test_bekreftelse_i_dialogen_gir_kvitteringen_i_fokus(page: Page) -> None:
+    """FR-7, UX-DR27: «Ja, avbryt oppdraget» gir detaljene med «Oppdraget er avbrutt.» i fokus."""
+    _logg_inn(page, KARI)
+    _detaljer(page, MAKE)
+    page.get_by_role("link", name="Avbryt oppdrag").click()
+    page.get_by_role("button", name="Ja, avbryt oppdraget").click()
+    expect(page.locator("#kvittering")).to_contain_text("Oppdraget er avbrutt.")
+    expect(page.locator("#kvittering")).to_be_focused()
+    expect(page.locator(".statusmerke")).to_contain_text("Avbrutt")
+    expect(page.get_by_role("link", name="Avbryt oppdrag")).to_have_count(0)
+
+
+def test_avbryte_fra_raden_gir_mine_oppdrag(page: Page) -> None:
+    """Spec 2.5, beslutning 1, akseptansekriterium 2: snarveien heter «Avbryt oppdrag» og beskrives av
+    tittelen; etter bekreftelsen står Kari i «Mine oppdrag» med kvitteringen i fokus."""
+    _logg_inn(page, KARI)
+    page.goto("/mine-oppdrag")
+    snarvei = page.get_by_role("link", name="Avbryt oppdrag")
+    expect(snarvei).to_have_accessible_name("Avbryt oppdrag")
+    expect(snarvei).to_have_accessible_description(BAERE)
+    expect(page.get_by_role("link", name="Endre tidspunkt")).to_have_accessible_description(BAERE)
+    snarvei.click()
+    page.get_by_role("button", name="Ja, avbryt oppdraget").click()
+    expect(page.get_by_role("heading", level=1)).to_have_text("Mine oppdrag")
+    expect(page.locator("#kvittering")).to_be_focused()
+    rad = page.locator(".listerad").filter(has_text=BAERE)
+    expect(rad.locator(".statusmerke")).to_contain_text("Avbrutt")
+    expect(page.locator(".listerad__handlinger")).to_have_count(0)
+
+
+def test_uten_js_gir_lenken_bekreftelsessiden(browser, browser_context_args: dict) -> None:
+    """AR-28: uten JS følges «Avbryt oppdrag» til bekreftelsessiden, og POST derfra avbryter."""
+    kontekst = browser.new_context(**browser_context_args, java_script_enabled=False)
+    try:
+        side = kontekst.new_page()
+        _logg_inn(side, KARI)
+        side.goto("/mine-oppdrag")
+        side.get_by_role("link", name="Avbryt oppdrag").click()
+        expect(side).to_have_title(f"Avbryte «{BAERE}»? – Nabolagshelten")
+        expect(side.get_by_role("heading", level=1)).to_have_text(f"Avbryte «{BAERE}»?")
+        expect(side.get_by_text("Det kan ikke angres.")).to_be_visible()
+        side.get_by_role("link", name="Behold oppdraget").click()
+        expect(side.get_by_role("heading", level=1)).to_have_text("Mine oppdrag")
+        side.get_by_role("link", name="Avbryt oppdrag").click()
+        side.get_by_role("button", name="Ja, avbryt oppdraget").click()
+        expect(side.get_by_role("heading", level=1)).to_have_text("Mine oppdrag")
+        expect(side.locator("#kvittering")).to_contain_text("Oppdraget er avbrutt.")
+    finally:
+        kontekst.close()
+
+
+@pytest.mark.parametrize("bredde", [360, 1280], ids=["360px", "1280px"])
+def test_endre_tidspunkt_gir_fokus_i_dato(page: Page, bredde: int) -> None:
+    """FR-8, UX-DR27: «Endre tidspunkt» i raden og i detaljene gir fokus i «Dato», med verdien utfylt.
+
+    Redigering står på én skjerm på alle bredder (ingen steg).
+    """
+    page.set_viewport_size({"width": bredde, "height": 800})
+    _logg_inn(page, KARI)
+    page.goto("/mine-oppdrag")
+    page.get_by_role("link", name="Endre tidspunkt").click()
+    dato = page.get_by_label("Dato")
+    expect(dato).to_be_focused()
+    expect(dato).to_have_value("22.11.2026")
+    expect(page.get_by_role("heading", level=2, name="Når og hvor?")).to_be_visible()
+    expect(page.get_by_role("button", name="Neste")).to_have_count(0)
+    _detaljer(page, BAERE)
+    page.get_by_role("link", name="Endre tidspunkt").click()
+    expect(page.get_by_label("Dato")).to_be_focused()
+
+
+def test_nytt_tidspunkt_gir_oppdraget_tilbake(page: Page) -> None:
+    """Akseptansekriterium 1 (FR-8): «Endre tidspunkt», dato i morgen og «Lagre endringer» gir
+    «Endringene er lagret.», merket og tallet i menyen er borte, og Ola ser oppdraget."""
+    _logg_inn(page, KARI)
+    page.goto("/mine-oppdrag")
+    page.get_by_role("link", name="Endre tidspunkt").click()
+    page.get_by_label("Dato").fill("25.11.2026")
+    page.get_by_role("button", name="Lagre endringer").click()
+    expect(page.locator("#kvittering")).to_contain_text("Endringene er lagret.")
+    expect(page.locator("#kvittering")).to_be_focused()
+    expect(page.locator(".handlingsmerke")).to_have_count(0)
+    expect(page.locator(".menytall")).to_have_count(0)
+    page.get_by_role("link", name="Tilbake").click()
+    expect(page.get_by_role("heading", level=1)).to_have_text("Mine oppdrag")
+    expect(page.locator(".handlingslinje")).to_have_count(0)
+    page.context.clear_cookies()
+    _logg_inn(page, OLA)
+    expect(page.get_by_role("link", name=BAERE)).to_be_visible()
+
+
+def test_to_faner_gir_feilmeldingen_i_fokus(page: Page) -> None:
+    """§4.0: avbrutt i fane 1, så «Lagre endringer» i fane 2: feilmeldingen i fokus, og
+    «Last siden på nytt» laster siden uten meldingen."""
+    _logg_inn(page, KARI)
+    _detaljer(page, MAKE)
+    page.get_by_role("link", name="Rediger", exact=True).click()
+    fane_1 = page.context.new_page()
+    try:
+        fane_1.goto(page.url.replace("/rediger", ""))
+        fane_1.get_by_role("link", name="Avbryt oppdrag").click()
+        fane_1.get_by_role("button", name="Ja, avbryt oppdraget").click()
+        expect(fane_1.locator("#kvittering")).to_contain_text("Oppdraget er avbrutt.")
+    finally:
+        fane_1.close()
+    page.get_by_label("Tittel").fill("Endret i fane 2")
+    page.get_by_role("button", name="Lagre endringer").click()
+    melding = page.locator("#feilmelding")
+    expect(melding).to_contain_text("Oppdraget er endret. Last siden på nytt.")
+    expect(melding).to_be_focused()
+    expect(page.get_by_role("heading", level=1)).to_have_text(MAKE)
+    page.get_by_role("link", name="Last siden på nytt").click()
+    expect(page.get_by_role("heading", level=1)).to_have_text(MAKE)
+    expect(page.locator("#feilmelding")).to_have_count(0)
+    expect(page.locator(".statusmerke")).to_contain_text("Avbrutt")

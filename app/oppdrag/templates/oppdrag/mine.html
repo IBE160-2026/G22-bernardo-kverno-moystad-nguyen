@@ -7,8 +7,11 @@
    (DESIGN.md § list-row): tittelen er eneste lenke, og navnet er bare tittelen. Lenken har
    aria-describedby til merkelinja og tidspunktet, så skjermleseren leser «Status: …»,
    «Må gjøres: …» og tidspunktet.
-   Lenkens ::after dekker `listerad__hoved`, og pila › er aria-hidden. I 2.5 kommer
-   `listerad__handlinger` med snarveiene etter `listerad__hoved`, utenfor lenken.
+   Lenkens ::after dekker `listerad__hoved`, og pila › er aria-hidden. Rader med merket
+   «Tidspunktet er passert» (`passert_merke`) har `listerad__handlinger` etter `listerad__hoved`,
+   utenfor lenken og under en skillelinje (story 2.5, FR-8, UX-DR26): «Endre tidspunkt» og
+   «Avbryt oppdrag» (sekundære) med `aria-describedby` til tittelen, så navnet leses før
+   tittelen, og en dialog per rad. `fra=mine` sender Kari tilbake hit etter avbruddet.
    Uten oppdrag: tomtilstanden med lenken «Legg ut oppdrag». #}
 {% block innhold %}
 <div class="lesebredde">
@@ -39,6 +42,15 @@
         </p>
         <svg class="listerad__pil" aria-hidden="true" focusable="false" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5.5 15.5 12 9 18.5"/></svg>
       </div>
+      {% if passert_merke in rad.merker %}
+      <div class="listerad__handlinger">
+        <a class="knapp knapp--sekundar" href="{{ url_for('oppdrag.rediger', id=rad.id) }}?fokus=tidspunkt" aria-describedby="rad-{{ rad.id }}-tittel">Endre tidspunkt</a>
+        <a class="knapp knapp--sekundar" href="{{ url_for('oppdrag.avbryt', id=rad.id) }}?fra=mine" data-dialog="avbryt-dialog-{{ rad.id }}" aria-describedby="rad-{{ rad.id }}-tittel">Avbryt oppdrag</a>
+      </div>
+      {{ m.bekreft_dialog("avbryt-dialog-" ~ rad.id, "Avbryte «" ~ rad.tittel ~ "»?", "Det kan ikke angres.",
+                          url_for('oppdrag.send_avbryt', id=rad.id), "Ja, avbryt oppdraget", "Behold oppdraget",
+                          skjulte={"fra": "mine"}) }}
+      {% endif %}
     </li>
     {% endfor %}
   </ul>
