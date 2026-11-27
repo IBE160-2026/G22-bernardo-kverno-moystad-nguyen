@@ -1,7 +1,7 @@
 """Gjør databasen klar lokalt: `uv run python -m app.seed` (NFR-1, NFR-2, AD-14).
 
 Kjører `alembic upgrade head`, som også laster postnumrene, og legger inn seks
-oppdiktede testbrukere i tre postnumre og 12 eksempeloppdrag. Passordene
+oppdiktede testbrukere i tre postnumre og 13 eksempeloppdrag. Passordene
 lagres bare som hash, med `hash_passord` fra identity (NFR-4, AD-6). Seed kan
 kjøres flere ganger: en bruker som allerede finnes, røres ikke, og
 testbrukernes oppdrag byttes ut, så tidspunktene alltid er relative til
@@ -80,10 +80,15 @@ class Eksempeloppdrag:
     belop: int | None  # None: «Uten betaling»
     lagt_ut_dager_siden: int
     avbrutt: bool = False  # avbrytes gjennom `endre_status` etter innsettingen
+    # E-posten til hjelperen som utførte oppdraget. Oppdraget går gjennom
+    # `endre_status` apen → hjelper_valgt → utfort, med hjelperen som valgt hjelper.
+    utfort_av: str | None = None
 
 
 # Bare for lokal testing. Oppdiktede oppdrag (NFR-2). Bare Kari, Nora og Sofie eier
-# oppdrag. Alle seks kategorier finnes blant de åpne, ett er utgått og ett avbrutt.
+# oppdrag. Alle seks kategorier finnes blant de åpne, ett er utgått, ett avbrutt og
+# ett utført med Nora som hjelper, så oppdragsgiverblokken på Noras oppdrag viser
+# «1 fullført oppdrag» (FR-9, story 2.3).
 EKSEMPELOPPDRAG: tuple[Eksempeloppdrag, ...] = (
     Eksempeloppdrag("kari@eksempel.no", "Måke snø i innkjørselen",
                     "Trenger noen som kan måke snø i innkjørselen min i morgen tidlig.",
@@ -121,6 +126,9 @@ EKSEMPELOPPDRAG: tuple[Eksempeloppdrag, ...] = (
     Eksempeloppdrag("sofie@eksempel.no", "Handle og bære opp varer",
                     "Jeg har brukket armen og trenger hjelp til å bære opp ukens varer fra butikken på hjørnet.",
                     "annet", "5006", 1, 16, None, 1),
+    Eksempeloppdrag("kari@eksempel.no", "Bytte lyspære i taket",
+                    "Lampen i stua henger høyt, og jeg vil ikke gå opp på stigen alene.",
+                    "annet", "0571", -5, 12, 150, 8, utfort_av="nora@eksempel.no"),
 )
 
 
@@ -162,7 +170,8 @@ def legg_inn_eksempeloppdrag(db: Session) -> int:
 
     Tidspunktene er relative til `klokke.na()`, med hele klokkeslett i norsk
     tid. De avbrutte legges inn som åpne og avbrytes gjennom `endre_status`
-    (AD-2), slik appen gjør.
+    (AD-2), slik appen gjør. De utførte går gjennom `endre_status` til
+    `hjelper_valgt`, får hjelperen som `valgt_hjelper_id` og går så til `utfort`.
     """
     na = klokke.na()
     i_dag = na.astimezone(tid.OSLO).date()
@@ -188,6 +197,12 @@ def legg_inn_eksempeloppdrag(db: Session) -> int:
         db.flush()
         if eksempel.avbrutt:
             endre_status(db, oppdrag.id, fra="apen", til="avbrutt", oppdragsgiver_id=eier_id)
+        if eksempel.utfort_av:
+            endre_status(db, oppdrag.id, fra="apen", til="hjelper_valgt", oppdragsgiver_id=eier_id)
+            # Valget av hjelper får egen funksjon i Epic 3. Til da settes hjelperen her.
+            oppdrag.valgt_hjelper_id = ider[normaliser_epost(eksempel.utfort_av)]
+            db.flush()
+            endre_status(db, oppdrag.id, fra="hjelper_valgt", til="utfort", oppdragsgiver_id=eier_id)
     return len(EKSEMPELOPPDRAG)
 
 

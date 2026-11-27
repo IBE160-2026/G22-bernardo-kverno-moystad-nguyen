@@ -107,6 +107,35 @@ def test_eksempeloppdragene_i_databasen(db, sett_na) -> None:
     assert all(o.tidspunkt <= T0 + timedelta(days=60) for o in oppdrag)
 
 
+def test_eksempeloppdragene_har_ett_utfort_med_nora_som_hjelper() -> None:
+    """FR-9, story 2.3: ett av Karis oppdrag er passert og utført med Nora som hjelper."""
+    utforte = [e for e in seed.EKSEMPELOPPDRAG if e.utfort_av]
+    assert len(utforte) == 1
+    (utfort,) = utforte
+    assert (utfort.eier, utfort.utfort_av, utfort.postnummer) == (
+        "kari@eksempel.no", "nora@eksempel.no", "0571",
+    )
+    assert utfort.dager < 0 and not utfort.avbrutt
+    assert utfort.lagt_ut_dager_siden > -utfort.dager
+
+
+def test_utfort_oppdrag_i_databasen(db, sett_na) -> None:
+    """FR-9, AD-2: utført gjennom `endre_status` (apen → hjelper_valgt → utfort), med Nora som
+    valgt hjelper, så `erfaring` gir Nora ett fullført oppdrag."""
+    from app.oppdrag.service import erfaring
+
+    sett_na(T0)
+    seed.last_eksempeldata(db)
+    db.commit()
+    nora = db.scalar(select(Bruker.id).where(Bruker.epost == "nora@eksempel.no"))
+    (utfort,) = db.scalars(select(Oppdrag).where(Oppdrag.status == "utfort")).all()
+    assert utfort.tittel == "Bytte lyspære i taket"
+    assert utfort.valgt_hjelper_id == nora
+    assert utfort.versjon == 3
+    assert utfort.tidspunkt < T0
+    assert erfaring(db, [nora])[nora].fullforte == 1
+
+
 def _tell(url: str) -> dict[str, int]:
     motor = lag_motor(url)
     try:
