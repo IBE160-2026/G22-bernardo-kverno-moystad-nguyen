@@ -122,6 +122,12 @@
   box-sizing: border-box;
 }
 
+/* `hidden` vinner over klasser som setter `display` (.knapp, .felt, .skjema__steg).
+ * steg.js skjuler steg, overskrifter og knapper med `hidden` (story 2.2). */
+[hidden] {
+  display: none !important;
+}
+
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
@@ -450,6 +456,18 @@ html:has(.har-meny) {
   gap: var(--spacing-5);
 }
 
+/* «Nytt oppdrag»: de to delene (`section[data-steg]`) med samme avstand som .skjema.
+ * Under 768 px viser steg.js én del om gangen (UX-DR16). */
+.skjema__steg {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-5);
+}
+
+.skjema__overskrift {
+  margin: 0;
+}
+
 .felt {
   display: flex;
   flex-direction: column;
@@ -610,10 +628,22 @@ textarea[aria-invalid="true"] {
   text-underline-offset: 3px;
 }
 
+button.tekstknapp {
+  background: none;
+  border: 0;
+  font: inherit;
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+}
+
 .skjema__knapper {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-3);
+}
+
+.skjema__knapper .tekstknapp {
+  align-self: flex-start;
 }
 
 .skjema__knapper .knapp {
@@ -869,6 +899,12 @@ textarea {
   margin-left: 2.25rem;
 }
 
+/* «Beløp i kr» vises bare når «Beløp» er valgt, også uten JS (UX-DR13). Å vise
+ * feltet flytter ikke fokus, og verdien beholdes når brukeren bytter. */
+fieldset:has(#tilbud-belop:not(:checked)) .belopfelt {
+  display: none;
+}
+
 .belopfelt__rad {
   display: flex;
   align-items: center;
@@ -965,6 +1001,47 @@ textarea {
   font-size: var(--text-price);
   font-weight: var(--weight-bold);
   line-height: var(--leading-price);
+}
+
+/* ---------- Oppdragskort og forhåndsvisning (UX-DR15) ----------
+ * `card`: beige flate, 1 px kant, 14 px hjørner, 24 px innside. Forhåndsvisningen har
+ * 1,5 px stiplet kant og ingen hover, så den ikke ser ut som noe man kan trykke på
+ * (DESIGN.md § Forhåndsvisning). Lange ord brytes, så kortet aldri gir vannrett rulling.
+ */
+.kort {
+  background: var(--color-surface-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--rounded-lg);
+  padding: var(--spacing-card-padding);
+  box-shadow: var(--shadow-card);
+  overflow-wrap: anywhere;
+}
+
+.kort--forhandsvisning {
+  border: 1.5px dashed var(--color-border);
+}
+
+.kort__tittel {
+  margin: var(--spacing-3) 0 var(--spacing-2);
+  font-family: var(--font-heading);
+  font-size: var(--text-heading-2);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-heading-2);
+}
+
+.kort .fakta {
+  margin-bottom: var(--spacing-3);
+}
+
+.kort .pris {
+  margin: 0;
+}
+
+.forhandsvisning__etikett {
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--text-label);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-label);
 }
 
 /* Linjeskiftene brukeren skrev, beholdes; teksten vises alltid som tekst (AD-11). */

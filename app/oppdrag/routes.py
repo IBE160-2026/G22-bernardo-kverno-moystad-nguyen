@@ -7,6 +7,11 @@
   `skjema_id` (NFR-10). Ved suksess: 303 til detaljene med kvitteringen
   «Oppdraget er lagt ut.» (PRG). En `skjema_id` som mangler eller har feil
   form, gir feilsiden med 400.
+- Skjemaet er alltid ett `<form>` på én skjerm, med to `section` (`data-steg`)
+  og en forhåndsvisning over «Publiser». Under 768 px deler `steg.js` det i to
+  steg (story 2.2, FR-5, UX-DR16). Ruta skriver overskriftene og titlene for
+  stegene i `data-`-attributter, og startverdiene i forhåndsvisningen med de
+  samme reglene som `skjema.js` (UX-DR15). Serveren vet ikke skjermbredden.
 - GET `/oppdrag/{id}` viser detaljene etter tilgangsregelen i FR-9. Menyvalget
   er «Mine oppdrag» på eget oppdrag og «Oppdrag» på andres, med
   `aria-current="true"` (underside).
@@ -29,10 +34,18 @@ from app.core.db import hent_db
 from app.core.feil import FinnesIkke, RegelBrudd, feilside
 from app.core.kvittering import sett_kvittering
 from app.core.postnummer import poststed
-from app.core.render import render, tilbake_url
+from app.core.render import render, sidetittel, tilbake_url
 from app.core.sesjon import Innlogget, innlogget_bruker
 from app.identity.service import hent_offentlig_bruker
-from app.oppdrag.service import hent_for_visning, lagt_ut_av, ny_skjema_id, opprett_oppdrag
+from app.oppdrag.service import (
+    SKRIV_BESKRIVELSE,
+    SKRIV_TITTEL,
+    VELG_KATEGORI,
+    hent_for_visning,
+    lagt_ut_av,
+    ny_skjema_id,
+    opprett_oppdrag,
+)
 
 router = APIRouter()
 
@@ -99,6 +112,80 @@ def mine_oppdrag(
 
 # ---------- nytt oppdrag (FR-5) ----------
 
+# Overskriften og titlen på én skjerm og i hvert steg, ordrett fra EXPERIENCE.md
+# § To steg i nytt oppdrag og § Sidetitler (UX-DR16).
+NYTT_OPPDRAG = "Nytt oppdrag"
+STEGOVERSKRIFT = {1: "Nytt oppdrag 1 av 2", 2: "Nytt oppdrag 2 av 2"}
+STEGTITTEL = {1: "Nytt oppdrag, steg 1 av 2", 2: "Nytt oppdrag, steg 2 av 2"}
+
+# Teksten «Neste» viser når et felt i steg 1 er tomt. Samme tekst som serveren gir.
+TOMME_FELT = {
+    "beskrivelse": SKRIV_BESKRIVELSE,
+    "tittel": SKRIV_TITTEL,
+    "kategori": VELG_KATEGORI,
+}
+
+TOM = "–"  # tomt felt i forhåndsvisningen (EXPERIENCE.md § Forhåndsvisning)
+
+
+def stegdata() -> list[tuple[str, str]]:
+    """`data-`-attributtene steg.js henter overskrift og `<title>` fra (UX-DR16).
+
+    Uten nummer gjelder én skjerm. «-feil» er titlen med «Feil: » foran.
+    """
+    data = [("data-overskrift", NYTT_OPPDRAG)]
+    data += [(f"data-overskrift-{n}", tekst) for n, tekst in STEGOVERSKRIFT.items()]
+    for nokkel, tittel in [("", NYTT_OPPDRAG)] + [(f"-{n}", t) for n, t in STEGTITTEL.items()]:
+        data.append((f"data-tittel{nokkel}", sidetittel(tittel)))
+        data.append((f"data-tittel{nokkel}-feil", sidetittel(tittel, feil=True)))
+    return data
+
+
+def _kr_fra_sifre(sifre: str) -> str:
+    """Som `domene.kr`, men rett fra sifrene, uten `int()`.
+
+    `int()` gir `ValueError` ved over 4300 sifre, og da ville 422-siden blitt en 500.
+    skjema.js bruker samme algoritme, så server og klient gir samme tekst.
+    """
+    sifre = sifre.lstrip("0") or "0"
+    forste = len(sifre) % 3 or 3
+    grupper = [sifre[:forste]] + [sifre[i : i + 3] for i in range(forste, len(sifre), 3)]
+    return domene.NBSP.join(grupper) + f"{domene.NBSP}kr"
+
+
+def _pris(tilbud: str, belop: str) -> str:
+    belop = belop.strip()
+    if tilbud == "uten":
+        return domene.UTEN_BETALING
+    if tilbud != "belop" or not belop:
+        return TOM
+    sifre = re.sub(r"\s", "", belop)
+    if sifre.isascii() and sifre.isdigit():
+        return _kr_fra_sifre(sifre)
+    return f"{belop}{domene.NBSP}kr"
+
+
+def forhandsvisning(verdier: dict[str, str], sted: str) -> dict[str, str]:
+    """Startverdiene i forhåndsvisningen, med de samme reglene som skjema.js (UX-DR15).
+
+    Ingen tolkning av tid: dato og klokkeslett vises slik brukeren skrev dem
+    (AD-9). Bare sifre i beløpet formateres som `kr`; annen tekst vises som den er.
+    """
+    dato, klokkeslett = verdier["dato"].strip(), verdier["klokkeslett"].strip()
+    postnummer = verdier["postnummer"].strip()
+    if postnummer:
+        sted_tekst = f"{postnummer} {sted}" if sted else postnummer
+    else:
+        sted_tekst = TOM
+    kategori = verdier["kategori"]
+    return {
+        "kategori": kategori if kategori in domene.KATEGORIKODER else "",
+        "tittel": verdier["tittel"].strip() or TOM,
+        "tid": f"{dato} kl. {klokkeslett}" if dato and klokkeslett else TOM,
+        "sted": sted_tekst,
+        "pris": _pris(verdier["tilbud"], verdier["belop"]),
+    }
+
 
 def _vis_skjema(
     request: Request,
@@ -107,16 +194,20 @@ def _vis_skjema(
     feil: list[tuple[str, str]] | None = None,
     status_code: int = 200,
 ) -> HTMLResponse:
+    sted = poststed(verdier["postnummer"]) or ""
     return render(
         request,
         "oppdrag/ny.html",
-        tittel="Nytt oppdrag",
+        tittel=NYTT_OPPDRAG,
         aktiv_meny="mine_oppdrag",
         underside=True,
         fokus="beskrivelse",
         status_code=status_code,
         verdier=verdier,
-        poststed=poststed(verdier["postnummer"]) or "",
+        poststed=sted,
+        forhandsvisning=forhandsvisning(verdier, sted),
+        stegdata=stegdata(),
+        tomme_felt=TOMME_FELT,
         antall_tegn=domene.antall_tegn(verdier["beskrivelse"]),
         beskrivelse_maks=domene.BESKRIVELSE_MAKS,
         gruppelenker=GRUPPELENKER,

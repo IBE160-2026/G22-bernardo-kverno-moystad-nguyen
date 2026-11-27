@@ -88,18 +88,22 @@ def feltfeil(html: str, felt: str) -> str | None:
 
 
 def test_skjemaet_har_feltene_i_rekkefolge(kari_klient: TestClient) -> None:
-    """FR-5, UX-DR11: etikettene og hjelpetekstene ordrett, i feltrekkefølgen fra spec 2.1."""
+    """FR-5, UX-DR11, UX-DR15, UX-DR16: etikettene og hjelpetekstene ordrett, i feltrekkefølgen
+    fra spec 2.1, med de to `h2` og forhåndsvisningen fra spec 2.2 (én skjerm, uten JS)."""
     svar = kari_klient.get("/oppdrag/ny")
     assert svar.status_code == 200
     html = svar.text
     assert "<title>Nytt oppdrag – Nabolagshelten</title>" in html
     assert "<h1>Nytt oppdrag</h1>" in html
     rekkefolge = [
+        ">Hva trenger du hjelp til?</h2>",
         '<label for="beskrivelse">Hva trenger du hjelp til?</label>',
         "Skriv med egne ord.",
         "Ikke skriv adresse eller telefonnummer – det avtaler dere når hjelperen er valgt.",
         '<label for="tittel">Tittel</label>',
         '<legend class="gruppe__etikett">Kategori</legend>',
+        ">Neste</button>",
+        ">Når og hvor?</h2>",
         '<label for="postnummer">Postnummer</label>',
         '<legend class="gruppe__etikett">Når?</legend>',
         '<label for="dato">Dato</label>',
@@ -110,11 +114,13 @@ def test_skjemaet_har_feltene_i_rekkefolge(kari_klient: TestClient) -> None:
         '<label for="tilbud-belop">Beløp</label>',
         '<label for="belop">Beløp i kr</label>',
         '<label for="tilbud-uten">Uten betaling</label>',
+        ">Slik vises oppdraget for andre.</p>",
         ">Publiser</button>",
+        ">Tilbake til steg 1</button>",
     ]
     posisjoner = [html.index(tekst) for tekst in rekkefolge]
     assert posisjoner == sorted(posisjoner)
-    assert re.search(r'<a class="tekstknapp" href="[^"]+">Tilbake</a>', html)
+    assert re.search(r'<a class="tekstknapp" href="[^"]+" data-vis-i-steg="1">Tilbake</a>', html)
     kategorier = re.findall(r'name="kategori" value="([^"]+)"', html)
     assert kategorier == ["snomaking", "hage", "baerehjelp-flytting", "dyrepass", "teknologihjelp", "annet"]
     for tekst in ("Snømåking", "Hage", "Bærehjelp/<wbr>flytting", "Dyrepass", "Teknologihjelp", "Annet"):
