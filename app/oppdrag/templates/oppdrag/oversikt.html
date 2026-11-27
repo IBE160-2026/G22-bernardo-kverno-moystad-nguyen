@@ -3,7 +3,8 @@
 {# Oversikten (FR-10, FR-11, FR-5, UX-DR5, UX-DR8, UX-DR10, UX-DR21, UX-DR24). Rekkefølgen er fra
    mockupen key-oversikt.html: «+ Legg ut oppdrag», h1, antallslinja, kategorifilteret,
    postnummerfilteret og kortene eller tomtilstanden. Malen får bare `OppdragKort` (AD-16).
-   Filterlenkene bygges bare med `filterlenke` (AR-27). Høyst ett autofocus: `fokusmal` er
+   Filterlenkene bygges bare med `filterlenke` (AR-27). Kort med bilde får miniatyren øverst
+   (`bilde_url` med `?v=`, FR-27). Høyst ett autofocus: `fokusmal` er
    «postnummer», «kategori» eller ingenting. Antallslinja har ikke aria-live; fokus på den
    valgte lenken eller feltet gir opplesningen gjennom aria-describedby. #}
 {% macro kategorilenke(kode, tekst) %}
@@ -58,7 +59,8 @@
 {% if oppdrag %}
 <ul class="kortliste">
   {% for o in oppdrag %}
-  <li>{{ m.oppdragskort(o.kategori, o.tittel, o.tidspunkt|tidspunkt, o.sted, o.belop|kr, href=url_for('oppdrag.detaljer', id=o.id)) }}</li>
+  {% set bilde_url = url_for('oppdrag.bilde_liten', id=o.id) ~ '?v=' ~ o.bildeversjon if o.bildeversjon is not none else none %}
+  <li>{{ m.oppdragskort(o.kategori, o.tittel, o.tidspunkt|tidspunkt, o.sted, o.belop|kr, href=url_for('oppdrag.detaljer', id=o.id), bilde_url=bilde_url) }}</li>
   {% endfor %}
 </ul>
 {% else %}

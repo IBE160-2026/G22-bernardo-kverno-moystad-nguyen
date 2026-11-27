@@ -16,12 +16,12 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 from starlette.requests import Request
-from starlette.responses import JSONResponse
+from starlette.responses import JSONResponse, Response
 
 from app import lag_app
 from app.core import klokke
 from app.core.config import Settings
-from app.core.csrf import MAKS_KROPP, CsrfMellomvare
+from app.core.csrf import BILDET_ER_FOR_STORT, MAKS_KROPP, MAKS_MULTIPART, CsrfMellomvare
 from app.core.db import hent_db
 from app.core.feil import FeilMellomvare
 from app.core.headere import SIKKERHETSHEADERE, HeaderMellomvare
@@ -69,6 +69,25 @@ def testruter(app: FastAPI) -> FastAPI:
         with db.begin():
             db.add(Bruker(navn="Skrevet av testrute", opprettet=klokke.na()))
         return JSONResponse({"ok": True})
+
+    @app.post("/_test/filer")
+    @offentlig
+    def filer(request: Request) -> JSONResponse:
+        """Det mellomvaren la i `request.state`, uten at ruta leser kroppen selv (AD-18)."""
+        return JSONResponse({
+            "skjema": request.state.skjema,
+            "filer": {navn: data.decode("latin-1") for navn, data in request.state.filer.items()},
+        })
+
+    @app.get("/_test/egen-buffer")
+    @offentlig
+    def egen_buffer() -> Response:
+        return Response(b"x", media_type="image/jpeg", headers={"Cache-Control": "private, max-age=60"})
+
+    @app.get("/_test/html-buffer")
+    @offentlig
+    def html_buffer() -> Response:
+        return Response("<p>x</p>", media_type="text/html", headers={"Cache-Control": "public, max-age=60"})
 
     @app.get("/_test/innlogget")
     @offentlig
@@ -460,3 +479,148 @@ def test_keepalive_gir_ikke_303_naar_databasen_feiler(app: FastAPI) -> None:
         klient.cookies.set("sesjon", "keepalive")
         svar = klient.get("/", follow_redirects=False)
     assert svar.status_code == 500
+
+
+# ---------- filfelt og grensene (story 2.7, AD-5, AD-18) ----------
+
+
+def test_filer_legges_i_state_som_bytes_og_ikke_i_skjema(klient: TestClient, testruter) -> None:
+    """AD-18: ikke-tomme filer i `request.state.filer`, tekstfeltene i `request.state.skjema` som før."""
+    nokkel = hent_csrf(klient)
+    svar = klient.post(
+        "/_test/filer",
+        data={"csrf_token": nokkel, "bildetekst": "Snø"},
+        files=[
+            ("bilde", ("bilde.jpg", b"forste", "image/jpeg")),
+            ("bilde", ("annet.jpg", b"andre", "image/jpeg")),
+            ("vedlegg", ("notat.txt", b"tekst", "text/plain")),
+        ],
+    )
+    assert svar.status_code == 200
+    assert svar.json() == {
+        "skjema": {"csrf_token": nokkel, "bildetekst": "Snø"},
+        "filer": {"bilde": "forste", "vedlegg": "tekst"},  # første ikke-tomme fil per navn
+    }
+
+
+def test_tomt_filfelt_gir_ingen_fil(klient: TestClient, testruter) -> None:
+    """Et filfelt uten valgt fil (tomt filnavn, 0 byte) gir ingen fil, og en senere ikke-tom fil teller."""
+    nokkel = hent_csrf(klient)
+    svar = klient.post(
+        "/_test/filer",
+        data={"csrf_token": nokkel},
+        files=[("bilde", ("", b"", "application/octet-stream")), ("annet", ("", b"", "application/octet-stream")),
+               ("annet", ("b.png", b"png", "image/png"))],
+    )
+    assert svar.status_code == 200
+    assert svar.json()["filer"] == {"annet": "png"}
+
+
+def test_urlencoded_gir_tom_filliste(klient: TestClient, testruter) -> None:
+    nokkel = hent_csrf(klient)
+    svar = klient.post("/_test/filer", data={"csrf_token": nokkel, "navn": "Kari"})
+    assert svar.status_code == 200
+    assert svar.json() == {"skjema": {"csrf_token": nokkel, "navn": "Kari"}, "filer": {}}
+
+
+def test_multipart_godtar_fil_og_tekstfelt_over_1_mb(klient: TestClient, testruter) -> None:
+    """AD-18: grensen for multipart er over 1 MB, og et stort tekstfelt (`bilde_beholdt`) avvises ikke."""
+    nokkel = hent_csrf(klient)
+    stor_tekst = "A" * (2 * 1024 * 1024)
+    svar = klient.post(
+        "/_test/filer",
+        data={"csrf_token": nokkel, "bilde_beholdt": stor_tekst},
+        files={"bilde": ("bilde.jpg", b"x" * (2 * 1024 * 1024), "image/jpeg")},
+    )
+    assert svar.status_code == 200
+    assert len(svar.json()["skjema"]["bilde_beholdt"]) == len(stor_tekst)
+    assert len(svar.json()["filer"]["bilde"]) == 2 * 1024 * 1024
+
+
+def test_multipart_over_grensen_gir_413_med_bildeteksten(klient: TestClient, testruter) -> None:
+    """413 for et skjema med bilde sier «Bildet er for stort. Velg et bilde på høyst 4 MB.»."""
+    nokkel = hent_csrf(klient)
+    svar = klient.post(
+        "/_test/filer",
+        data={"csrf_token": nokkel},
+        files={"bilde": ("bilde.jpg", b"x" * MAKS_MULTIPART, "image/jpeg")},
+    )
+    assert svar.status_code == 413
+    assert f"<h1>{BILDET_ER_FOR_STORT}</h1>" in svar.text
+    assert "Noe gikk galt" not in svar.text
+
+
+def test_multipart_over_grensen_uten_content_length_gir_413(klient: TestClient, testruter) -> None:
+    """Grensen holder også når kroppen kommer i biter, og ruta kalles ikke."""
+    nokkel = hent_csrf(klient)
+    grense = "grense123"
+
+    def biter():
+        hode = (
+            f"--{grense}\r\nContent-Disposition: form-data; name=\"csrf_token\"\r\n\r\n{nokkel}\r\n"
+            f"--{grense}\r\nContent-Disposition: form-data; name=\"bilde\"; filename=\"a.jpg\"\r\n"
+            "Content-Type: image/jpeg\r\n\r\n"
+        )
+        yield hode.encode()
+        bit = b"x" * 65536
+        for _ in range(MAKS_MULTIPART // len(bit) + 1):
+            yield bit
+
+    svar = klient.post(
+        "/_test/filer", content=biter(), headers={"Content-Type": f"multipart/form-data; boundary={grense}"}
+    )
+    assert svar.status_code == 413
+
+
+def test_urlencoded_grensen_er_fortsatt_1_mb(klient: TestClient, testruter) -> None:
+    """Story 2.7 hever bare grensen for multipart. Urlencoded over 1 MB gir 413 med den vanlige teksten."""
+    nokkel = hent_csrf(klient)
+    svar = klient.post("/_test/filer", data={"csrf_token": nokkel, "tekst": "x" * (2 * 1024 * 1024)})
+    assert svar.status_code == 413
+    assert "Noe gikk galt. Prøv igjen om litt." in svar.text
+
+
+def test_grensene_for_kroppen() -> None:
+    """AD-18: multipart har plass til én fil og ett beholdt bilde (base64) av største størrelse,
+    med 256 KiB margin. Teksten på 413-siden er den samme som feltfeilen i `oppdrag/bilde.py`."""
+    from app.oppdrag.bilde import FOR_STORT, MAKS_BYTE
+
+    assert MAKS_KROPP == 1024 * 1024
+    assert MAKS_MULTIPART == MAKS_BYTE + -(-MAKS_BYTE * 4 // 3) + 256 * 1024
+    assert MAKS_MULTIPART > MAKS_BYTE + len(base64_av(MAKS_BYTE)) + 100_000
+    assert BILDET_ER_FOR_STORT == FOR_STORT
+
+
+def base64_av(antall: int) -> bytes:
+    import base64
+
+    return base64.b64encode(bytes(antall))
+
+
+def test_multipart_med_fil_uten_csrf_gir_403(klient: TestClient, testruter) -> None:
+    """Invariant 1.x: en fil endrer ikke CSRF-sjekken."""
+    hent_csrf(klient)
+    svar = klient.post(
+        "/_test/filer", data={"csrf_token": "feil"}, files={"bilde": ("a.jpg", b"x", "image/jpeg")}
+    )
+    assert svar.status_code == 403
+
+
+def test_egen_cache_control_beholdes(klient: TestClient, testruter) -> None:
+    """AD-18: en `Cache-Control` ruta har satt selv, beholdes, og `no-store` legges ikke til."""
+    svar = klient.get("/_test/egen-buffer")
+    assert svar.headers.get_list("cache-control") == ["private, max-age=60"]
+    assert svar.headers["x-content-type-options"] == "nosniff"
+
+
+def test_html_med_egen_cache_control_far_likevel_no_store(klient: TestClient, testruter) -> None:
+    """FR-2: bare JPEG-svar (bilderutene) beholder sin egen `Cache-Control`."""
+    svar = klient.get("/_test/html-buffer")
+    assert svar.headers.get_list("cache-control") == ["no-store"]
+
+
+def test_svar_uten_egen_cache_control_far_no_store(klient: TestClient, testruter) -> None:
+    """FR-2: alt annet enn `/static/` og ruter med egen `Cache-Control` har fortsatt `no-store`."""
+    nokkel = hent_csrf(klient)
+    svar = klient.post("/_test/filer", data={"csrf_token": nokkel})
+    assert svar.headers.get_list("cache-control") == ["no-store"]

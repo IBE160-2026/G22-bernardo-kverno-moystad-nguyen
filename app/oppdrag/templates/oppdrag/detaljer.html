@@ -8,12 +8,17 @@
    når status er Åpen (`kan_endres`): «Rediger» og «Avbryt oppdrag» (sekundære), eller, når
    `passert` (fra `utgatt`), merkene fra `merker_lagt_ut`, «Endre tidspunkt» (primær) og «Avbryt
    oppdrag». «Avbryt oppdrag» er en lenke til bekreftelsessiden, som dialog.js åpner som
-   `<dialog>` fra `bekreft_dialog`. Knappene for Hjelper valgt kommer i Epic 3. #}
+   `<dialog>` fra `bekreft_dialog`. Knappene for Hjelper valgt kommer i Epic 3.
+   Bildet (story 2.7, FR-27) står etter `meldinger()`, så kvitteringen står rett under `h1`,
+   med bildeteksten som `alt`, `width` og `height`, og uten lenke. Uten bilde: ingenting. #}
 {% block innhold %}
 <div class="lesebredde">
   <a class="tekstknapp" href="{{ tilbake_url }}">Tilbake</a>
   <h1>{{ oppdrag.tittel }}</h1>
   {{ m.meldinger() }}
+  {% if oppdrag.bilde %}
+  <img class="detaljbilde" src="{{ url_for('oppdrag.bilde', id=oppdrag.id) }}?v={{ oppdrag.bilde.versjon }}" alt="{{ oppdrag.bilde.bildetekst }}" width="{{ oppdrag.bilde.bredde }}" height="{{ oppdrag.bilde.hoyde }}">
+  {% endif %}
   <div class="merkelinje">
     {{ m.statusmerke(oppdrag.status) }}
     {{ m.kategorimerke(oppdrag.kategori) }}

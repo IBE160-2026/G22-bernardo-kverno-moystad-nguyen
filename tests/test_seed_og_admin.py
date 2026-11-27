@@ -15,7 +15,7 @@ from app.core.domene import KATEGORIKODER
 from app.core.postnummer import finnes
 from app.identity.models import Bruker, Innloggingsforsok, Sesjon
 from app.identity.service import logg_inn, sjekk_passord
-from app.oppdrag.models import Oppdrag
+from app.oppdrag.models import Oppdrag, Oppdragsbilde
 
 from .conftest import ROT, STANDARD_PASSORD
 
@@ -143,6 +143,7 @@ def _tell(url: str) -> dict[str, int]:
             return {
                 "brukere": tilkobling.scalar(select(func.count()).select_from(Bruker)),
                 "oppdrag": tilkobling.scalar(select(func.count()).select_from(Oppdrag)),
+                "bilder": tilkobling.scalar(select(func.count()).select_from(Oppdragsbilde)),
             }
     finally:
         motor.dispose()
@@ -155,7 +156,7 @@ def test_seed_main_to_ganger_pa_ren_database(monkeypatch: pytest.MonkeyPatch, tm
     monkeypatch.setattr(seed, "hent_settings", lambda: settings)
     monkeypatch.setattr("app.core.config.hent_settings", lambda: settings)
     assert seed.main() == 0
-    assert _tell(url) == {"brukere": 6, "oppdrag": len(seed.EKSEMPELOPPDRAG)}
+    assert _tell(url) == {"brukere": 6, "oppdrag": len(seed.EKSEMPELOPPDRAG), "bilder": 4}
 
     # En annen bruker med eget oppdrag skal stå urørt etter neste seed.
     motor = lag_motor(url)
@@ -176,8 +177,9 @@ def test_seed_main_to_ganger_pa_ren_database(monkeypatch: pytest.MonkeyPatch, tm
     finally:
         motor.dispose()
 
+    # Andre kjøring feiler ikke på fremmednøkkelen fra `oppdragsbilde` (story 2.7, AD-2).
     assert seed.main() == 0
-    assert _tell(url) == {"brukere": 7, "oppdrag": len(seed.EKSEMPELOPPDRAG) + 1}
+    assert _tell(url) == {"brukere": 7, "oppdrag": len(seed.EKSEMPELOPPDRAG) + 1, "bilder": 4}
     motor = lag_motor(url)
     try:
         with motor.connect() as tilkobling:
@@ -272,13 +274,16 @@ def test_admin_ukjent_eller_slettet_bruker(db, sesjonsfabrikk, lag_bruker, capsy
 
 # Tabellene testen under lager fremmede rader i. En ny tabell i `Base.metadata`
 # må legges til her, med en fremmed rad i testen (T-3).
-TABELLER_MED_FREMMEDE_RADER = {"bruker", "sesjon", "innloggingsforsok", "oppdrag"}
+TABELLER_MED_FREMMEDE_RADER = {"bruker", "sesjon", "innloggingsforsok", "oppdrag", "oppdragsbilde"}
 
 
-def test_last_eksempeldata_gir_bare_testbrukerne_og_eksempeloppdragene(db, lag_bruker, lag_oppdrag) -> None:
+def test_last_eksempeldata_gir_bare_testbrukerne_og_eksempeloppdragene(
+    db, lag_bruker, lag_oppdrag, lag_bilde
+) -> None:
     """AR-29, T-3: fremmede rader i hver tabell forsvinner, og bare seed-dataene står igjen."""
     annen = lag_bruker(epost="annen@eksempel.no")
     fremmed = lag_oppdrag(oppdragsgiver=annen, skjema_id="fremmed-skjema-id-1")
+    lag_bilde(fremmed)
     logg_inn(db, "annen@eksempel.no", STANDARD_PASSORD)
     logg_inn(db, "annen@eksempel.no", "feil")
     db.commit()
@@ -298,6 +303,60 @@ def test_last_eksempeldata_gir_bare_testbrukerne_og_eksempeloppdragene(db, lag_b
     assert fremmed.skjema_id not in skjema_ider
     assert len(skjema_ider) == len(seed.EKSEMPELOPPDRAG)
     assert db.scalar(select(func.count()).select_from(Oppdrag)) == len(seed.EKSEMPELOPPDRAG)
+    assert db.scalar(select(func.count()).select_from(Oppdragsbilde)) == 4  # bare seed-bildene
+
+
+# ---------- bilder i seed (story 2.7, FR-27, NFR-2) ----------
+
+BILDER_I_SEED = {
+    "Måke snø i innkjørselen": "kari@eksempel.no",
+    "Mate katten i helgen": "nora@eksempel.no",
+    "Flytte sofa ned i kjelleren": "nora@eksempel.no",
+    "Klippe hekken": "sofie@eksempel.no",
+}
+
+
+def test_fire_eksempeloppdrag_har_bilde_i_fire_kategorier() -> None:
+    """FR-27, NFR-2: fire oppdrag med motiv og bildetekst på 3–120 tegn, i fire kategorier."""
+    med_bilde = [e for e in seed.EKSEMPELOPPDRAG if e.bilde]
+    assert {e.tittel: e.eier for e in med_bilde} == BILDER_I_SEED
+    assert len({e.kategori for e in med_bilde}) == 4
+    assert {e.bilde for e in med_bilde} == set(seed.MOTIVER)
+    for e in med_bilde:
+        assert e.bildetekst and 3 <= len(e.bildetekst) <= 120, e.tittel
+        assert not e.avbrutt and e.dager > 0, e.tittel  # åpne, så de vises i oversikten
+    # Ola i 0571 ser to kort med bilde (Karis «Måke snø» og Noras «Mate katten»).
+    i_0571 = [e for e in med_bilde if e.postnummer == "0571"]
+    assert len(i_0571) == 2
+
+
+def test_bildene_i_seed_er_tegnet_og_behandlet(db, sett_na) -> None:
+    """FR-27, AD-18: bildene i databasen er JPEG-er uten EXIF fra `oppdrag/bilde.py`."""
+    from tests.bilder import apne
+
+    sett_na(T0)
+    seed.last_eksempeldata(db)
+    db.commit()
+    rader = db.execute(
+        select(Oppdrag.tittel, Oppdragsbilde.bildetekst, Oppdragsbilde.bilde, Oppdragsbilde.miniatyr,
+               Oppdragsbilde.bredde, Oppdragsbilde.hoyde)
+        .join(Oppdragsbilde, Oppdragsbilde.oppdrag_id == Oppdrag.id)
+    ).all()
+    assert {r.tittel for r in rader} == set(BILDER_I_SEED)
+    for rad in rader:
+        stor, liten = apne(rad.bilde), apne(rad.miniatyr)
+        assert stor.format == liten.format == "JPEG"
+        assert stor.size == (rad.bredde, rad.hoyde) and max(stor.size) <= 1600
+        assert max(liten.size) <= 640
+        assert not stor.getexif() and not liten.getexif()
+
+
+def test_readme_forteller_om_bildene() -> None:
+    """FR-27, NFR-2: README sier hvilke fire som har bilde, og at Kari kan bytte og fjerne det."""
+    readme = (ROT / "README.md").read_text(encoding="utf-8")
+    for tittel in BILDER_I_SEED:
+        assert f"«{tittel}»" in readme, tittel
+    assert "Bytt bilde" in readme and "Fjern bildet" in readme
 
 
 def test_alle_tabellene_i_databasen_finnes_i_metadataen(tilkobling) -> None:

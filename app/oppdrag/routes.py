@@ -40,6 +40,16 @@ redigering og avbrudd (FR-5–FR-9, FR-21 grunnsider, NFR-11, UX-DR7, UX-DR10–
   tilbake til «Mine oppdrag» etter avbruddet. Alt annet gir detaljene.
 - `Konflikt` gir 303 til detaljene med «Oppdraget er endret. Last siden på
   nytt.» (handleren i `core/feil.py`, §4.0).
+- Bilde (story 2.7, FR-27, AD-18): skjemaet er `multipart/form-data`. `send_ny`
+  og `send_rediger` gir filen (`request.state.filer["bilde"]`), `bilde_beholdt`
+  og `fjern_bilde` til `tolk_bildevalg` før `with db.begin():`, så bildet
+  dekodes utenfor transaksjonen. Ruta leser aldri fila selv. Ved 422 får malen
+  det gyldige bildet som `bilde_beholdt` (base64) og miniatyren som `data:`-URL.
+  Ved redigering vises det lagrede bildet med «Bytt bilde» og «Fjern bildet».
+- GET `/oppdrag/{id}/bilde` og `/oppdrag/{id}/bilde/liten` gir JPEG-en og
+  miniatyren med samme tilgangsregel og samme 404 som detaljene (FR-9), og med
+  `Cache-Control: private, max-age=31536000, immutable`. Malene lenker med
+  `?v={versjon}`, så et nytt bilde får ny URL.
 """
 
 from __future__ import annotations
@@ -62,18 +72,22 @@ from app.core.postnummer import normaliser_postnummer, poststed
 from app.core.render import render, sidetittel, tilbake_url
 from app.core.sesjon import Innlogget, innlogget_bruker
 from app.identity.service import POSTNUMMER_UKJENT, SKRIV_POSTNUMMER, hent_offentlig_bruker
+from app.oppdrag.bilde import miniatyr_data_url, til_beholdt
 from app.oppdrag.service import (
     AVBRYTBAR,
+    INGEN_BILDEVALG,
     KONFLIKT,
     REDIGERBAR,
     SKRIV_BESKRIVELSE,
     SKRIV_TITTEL,
     TIDSPUNKTET_ER_PASSERT,
     VELG_KATEGORI,
+    Bildevalg,
     OppdragVisning,
     avbryt_oppdrag,
     detaljer_url,
     erfaring,
+    hent_bilde,
     hent_eget_oppdrag,
     hent_for_visning,
     lagt_ut_av,
@@ -83,6 +97,7 @@ from app.oppdrag.service import (
     opprett_oppdrag,
     rediger_oppdrag,
     skjemaverdier_for,
+    tolk_bildevalg,
     utgatt,
 )
 
@@ -93,6 +108,7 @@ MAKS_ID = 2**31 - 1  # største verdi for en heltallskolonne i Postgres
 # Feltene i «Nytt oppdrag», i rekkefølgen de vises (FR-5).
 SKJEMAFELT = (
     "beskrivelse",
+    "bildetekst",
     "tittel",
     "kategori",
     "postnummer",
@@ -105,6 +121,7 @@ SKJEMA_ID = re.compile(r"[A-Za-z0-9_-]{16,64}")
 
 # Lenkene i feiloppsummeringen går til første felt i gruppen (UX-DR12).
 GRUPPELENKER = {
+    "bilde": "bilde",
     "nar": "dato",
     "kategori": f"kategori-{domene.KATEGORIER[0][0]}",
     "tilbud": "tilbud-belop",
@@ -309,12 +326,40 @@ def forhandsvisning(verdier: dict[str, str], sted: str) -> dict[str, str]:
     }
 
 
+def _bildefelt(
+    request: Request, valg: Bildevalg, oppdrag: OppdragVisning | None = None
+) -> dict:
+    """Det filfeltet trenger: miniatyren, `bilde_beholdt` og om det finnes et bilde (FR-27).
+
+    Et gyldig bilde fra innsendingen (`valg.ny`) vises som `data:`-URL og følger
+    med som `bilde_beholdt`. Ellers vises det lagrede bildet ved redigering, med
+    «Fjern bildet» krysset av hvis brukeren krysset den av.
+    """
+    if valg.ny is not None:
+        return {
+            "src": miniatyr_data_url(valg.ny),
+            "beholdt": til_beholdt(valg.ny),
+            "finnes": True,
+            "fjern_valgt": False,
+        }
+    if oppdrag is not None and oppdrag.bilde is not None:
+        src = request.app.url_path_for("oppdrag.bilde_liten", id=oppdrag.id)
+        return {
+            "src": f"{src}?v={oppdrag.bilde.versjon}",
+            "beholdt": None,
+            "finnes": True,
+            "fjern_valgt": valg.fjern,
+        }
+    return {"src": None, "beholdt": None, "finnes": False, "fjern_valgt": False}
+
+
 def _vis_skjema(
     request: Request,
     *,
     verdier: dict[str, str],
     feil: list[tuple[str, str]] | None = None,
     status_code: int = 200,
+    bildevalg: Bildevalg = INGEN_BILDEVALG,
 ) -> HTMLResponse:
     """«Nytt oppdrag»: to steg under 768 px, `skjema_id` og «Publiser» (FR-5, UX-DR16)."""
     sted = poststed(verdier["postnummer"]) or ""
@@ -330,16 +375,19 @@ def _vis_skjema(
         knappetekst="Publiser",
         skjema_id=verdier["skjema_id"],
         to_steg=True,
-        **_skjemakontekst(verdier, sted, feil),
+        **_skjemakontekst(verdier, sted, feil, _bildefelt(request, bildevalg)),
     )
 
 
 def _skjemakontekst(
-    verdier: dict[str, str], sted: str, feil: list[tuple[str, str]] | None
+    verdier: dict[str, str], sted: str, feil: list[tuple[str, str]] | None, bildefelt: dict
 ) -> dict:
-    """Det skjemaet trenger, felles for «Nytt oppdrag» og redigering (FR-5, FR-6)."""
+    """Det skjemaet trenger, felles for «Nytt oppdrag» og redigering (FR-5, FR-6, FR-27)."""
     return {
         "verdier": verdier,
+        "bildefelt": bildefelt,
+        "bildetekst_antall": domene.antall_tegn(verdier["bildetekst"]),
+        "bildetekst_maks": domene.BILDETEKST_MAKS,
         "poststed": sted,
         "forhandsvisning": forhandsvisning(verdier, sted),
         "stegdata": stegdata(),
@@ -350,6 +398,13 @@ def _skjemakontekst(
         "feil": feil or [],
         "feltfeil": dict(feil or []),
     }
+
+
+def _bildevalg(request: Request) -> Bildevalg:
+    """Filfeltet `bilde`, `bilde_beholdt` og `fjern_bilde` fra mellomvaren (AD-5, AD-18)."""
+    skjema: dict[str, str] = request.state.skjema
+    filer: dict[str, bytes] = getattr(request.state, "filer", {})
+    return tolk_bildevalg(filer.get("bilde"), skjema.get("bilde_beholdt"), skjema.get("fjern_bilde"))
 
 
 @router.get("/oppdrag/ny", name="oppdrag.ny", response_class=HTMLResponse)
@@ -371,16 +426,25 @@ def send_ny(
     innlogget: Innlogget = Depends(innlogget_bruker),
     db: Session = Depends(hent_db),
 ) -> Response:
-    """Legger ut oppdraget, eller viser skjemaet igjen med alle feilene (FR-5, NFR-5, NFR-10)."""
+    """Legger ut oppdraget, eller viser skjemaet igjen med alle feilene (FR-5, FR-27, NFR-5, NFR-10).
+
+    Bildet tolkes før transaksjonen (`tolk_bildevalg`), og et gyldig bilde vises
+    igjen ved 422 (AD-18).
+    """
     skjema: dict[str, str] = request.state.skjema
     skjema_id = skjema.get("skjema_id", "")
     if not SKJEMA_ID.fullmatch(skjema_id):
         return feilside(request, 400)
     verdier = {felt: skjema.get(felt, "") for felt in SKJEMAFELT}
+    valg = _bildevalg(request)
     try:
         with db.begin():
             oppdrag_id = opprett_oppdrag(
-                db, oppdragsgiver_id=innlogget.bruker_id, skjema_id=skjema_id, **verdier
+                db,
+                oppdragsgiver_id=innlogget.bruker_id,
+                skjema_id=skjema_id,
+                bildevalg=valg,
+                **verdier,
             )
     except RegelBrudd as brudd:
         return _vis_skjema(
@@ -388,6 +452,7 @@ def send_ny(
             verdier={**verdier, "skjema_id": skjema_id},
             feil=brudd.feil,
             status_code=422,
+            bildevalg=valg,
         )
     svar = RedirectResponse(
         request.app.url_path_for("oppdrag.detaljer", id=oppdrag_id), status_code=303
@@ -463,6 +528,39 @@ def detaljer(
     )
 
 
+# ---------- bildet (FR-9, FR-27, AD-18) ----------
+
+# Bildet kan ligge i nettleserens buffer, men bare for den som allerede kunne se det
+# (AD-18). `core/headere.py` beholder en `Cache-Control` som ruta har satt selv.
+BILDEBUFFER = "private, max-age=31536000, immutable"
+
+
+def _bildesvar(db: Session, id: int, innlogget: Innlogget, *, liten: bool) -> Response:
+    _sjekk_id(id)
+    data = hent_bilde(db, id, innlogget.bruker_id, liten=liten)
+    return Response(data, media_type="image/jpeg", headers={"Cache-Control": BILDEBUFFER})
+
+
+@router.get("/oppdrag/{id:int}/bilde", name="oppdrag.bilde", response_class=Response)
+def bilde(
+    id: int,
+    innlogget: Innlogget = Depends(innlogget_bruker),
+    db: Session = Depends(hent_db),
+) -> Response:
+    """Bildet i detaljene, høyst 1 600 px (FR-9, FR-27). Ingen tilgang gir samme 404 som detaljene."""
+    return _bildesvar(db, id, innlogget, liten=False)
+
+
+@router.get("/oppdrag/{id:int}/bilde/liten", name="oppdrag.bilde_liten", response_class=Response)
+def bilde_liten(
+    id: int,
+    innlogget: Innlogget = Depends(innlogget_bruker),
+    db: Session = Depends(hent_db),
+) -> Response:
+    """Miniatyren på kortet og i skjemaet, høyst 640 px (FR-9, FR-10, FR-27)."""
+    return _bildesvar(db, id, innlogget, liten=True)
+
+
 # ---------- redigere (FR-6, FR-8) ----------
 
 
@@ -484,6 +582,7 @@ def _vis_redigering(
     fokus: str | None = None,
     feil: list[tuple[str, str]] | None = None,
     status_code: int = 200,
+    bildevalg: Bildevalg = INGEN_BILDEVALG,
 ) -> HTMLResponse:
     """Skjemaet fra «Nytt oppdrag» uten KI, `skjema_id` og steg, med «Lagre endringer» (FR-6).
 
@@ -504,7 +603,7 @@ def _vis_redigering(
         skjema_id=None,
         to_steg=False,
         tilbake_url=_tilbake_fra_redigering(request, oppdrag.id),
-        **_skjemakontekst(verdier, sted, feil),
+        **_skjemakontekst(verdier, sted, feil, _bildefelt(request, bildevalg, oppdrag)),
     )
 
 
@@ -533,18 +632,24 @@ def send_rediger(
     innlogget: Innlogget = Depends(innlogget_bruker),
     db: Session = Depends(hent_db),
 ) -> Response:
-    """Lagrer endringene, eller viser skjemaet igjen med alle feilene (FR-6, NFR-5, NFR-10)."""
+    """Lagrer endringene, eller viser skjemaet igjen med alle feilene (FR-6, FR-27, NFR-5, NFR-10).
+
+    Bildet tolkes før transaksjonen, som i `send_ny`.
+    """
     _sjekk_id(id)
     skjema: dict[str, str] = request.state.skjema
     verdier = {felt: skjema.get(felt, "") for felt in SKJEMAFELT}
+    valg = _bildevalg(request)
     try:
         with db.begin():
-            rediger_oppdrag(db, id, oppdragsgiver_id=innlogget.bruker_id, **verdier)
+            rediger_oppdrag(
+                db, id, oppdragsgiver_id=innlogget.bruker_id, bildevalg=valg, **verdier
+            )
     except RegelBrudd as brudd:
         with laas_gir_konflikt(KONFLIKT, detaljer_url(id)):
             oppdrag = hent_eget_oppdrag(db, id, innlogget.bruker_id, statuser=REDIGERBAR)
         return _vis_redigering(
-            request, oppdrag, verdier=verdier, feil=brudd.feil, status_code=422
+            request, oppdrag, verdier=verdier, feil=brudd.feil, status_code=422, bildevalg=valg
         )
     svar = RedirectResponse(request.app.url_path_for("oppdrag.detaljer", id=id), status_code=303)
     sett_kvittering(request, svar, "endringer_lagret")

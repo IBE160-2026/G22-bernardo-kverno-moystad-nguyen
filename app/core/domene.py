@@ -44,6 +44,13 @@ BESKRIVELSE_MAKS = 1000
 BELOP_MIN = 1
 BELOP_MAKS = 10_000
 
+# «Hva viser bildet?» (FR-27, story 2.7)
+BILDETEKST_MIN = 3
+BILDETEKST_MAKS = 120
+# Største bildefil (FR-27, AD-18): 4 MB er 4 × 1024 × 1024 byte. Brukes av
+# `oppdrag/bilde.py` og av kroppsgrensen i `core/csrf.py`.
+BILDE_MAKS_BYTE = 4 * 1024 * 1024
+
 NBSP = " "
 UTEN_BETALING = "Uten betaling"
 

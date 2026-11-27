@@ -124,15 +124,19 @@ def personopplysninger(*brukere) -> list[str]:
 
 
 def test_ar24_ingen_get_rute_viser_telefon_epost_eller_fodselsdato(
-    app: FastAPI, klient: TestClient, kari, amir, logg_inn_som, lag_oppdrag
+    app: FastAPI, klient: TestClient, kari, amir, logg_inn_som, lag_oppdrag, lag_bilde
 ) -> None:
     """AR-24, AD-16: alle GET-ruter rendret for innlogget bruker, også `/profil/{annen id}`
     og detaljene for et oppdrag Amir har lagt ut (story 2.1). Redigering og bekreftelsessiden
-    for avbrudd (story 2.5) rendres for et oppdrag Kari eier, fordi andre får 404."""
+    for avbrudd (story 2.5) rendres for et oppdrag Kari eier, fordi andre får 404. Amirs
+    oppdrag har bilde, så også bilderutene (story 2.7) gir 200."""
     amirs_oppdrag = lag_oppdrag(oppdragsgiver=amir)
+    lag_bilde(amirs_oppdrag)
     karis_oppdrag = lag_oppdrag(oppdragsgiver=kari)
     id_for_rute = {
         "oppdrag.detaljer": amirs_oppdrag.id,
+        "oppdrag.bilde": amirs_oppdrag.id,
+        "oppdrag.bilde_liten": amirs_oppdrag.id,
         "oppdrag.rediger": karis_oppdrag.id,
         "oppdrag.avbryt": karis_oppdrag.id,
     }

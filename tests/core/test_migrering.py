@@ -73,6 +73,60 @@ def test_tabellen_oppdrag(tilkobling: Connection) -> None:
         assert (fremmednokkel.get("options") or {}).get("ondelete") is None, fremmednokkel
 
 
+def test_tabellen_oppdragsbilde(tilkobling: Connection) -> None:
+    """AD-18, AD-2 (story 2.7): kolonnene i `oppdragsbilde`, `oppdrag_id` som primærnøkkel og
+    fremmednøkkel, og ingen ON DELETE CASCADE."""
+    inspektor = inspect(tilkobling)
+    kolonner = {k["name"]: k for k in inspektor.get_columns("oppdragsbilde")}
+    assert set(kolonner) == {"oppdrag_id", "bilde", "miniatyr", "bildetekst", "bredde", "hoyde", "opprettet"}
+    assert not any(k["nullable"] for k in kolonner.values())
+    assert inspektor.get_pk_constraint("oppdragsbilde")["constrained_columns"] == ["oppdrag_id"]
+    (fremmednokkel,) = inspektor.get_foreign_keys("oppdragsbilde")
+    assert fremmednokkel["name"] == "fk_oppdragsbilde_oppdrag_id_oppdrag"
+    assert (fremmednokkel["referred_table"], fremmednokkel["referred_columns"]) == ("oppdrag", ["id"])
+    assert (fremmednokkel.get("options") or {}).get("ondelete") is None
+
+
+def test_largebinary_lagres_og_hentes_likt(db: Session, eier: Bruker) -> None:
+    """AD-13, FR-27: binærdata (alle 256 byteverdier, også NUL) kommer tilbake byte for byte, i
+    både SQLite og Postgres (`test-postgres` i CI)."""
+    from app.oppdrag.models import Oppdragsbilde
+
+    oppdrag = _oppdrag(eier.id, skjema_id="bilde-skjema-id-1")
+    db.add(oppdrag)
+    db.flush()
+    data = bytes(range(256)) * 1000
+    db.add(Oppdragsbilde(oppdrag_id=oppdrag.id, bilde=data, miniatyr=data[:1000], bildetekst="Snø",
+                         bredde=10, hoyde=20, opprettet=datetime(2026, 11, 24, tzinfo=timezone.utc)))
+    db.flush()
+    db.expire_all()
+    rad = db.get(Oppdragsbilde, oppdrag.id)
+    assert bytes(rad.bilde) == data and bytes(rad.miniatyr) == data[:1000]
+
+
+def test_bilde_uten_oppdrag_avvises_og_oppdrag_med_bilde_kan_ikke_slettes_alene(
+    db: Session, eier: Bruker
+) -> None:
+    """AD-2: fremmednøkkelen håndheves i begge databasene, uten ON DELETE CASCADE."""
+    from app.oppdrag.models import Oppdragsbilde
+
+    na = datetime(2026, 11, 24, tzinfo=timezone.utc)
+    with pytest.raises(IntegrityError):
+        with db.begin_nested():
+            db.add(Oppdragsbilde(oppdrag_id=999999, bilde=b"x", miniatyr=b"x", bildetekst="Snø",
+                                 bredde=1, hoyde=1, opprettet=na))
+            db.flush()
+    oppdrag = _oppdrag(eier.id, skjema_id="bilde-skjema-id-2")
+    db.add(oppdrag)
+    db.flush()
+    db.add(Oppdragsbilde(oppdrag_id=oppdrag.id, bilde=b"x", miniatyr=b"x", bildetekst="Snø",
+                         bredde=1, hoyde=1, opprettet=na))
+    db.flush()
+    with pytest.raises(IntegrityError):
+        with db.begin_nested():
+            db.execute(text("DELETE FROM oppdrag WHERE id = :id"), {"id": oppdrag.id})
+
+
 def _oppdrag(eier_id: int, **felt) -> Oppdrag:
     na = datetime(2026, 11, 24, tzinfo=timezone.utc)
     verdier = {

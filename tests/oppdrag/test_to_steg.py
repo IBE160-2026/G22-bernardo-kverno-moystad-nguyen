@@ -60,7 +60,7 @@ class Skjemaleser(HTMLParser):
         for _, _, felt in self.stabel:
             if felt:
                 self.tagger_i_felt.setdefault(felt, []).append(tag)
-        if tag not in {"input", "wbr", "br"}:
+        if tag not in {"input", "wbr", "br", "img"}:  # tomme elementer (img: story 2.7)
             self.stabel.append((tag, steg, a.get("data-felt")))
             if a.get("data-felt"):
                 self.forhandsvisning[a["data-felt"]] = ""
@@ -121,10 +121,11 @@ def test_en_skjerm_har_h1_og_to_h2_i_rekkefolge(kari_klient: TestClient) -> None
 
 
 def test_feltene_ligger_i_riktig_steg(kari_klient: TestClient) -> None:
-    """FR-5, UX-DR16: steg 1 har beskrivelse, tittel og kategori; steg 2 resten og «Publiser»."""
+    """FR-5, FR-27, UX-DR16: steg 1 har beskrivelse, bilde, «Hva viser bildet?», tittel og
+    kategori; steg 2 resten og «Publiser»."""
     leser = les_skjema(kari_klient.get("/oppdrag/ny").text)
     assert leser.felt_i_steg == {
-        "1": ["beskrivelse", "tittel", "kategori"],
+        "1": ["beskrivelse", "bilde", "bildetekst", "tittel", "kategori"],
         "2": ["postnummer", "dato", "klokkeslett", "tilbud", "belop"],
     }
     assert leser.knapper_i_steg == {"1": ["Neste"], "2": ["Publiser", "Tilbake til steg 1"]}

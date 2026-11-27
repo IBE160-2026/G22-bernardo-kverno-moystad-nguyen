@@ -13,6 +13,9 @@ Klikk på radflaten i «Mine oppdrag», merket som brytes, og tallet i menyen ve
 Bekreftelsesdialogen (`dialog.js`), bekreftelsessiden uten JS, «Endre tidspunkt» med fokus i
 «Dato», to faner med feilmeldingen og akseptansekriteriene kom med story 2.5 (FR-6, FR-7,
 FR-8, NFR-7, NFR-8, AR-28, UX-DR18, §4.0).
+Bildet (`bilde.js`): skalering før innsending, forhåndsvisningen, «Hva viser bildet?» som
+vises når en fil er valgt, innsending mens skaleringen pågår, og bilde uten JS kom med
+story 2.7 (FR-27, AR-28, AD-18, SM-5, NFR-7, UX-DR33).
 """
 
 from __future__ import annotations
@@ -22,6 +25,8 @@ from collections.abc import Callable
 
 import pytest
 from playwright.sync_api import Page, expect
+
+from tests import bilder
 
 from ..oppdrag.test_to_steg import kort as kort_fra_serveren
 from .conftest import AMIR, KARI, OLA, _logg_inn, fyll_ut_nytt_oppdrag, fyll_ut_steg_1
@@ -700,11 +705,26 @@ def test_klikk_pa_kortflaten_apner_detaljene(page: Page) -> None:
     kort = page.locator(".kort--lenke").filter(has_text="Mate katten i helgen")
     # Musa trykker midt på prisen. Lenkens ::after ligger over, så det er lenken som får klikket
     # (Playwright sin `click()` på prisen ville nektet, nettopp fordi lenken dekker den).
+    # Kortet har bilde øverst (story 2.7), så prisen kan ligge under skjermkanten.
+    kort.locator(".pris").scroll_into_view_if_needed()
     boks = kort.locator(".pris").bounding_box()
     assert boks is not None
     page.mouse.click(boks["x"] + boks["width"] / 2, boks["y"] + boks["height"] / 2)
     expect(page.get_by_role("heading", level=1)).to_have_text("Mate katten i helgen")
     expect(page.get_by_role("heading", level=2, name="Lagt ut av Nora Berg")).to_be_visible()
+
+
+def test_klikk_pa_bildet_i_kortet_apner_detaljene(page: Page) -> None:
+    """UX-DR5, FR-27: miniatyren er en del av trykkflaten, og kortet har ingen annen lenke."""
+    _logg_inn(page, OLA)
+    kort = page.locator(".kort--lenke").filter(has_text="Mate katten i helgen")
+    expect(kort.locator("a")).to_have_count(1)
+    bilde = kort.locator("img.kort__bilde")
+    bilde.scroll_into_view_if_needed()
+    boks = bilde.bounding_box()
+    assert boks is not None
+    page.mouse.click(boks["x"] + boks["width"] / 2, boks["y"] + boks["height"] / 2)
+    expect(page.get_by_role("heading", level=1)).to_have_text("Mate katten i helgen")
 
 
 @pytest.mark.parametrize(("bredde", "kolonner"), [(360, 1), (768, 2), (1280, 3)], ids=["360px", "768px", "1280px"])
@@ -985,3 +1005,203 @@ def test_to_faner_gir_feilmeldingen_i_fokus(page: Page) -> None:
     expect(page.get_by_role("heading", level=1)).to_have_text(MAKE)
     expect(page.locator("#feilmelding")).to_have_count(0)
     expect(page.locator(".statusmerke")).to_contain_text("Avbrutt")
+
+
+# ---------- bilde (story 2.7, FR-27, AD-18) ----------
+
+FIRE_MB = 4 * 1024 * 1024
+FIL_ER_SKALERT = "() => { const f = document.querySelector('#bilde').files[0]; return f && f.type === 'image/jpeg'; }"
+FILSTORRELSE = "() => document.querySelector('#bilde').files[0].size"
+
+
+def _velg(page: Page, data: bytes, navn: str, type_: str) -> None:
+    page.locator("#bilde").set_input_files(files=[{"name": navn, "mimeType": type_, "buffer": data}])
+
+
+def _fyll_ut_steg_2(page: Page) -> None:
+    page.get_by_label("Dato").fill("25.11.2026")
+    page.get_by_label("Klokkeslett").fill("07:00")
+    page.get_by_label("Beløp", exact=True).check()
+    page.get_by_label("Beløp i kr").fill("200")
+
+
+def _detaljbildet(page: Page) -> tuple[int, int]:
+    bilde = page.locator("img.detaljbilde")
+    expect(bilde).to_have_js_property("complete", True)
+    bredde, hoyde = bilde.evaluate("b => [b.naturalWidth, b.naturalHeight]")
+    return bredde, hoyde
+
+
+def test_stort_bilde_skaleres_vises_i_forhandsvisningen_og_publiseres(page: Page) -> None:
+    """Akseptansekriterium 1: Kari på mobil velger et PNG-bilde på cirka 6 MB. Fila byttes med
+    en JPEG under 4 MB, forhåndsvisningen viser bildet, og detaljene har et bilde på høyst 1 600 px."""
+    stort = bilder.stoy_png(2000, 1000)
+    assert len(stort) > 5 * 1024 * 1024  # uten skalering ville kroppen vært over grensen
+    page.set_viewport_size(MOBIL)
+    _logg_inn(page, KARI)
+    fyll_ut_steg_1(page)
+    bildetekst = page.get_by_label("Hva viser bildet?")
+    expect(bildetekst).to_be_hidden()
+    _velg(page, stort, "kamera.png", "image/png")
+    expect(bildetekst).to_be_visible()
+    page.wait_for_function(FIL_ER_SKALERT)
+    assert page.evaluate(FILSTORRELSE) < FIRE_MB
+    bildetekst.fill("Snødekt innkjørsel")
+    page.get_by_role("button", name="Neste").click()
+    forhandsvisning = page.locator('[data-forhandsvisning] img[data-felt="bilde"]')
+    expect(forhandsvisning).to_be_visible()
+    expect(forhandsvisning).to_have_attribute("src", re.compile(r"^blob:"))
+    expect(forhandsvisning).to_have_js_property("complete", True)
+    assert forhandsvisning.evaluate("b => b.naturalWidth") == 1600
+    _fyll_ut_steg_2(page)
+    page.get_by_role("button", name="Publiser").click()
+    expect(page.locator("#kvittering")).to_contain_text("Oppdraget er lagt ut.")
+    bredde, hoyde = _detaljbildet(page)
+    assert max(bredde, hoyde) <= 1600 and (bredde, hoyde) == (1600, 800)
+    expect(page.get_by_role("img", name="Snødekt innkjørsel")).to_be_visible()
+
+
+# Holder `createImageBitmap` til testen kaller `window.slippBilde()`, så skaleringen garantert
+# pågår når «Publiser» trykkes.
+HOLD_SKALERING = """
+window.slippBilde = null;
+const ekteCreateImageBitmap = window.createImageBitmap.bind(window);
+window.createImageBitmap = (...argumenter) => new Promise((ok, feil) => {
+  window.slippBilde = () => ekteCreateImageBitmap(...argumenter).then(ok, feil);
+});
+"""
+
+
+def _poster_til(page: Page, sti: str) -> list[str]:
+    poster: list[str] = []
+    page.on("request", lambda r: poster.append(r.url) if r.method == "POST" and r.url.endswith(sti) else None)
+    return poster
+
+
+def test_innsending_mens_skaleringen_pagar_venter_pa_bildet(page: Page) -> None:
+    """AD-18: «Publiser» mens skaleringen pågår, stoppes til skaleringen er ferdig, og sendes så
+    med den skalerte fila (originalen ville gitt 413)."""
+    page.add_init_script(HOLD_SKALERING)
+    page.set_viewport_size({"width": 1280, "height": 800})
+    _logg_inn(page, KARI)
+    fyll_ut_nytt_oppdrag(page)
+    poster = _poster_til(page, "/oppdrag/ny")
+    # Bildeteksten fylles ut før fila velges (feltet er skjult til da).
+    page.locator("#bildetekst").evaluate("felt => { felt.value = 'Snødekt innkjørsel'; }")
+    _velg(page, bilder.stoy_png(2000, 1000), "kamera.png", "image/png")
+    page.wait_for_function("() => window.slippBilde !== null")
+    page.get_by_role("button", name="Publiser").click()
+    page.wait_for_timeout(300)
+    assert page.url.endswith("/oppdrag/ny") and poster == []
+    page.evaluate("() => window.slippBilde()")
+    # Skaleringen av et bilde på 6 MB kan ta noen sekunder i CI.
+    expect(page.locator("#kvittering")).to_contain_text("Oppdraget er lagt ut.", timeout=20_000)
+    assert len(poster) == 1
+    assert _detaljbildet(page) == (1600, 800)
+
+
+def test_to_trykk_under_skaleringen_gir_en_innsending(page: Page) -> None:
+    """NFR-5: to trykk på «Lagre endringer» mens skaleringen pågår gir nøyaktig én POST, også i
+    redigeringsskjemaet, som ikke har `skjema_id`."""
+    page.add_init_script(HOLD_SKALERING)
+    page.set_viewport_size({"width": 1280, "height": 800})
+    _logg_inn(page, KARI)
+    _detaljer(page, MAKE)
+    page.get_by_role("link", name="Rediger", exact=True).click()
+    poster = _poster_til(page, "/rediger")
+    _velg(page, bilder.stoy_png(2000, 1000), "kamera.png", "image/png")
+    page.wait_for_function("() => window.slippBilde !== null")
+    knapp = page.get_by_role("button", name="Lagre endringer")
+    knapp.click()
+    knapp.click()
+    page.wait_for_timeout(300)
+    assert poster == []
+    page.evaluate("() => window.slippBilde()")
+    expect(page.locator("#kvittering")).to_contain_text("Endringene er lagret.", timeout=20_000)
+    page.wait_for_timeout(500)
+    assert len(poster) == 1
+    assert _detaljbildet(page) == (1600, 800)
+
+
+def test_fjern_bildet_tar_bildet_ut_av_forhandsvisningen(page: Page) -> None:
+    """«Fjern bildet» fjerner det lagrede bildet fra forhåndsvisningen, og setter det inn igjen."""
+    page.set_viewport_size({"width": 1280, "height": 800})
+    _logg_inn(page, KARI)
+    _detaljer(page, MAKE)
+    page.get_by_role("link", name="Rediger", exact=True).click()
+    forhandsvisning = page.locator('[data-forhandsvisning] img[data-felt="bilde"]')
+    expect(forhandsvisning).to_be_visible()
+    page.get_by_label("Fjern bildet").check()
+    expect(forhandsvisning).to_be_hidden()
+    page.get_by_label("Fjern bildet").uncheck()
+    expect(forhandsvisning).to_be_visible()
+    expect(page.get_by_role("img", name="Valgt bilde")).to_be_visible()
+
+
+def test_ny_fil_slar_av_beholdt_bilde(page: Page) -> None:
+    """Etter 422 med beholdt bilde: en ny fil slår av `bilde_beholdt`, og fjernes fila, slås det på igjen."""
+    page.set_viewport_size({"width": 1280, "height": 800})
+    _logg_inn(page, KARI)
+    fyll_ut_nytt_oppdrag(page)
+    _velg(page, bilder.jpeg(800, 600), "bilde.jpg", "image/jpeg")
+    page.get_by_role("button", name="Publiser").click()
+    expect(page.locator("#bildetekst-feil")).to_contain_text("Skriv hva bildet viser.")
+    beholdt = page.locator('input[name="bilde_beholdt"]')
+    expect(beholdt).to_be_enabled()
+    _velg(page, bilder.png(400, 300), "nytt.png", "image/png")
+    expect(beholdt).to_be_disabled()
+    page.locator("#bilde").set_input_files(files=[])
+    expect(beholdt).to_be_enabled()
+
+
+def test_bildeteksten_vises_bare_med_fil(page: Page) -> None:
+    """«Hva viser bildet?» er skjult til en fil er valgt, og skjules igjen når fila fjernes.
+    Ved redigering av et oppdrag med bilde står feltet synlig fra start."""
+    page.set_viewport_size({"width": 1280, "height": 800})
+    _logg_inn(page, KARI)
+    page.goto("/oppdrag/ny")
+    bildetekst = page.get_by_label("Hva viser bildet?")
+    forhandsvisning = page.locator('[data-forhandsvisning] img[data-felt="bilde"]')
+    expect(bildetekst).to_be_hidden()
+    expect(forhandsvisning).to_be_hidden()
+    _velg(page, bilder.jpeg(800, 600), "bilde.jpg", "image/jpeg")
+    expect(bildetekst).to_be_visible()
+    expect(forhandsvisning).to_be_visible()
+    page.locator("#bilde").set_input_files(files=[])
+    expect(bildetekst).to_be_hidden()
+    expect(forhandsvisning).to_be_hidden()
+    _detaljer(page, MAKE)
+    page.get_by_role("link", name="Rediger", exact=True).click()
+    expect(page.get_by_label("Hva viser bildet?")).to_be_visible()
+    expect(page.get_by_label("Bytt bilde")).to_be_visible()
+
+
+def test_fil_som_ikke_kan_dekodes_sendes_som_den_er(page: Page) -> None:
+    """JS avviser aldri en fil: en tekstfil sendes uendret, og serveren gir feilen."""
+    page.set_viewport_size({"width": 1280, "height": 800})
+    _logg_inn(page, KARI)
+    fyll_ut_nytt_oppdrag(page)
+    _velg(page, bilder.TEKST, "bilde.jpg", "image/jpeg")
+    page.get_by_role("button", name="Publiser").click()
+    expect(page.locator("#bilde-feil")).to_contain_text("Velg et bilde i JPEG, PNG eller WebP.")
+
+
+def test_bilde_uten_js(browser, browser_context_args: dict) -> None:
+    """AR-28: uten JS står «Hva viser bildet?» alltid synlig, og et JPEG-bilde på cirka 1 MB
+    sendes som det er og vises i detaljene."""
+    data = bilder.stoy_jpeg(900, 900)
+    assert 700_000 < len(data) < 2 * 1024 * 1024
+    kontekst = browser.new_context(**browser_context_args, java_script_enabled=False, viewport=MOBIL)
+    try:
+        side = kontekst.new_page()
+        _logg_inn(side, KARI)
+        fyll_ut_steg_1(side)
+        expect(side.get_by_label("Hva viser bildet?")).to_be_visible()
+        _velg(side, data, "bilde.jpg", "image/jpeg")
+        side.get_by_label("Hva viser bildet?").fill("Snødekt innkjørsel")
+        _fyll_ut_steg_2(side)
+        side.get_by_role("button", name="Publiser").click()
+        expect(side.locator("#kvittering")).to_contain_text("Oppdraget er lagt ut.")
+        assert _detaljbildet(side) == (900, 900)
+    finally:
+        kontekst.close()

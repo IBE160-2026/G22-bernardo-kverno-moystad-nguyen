@@ -12,6 +12,9 @@ Story 2.5 la til redigering, «Endre tidspunkt», detaljene for et utgått oppdr
 bekreftelsesdialogen (åpen, fra detaljene og fra raden), bekreftelsessiden uten JS,
 kvitteringen etter avbrudd og feilmeldingen etter en konflikt.
 
+Story 2.7 la til oversikten og detaljene med bilde, «Nytt oppdrag» med bildefeil og
+med beholdt bilde, og redigering av et oppdrag med bilde (FR-27, UX-DR33).
+
 Ingen regler slås av, og ingen side utelates. Senere stories legger sine nye
 sider og tilstander inn i `SIDER` (Definition of Done).
 """
@@ -26,6 +29,8 @@ import pytest
 from axe_playwright_python.base import AXE_FILE_PATH
 from axe_playwright_python.sync_playwright import Axe
 from playwright.sync_api import Page, expect
+
+from tests import bilder
 
 from .conftest import OLA, fyll_ut_nytt_oppdrag, fyll_ut_steg_1, trykk_neste_hvis_synlig
 
@@ -73,7 +78,7 @@ def registrer_tom_innsending(page: Page, h: dict) -> None:
 
 
 def oversikt(page: Page, h: dict) -> None:
-    """Ola i 0571 med fire kort (story 2.3)."""
+    """Ola i 0571 med fire kort (story 2.3). To av dem har bilde (story 2.7)."""
     h["logg_inn_som"](page, OLA)
     expect(page.locator("#antallslinje")).to_have_text("4 ledige oppdrag i 0571 Oslo")
 
@@ -310,6 +315,70 @@ def konflikt(page: Page, h: dict) -> None:
     expect(page.locator("#feilmelding")).to_contain_text("Oppdraget er endret. Last siden på nytt.")
 
 
+# ---------- bilde (story 2.7, FR-27, UX-DR33) ----------
+
+
+def oversikt_med_bilde(page: Page, h: dict) -> None:
+    """Ola i 0571: to av fire kort har miniatyren øverst, og bildene er lastet."""
+    h["logg_inn_som"](page, OLA)
+    bildene = page.locator("img.kort__bilde")
+    expect(bildene).to_have_count(2)
+    for nummer in range(2):
+        bildene.nth(nummer).scroll_into_view_if_needed()
+        expect(bildene.nth(nummer)).to_have_js_property("complete", True)
+
+
+def oppdrag_detaljer_med_bilde(page: Page, h: dict) -> None:
+    """Ola åpner «Mate katten i helgen»: bildet under tittelen, med bildeteksten som alt."""
+    h["logg_inn_som"](page, OLA)
+    page.get_by_role("link", name="Mate katten i helgen").click()
+    expect(page.get_by_role("img", name="Matskål og vannskål på kjøkkengulvet")).to_be_visible()
+
+
+def _velg_bilde(page: Page, data: bytes, navn: str) -> None:
+    page.locator("#bilde").set_input_files(files=[{"name": navn, "mimeType": "image/jpeg", "buffer": data}])
+
+
+def nytt_oppdrag_bildefeil(page: Page, h: dict) -> None:
+    """En tekstfil som heter `bilde.jpg`: serveren gir «Velg et bilde i JPEG, PNG eller WebP.»
+    ved bildet, og mobil viser steg 1."""
+    h["logg_inn_som_kari"](page)
+    fyll_ut_steg_1(page)
+    _velg_bilde(page, bilder.TEKST, "bilde.jpg")
+    page.get_by_label("Hva viser bildet?").fill("Snø i innkjørselen")
+    trykk_neste_hvis_synlig(page)
+    page.get_by_label("Dato").fill("25.11.2026")
+    page.get_by_label("Klokkeslett").fill("07:00")
+    page.get_by_label("Uten betaling").check()
+    page.get_by_role("button", name="Publiser").click()
+    expect(page.locator("#bilde-feil")).to_contain_text("Velg et bilde i JPEG, PNG eller WebP.")
+    expect(page.locator("#bilde")).to_be_visible()
+
+
+def nytt_oppdrag_beholdt_bilde(page: Page, h: dict) -> None:
+    """Gyldig bilde uten bildetekst: feilen ved «Hva viser bildet?», og bildet beholdes som
+    miniatyr med «Fjern bildet»."""
+    h["logg_inn_som_kari"](page)
+    fyll_ut_steg_1(page)
+    _velg_bilde(page, bilder.jpeg(800, 600), "bilde.jpg")
+    trykk_neste_hvis_synlig(page)
+    page.get_by_label("Dato").fill("25.11.2026")
+    page.get_by_label("Klokkeslett").fill("07:00")
+    page.get_by_label("Uten betaling").check()
+    page.get_by_role("button", name="Publiser").click()
+    expect(page.locator("#bildetekst-feil")).to_contain_text("Skriv hva bildet viser.")
+    expect(page.get_by_label("Fjern bildet")).to_be_visible()
+    expect(page.locator("img.beholdt-bilde__miniatyr")).to_have_js_property("complete", True)
+
+
+def rediger_oppdrag_med_bilde(page: Page, h: dict) -> None:
+    """«Rediger» på «Måke snø»: det lagrede bildet med «Bytt bilde» og «Fjern bildet»."""
+    rediger_oppdrag(page, h)
+    expect(page.get_by_label("Bytt bilde")).to_be_visible()
+    expect(page.get_by_label("Fjern bildet")).to_be_visible()
+    expect(page.get_by_label("Hva viser bildet?")).to_have_value("Snødekt innkjørsel med en spade")
+
+
 SIDER: dict[str, Callable[[Page, dict], None]] = {
     "logg-inn": logg_inn_tom,
     "logg-inn-tom-innsending": logg_inn_tom_innsending,
@@ -347,6 +416,12 @@ SIDER: dict[str, Callable[[Page, dict], None]] = {
     "avbryt-bekreftelse": avbryt_bekreftelse,
     "oppdrag-avbrutt": oppdrag_avbrutt,
     "konflikt": konflikt,
+    # Story 2.7
+    "oversikt-med-bilde": oversikt_med_bilde,
+    "oppdrag-detaljer-med-bilde": oppdrag_detaljer_med_bilde,
+    "nytt-oppdrag-bildefeil": nytt_oppdrag_bildefeil,
+    "nytt-oppdrag-beholdt-bilde": nytt_oppdrag_beholdt_bilde,
+    "rediger-oppdrag-med-bilde": rediger_oppdrag_med_bilde,
 }
 
 # «Nytt oppdrag» på én skjerm ved 768 px (nettbrett): de samme tilstandene som i to steg.

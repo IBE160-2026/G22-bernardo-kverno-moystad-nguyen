@@ -11,6 +11,10 @@ produksjon (AD-14).
 `last_eksempeldata` (bare for test, `POST /_test/tilstand`) tømmer alle
 tabellene unntatt `postnummer` og legger inn det samme på nytt.
 
+Fire av eksempeloppdragene har bilde (FR-27, story 2.7). Bildene tegnes her med
+Pillow (`tegn_bilde`), uten personer og tekst, og går gjennom
+`oppdrag/bilde.py` som en vanlig opplasting. Ingen bildefiler i repoet.
+
 Testbrukerne og eksempeloppdragene er bare for lokal testing. Tabellene står også i README.
 """
 
@@ -19,10 +23,13 @@ from __future__ import annotations
 import sys
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
+from functools import cache
+from io import BytesIO
 from pathlib import Path
 
 from alembic import command
 from alembic.config import Config
+from PIL import Image, ImageDraw
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
@@ -32,7 +39,8 @@ from app.core.db import Base, lag_motor, lag_sesjonsfabrikk, url_uten_passord
 from app.core.postnummer import postnummer_tabell
 from app.identity.models import Bruker
 from app.identity.service import hash_passord, normaliser_epost
-from app.oppdrag.models import Oppdrag
+from app.oppdrag import bilde as bildebehandling
+from app.oppdrag.models import Oppdrag, Oppdragsbilde
 from app.oppdrag.service import endre_status, ny_skjema_id
 
 ROT = Path(__file__).resolve().parents[1]
@@ -83,16 +91,22 @@ class Eksempeloppdrag:
     # E-posten til hjelperen som utførte oppdraget. Oppdraget går gjennom
     # `endre_status` apen → hjelper_valgt → utfort, med hjelperen som valgt hjelper.
     utfort_av: str | None = None
+    # Motivet `tegn_bilde` tegner (FR-27), og bildeteksten («Hva viser bildet?»).
+    bilde: str | None = None
+    bildetekst: str | None = None
 
 
 # Bare for lokal testing. Oppdiktede oppdrag (NFR-2). Bare Kari, Nora og Sofie eier
 # oppdrag. Alle seks kategorier finnes blant de åpne, ett er utgått, ett avbrutt og
 # ett utført med Nora som hjelper, så oppdragsgiverblokken på Noras oppdrag viser
-# «1 fullført oppdrag» (FR-9, story 2.3).
+# «1 fullført oppdrag» (FR-9, story 2.3). Fire oppdrag i fire kategorier har bilde (FR-27,
+# story 2.7): Ola i 0571 ser to kort med bilde og to uten, og Kari kan bytte og fjerne
+# bildet på «Måke snø i innkjørselen».
 EKSEMPELOPPDRAG: tuple[Eksempeloppdrag, ...] = (
     Eksempeloppdrag("kari@eksempel.no", "Måke snø i innkjørselen",
                     "Trenger noen som kan måke snø i innkjørselen min i morgen tidlig.",
-                    "snomaking", "0571", 1, 9, 200, 1),
+                    "snomaking", "0571", 1, 9, 200, 1,
+                    bilde="sno", bildetekst="Snødekt innkjørsel med en spade"),
     Eksempeloppdrag("kari@eksempel.no", "Raking av løv i hagen",
                     "Hagen er full av løv etter stormen. Jeg har river og sekker.",
                     "hage", "0571", 4, 11, 300, 2),
@@ -107,10 +121,12 @@ EKSEMPELOPPDRAG: tuple[Eksempeloppdrag, ...] = (
                     "dyrepass", "0571", 10, 16, 500, 3, avbrutt=True),
     Eksempeloppdrag("nora@eksempel.no", "Mate katten i helgen",
                     "Katten Pus trenger mat og vann lørdag og søndag. Nøkkel avtales når hjelperen er valgt.",
-                    "dyrepass", "0571", 3, 12, 250, 1),
+                    "dyrepass", "0571", 3, 12, 250, 1,
+                    bilde="matskal", bildetekst="Matskål og vannskål på kjøkkengulvet"),
     Eksempeloppdrag("nora@eksempel.no", "Flytte sofa ned i kjelleren",
                     "En tung sofa skal ned én trapp til kjelleren. Det trengs to personer.",
-                    "baerehjelp-flytting", "0572", 5, 17, 600, 2),
+                    "baerehjelp-flytting", "0572", 5, 17, 600, 2,
+                    bilde="sofa", bildetekst="Sofa ved toppen av en kjellertrapp"),
     Eksempeloppdrag("nora@eksempel.no", "Henge opp gardiner",
                     "Jeg trenger hjelp til å henge opp tre gardinstenger. Drill og skruer finnes.",
                     "annet", "0572", 8, 13, 350, 1),
@@ -119,7 +135,8 @@ EKSEMPELOPPDRAG: tuple[Eksempeloppdrag, ...] = (
                     "snomaking", "0572", 2, 15, 150, 1),
     Eksempeloppdrag("sofie@eksempel.no", "Klippe hekken",
                     "Hekken mot veien har vokst seg høy og må klippes ned til brysthøyde.",
-                    "hage", "5006", 7, 10, 450, 2),
+                    "hage", "5006", 7, 10, 450, 2,
+                    bilde="hekk", bildetekst="Høy hekk mot veien og en hekksaks"),
     Eksempeloppdrag("sofie@eksempel.no", "Sette opp skriver",
                     "Ny skriver skal kobles til det trådløse nettet og til PC-en min.",
                     "teknologihjelp", "5006", 3, 18, 200, 1),
@@ -130,6 +147,69 @@ EKSEMPELOPPDRAG: tuple[Eksempeloppdrag, ...] = (
                     "Lampen i stua henger høyt, og jeg vil ikke gå opp på stigen alene.",
                     "annet", "0571", -5, 12, 150, 8, utfort_av="nora@eksempel.no"),
 )
+
+
+MOTIVER = ("sno", "matskal", "sofa", "hekk")
+
+
+def tegn_bilde(motiv: str) -> bytes:
+    """Et enkelt bilde av motivet som PNG, 1200 × 675 (FR-27). Uten personer og tekst."""
+    bredde, hoyde = 1200, 675
+    if motiv == "sno":
+        im = Image.new("RGB", (bredde, hoyde), (176, 196, 214))  # grå himmel
+        tegning = ImageDraw.Draw(im)
+        tegning.rectangle((0, 300, bredde, hoyde), fill=(246, 248, 250))  # snø
+        tegning.polygon([(420, hoyde), (560, 300), (640, 300), (780, hoyde)], fill=(214, 220, 228))
+        tegning.rectangle((80, 140, 380, 320), fill=(150, 70, 55))  # hus
+        tegning.polygon([(60, 150), (230, 50), (400, 150)], fill=(90, 60, 50))
+        tegning.rectangle((200, 220, 260, 320), fill=(80, 55, 40))
+        tegning.line((900, 610, 1010, 330), fill=(110, 80, 50), width=14)  # skaft
+        tegning.polygon([(840, 640), (960, 640), (950, 580), (850, 580)], fill=(60, 90, 140))  # blad
+        for x, y in ((150, 420), (330, 520), (1080, 450), (720, 380), (1000, 560)):
+            tegning.ellipse((x - 6, y - 6, x + 6, y + 6), fill=(255, 255, 255))
+    elif motiv == "matskal":
+        im = Image.new("RGB", (bredde, hoyde), (222, 205, 176))  # kjøkkengulv
+        tegning = ImageDraw.Draw(im)
+        for x in range(0, bredde, 150):
+            tegning.line((x, 0, x, hoyde), fill=(200, 182, 152), width=4)
+        tegning.ellipse((260, 330, 560, 470), fill=(70, 85, 63))  # matskål
+        tegning.ellipse((290, 340, 530, 410), fill=(140, 90, 50))  # mat
+        tegning.ellipse((640, 330, 940, 470), fill=(60, 90, 140))  # vannskål
+        tegning.ellipse((670, 340, 910, 410), fill=(170, 205, 230))  # vann
+    elif motiv == "sofa":
+        im = Image.new("RGB", (bredde, hoyde), (232, 222, 205))  # vegg
+        tegning = ImageDraw.Draw(im)
+        tegning.rectangle((0, 520, bredde, hoyde), fill=(150, 120, 90))  # gulv
+        for trinn in range(6):  # trapp ned til høyre
+            x = 760 + trinn * 70
+            tegning.rectangle((x, 520 + trinn * 26, bredde, 546 + trinn * 26), fill=(110, 85, 60))
+        tegning.rectangle((120, 330, 640, 500), fill=(71, 85, 63))  # sofa
+        tegning.rectangle((120, 250, 640, 340), fill=(60, 72, 54))  # rygg
+        tegning.rectangle((90, 300, 160, 500), fill=(60, 72, 54))  # armlener
+        tegning.rectangle((600, 300, 670, 500), fill=(60, 72, 54))
+        tegning.rectangle((140, 500, 170, 530), fill=(50, 40, 30))  # bein
+        tegning.rectangle((590, 500, 620, 530), fill=(50, 40, 30))
+    elif motiv == "hekk":
+        im = Image.new("RGB", (bredde, hoyde), (190, 214, 230))  # himmel
+        tegning = ImageDraw.Draw(im)
+        tegning.rectangle((0, 560, bredde, hoyde), fill=(150, 150, 145))  # vei
+        tegning.rectangle((0, 160, bredde, 560), fill=(58, 104, 52))  # hekk
+        for x in range(0, bredde, 60):
+            tegning.ellipse((x - 40, 120, x + 40, 200), fill=(58, 104, 52))
+        tegning.line((820, 620, 960, 470), fill=(120, 120, 125), width=10)  # saks
+        tegning.line((860, 640, 1000, 490), fill=(120, 120, 125), width=10)
+        tegning.rectangle((760, 610, 840, 650), fill=(150, 40, 40))  # håndtak
+    else:
+        raise ValueError(f"Ukjent motiv: {motiv!r}")
+    ut = BytesIO()
+    im.save(ut, format="PNG")
+    return ut.getvalue()
+
+
+@cache
+def eksempelbilde(motiv: str) -> bildebehandling.Bilde:
+    """Motivet gjennom `oppdrag/bilde.py`, som en opplasting (AD-18). Huskes mellom kjøringene."""
+    return bildebehandling.behandle(tegn_bilde(motiv))
 
 
 def alembic_config() -> Config:
@@ -172,6 +252,7 @@ def legg_inn_eksempeloppdrag(db: Session) -> int:
     tid. De avbrutte legges inn som åpne og avbrytes gjennom `endre_status`
     (AD-2), slik appen gjør. De utførte går gjennom `endre_status` til
     `hjelper_valgt`, får hjelperen som `valgt_hjelper_id` og går så til `utfort`.
+    Oppdrag med `bilde` får et tegnet bilde i `oppdragsbilde` (FR-27).
     """
     na = klokke.na()
     i_dag = na.astimezone(tid.OSLO).date()
@@ -195,6 +276,20 @@ def legg_inn_eksempeloppdrag(db: Session) -> int:
         )
         db.add(oppdrag)
         db.flush()
+        if eksempel.bilde and eksempel.bildetekst:
+            bilde = eksempelbilde(eksempel.bilde)
+            db.add(
+                Oppdragsbilde(
+                    oppdrag_id=oppdrag.id,
+                    bilde=bilde.bilde,
+                    miniatyr=bilde.miniatyr,
+                    bildetekst=eksempel.bildetekst,
+                    bredde=bilde.bredde,
+                    hoyde=bilde.hoyde,
+                    opprettet=na,
+                )
+            )
+            db.flush()
         if eksempel.avbrutt:
             endre_status(db, oppdrag.id, fra="apen", til="avbrutt", oppdragsgiver_id=eier_id)
         if eksempel.utfort_av:
@@ -209,9 +304,12 @@ def legg_inn_eksempeloppdrag(db: Session) -> int:
 def bytt_ut_eksempeloppdrag(db: Session) -> int:
     """Sletter testbrukernes oppdrag og legger inn `EKSEMPELOPPDRAG` på nytt. Committer ikke.
 
-    Andre brukeres oppdrag røres ikke (invarianten fra story 1.5).
+    Andre brukeres oppdrag røres ikke (invarianten fra story 1.5). Bildene slettes
+    eksplisitt før oppdragene, fordi fremmednøkkelen ikke har `ON DELETE CASCADE` (AD-2).
     """
     ider = list(_testbruker_ider(db).values())
+    egne = select(Oppdrag.id).where(Oppdrag.oppdragsgiver_id.in_(ider))
+    db.execute(delete(Oppdragsbilde).where(Oppdragsbilde.oppdrag_id.in_(egne)))
     db.execute(delete(Oppdrag).where(Oppdrag.oppdragsgiver_id.in_(ider)))
     return legg_inn_eksempeloppdrag(db)
 

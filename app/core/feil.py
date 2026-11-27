@@ -87,10 +87,22 @@ class Konflikt(Exception):
         self.til_url = til_url
 
 
-def feilside(request: Request, status_code: int, headers: dict[str, str] | None = None) -> HTMLResponse:
+def feilside(
+    request: Request,
+    status_code: int,
+    headers: dict[str, str] | None = None,
+    *,
+    overskrift: str | None = None,
+) -> HTMLResponse:
     """Vennlig feilside. Rendres uten databasekall: menyen vises uten tall,
-    og menykroken kalles ikke (`med_menytall=False`)."""
-    if status_code == 404:
+    og menykroken kalles ikke (`med_menytall=False`).
+
+    `overskrift` erstatter standardteksten, for eksempel «Bildet er for stort. …»
+    når et skjema med bilde er over kroppsgrensen (413, story 2.7). Den blir også titlen.
+    """
+    if overskrift is not None:
+        tittel = overskrift
+    elif status_code == 404:
         tittel = overskrift = FANT_IKKE_SIDEN
     else:
         tittel, overskrift = "Noe gikk galt", NOE_GIKK_GALT

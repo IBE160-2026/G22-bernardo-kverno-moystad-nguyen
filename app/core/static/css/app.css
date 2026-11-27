@@ -879,7 +879,8 @@ textarea {
   gap: var(--spacing-3);
 }
 
-.radiovalg input[type="radio"] {
+.radiovalg input[type="radio"],
+.radiovalg input[type="checkbox"] {
   flex: none;
   width: 1.5rem;
   height: 1.5rem;
@@ -914,6 +915,53 @@ fieldset:has(#tilbud-belop:not(:checked)) .belopfelt {
 
 .belopfelt__rad input {
   width: 8em;
+}
+
+/* ---------- Bilde i skjemaet (story 2.7, FR-27, DESIGN.md § Filfelt) ----------
+ * Filfeltet har samme trykkflate (minst 48 px), kant og fokusring som andre felt. Knappen
+ * i feltet ser ut som en sekundærknapp. Bredden følger skjemaet, så feltet aldri gir
+ * vannrett rulling ved 320 px. Miniatyren av et beholdt eller lagret bilde er høyst 160 px.
+ */
+input[type="file"] {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: var(--spacing-touch-target);
+  padding: var(--spacing-1);
+  background: var(--color-surface-input);
+  color: var(--color-ink);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--rounded-sm);
+  font: inherit;
+  font-size: var(--text-body);
+}
+
+input[type="file"]::file-selector-button {
+  min-height: 2.5rem;
+  margin-right: var(--spacing-3);
+  padding: 0 var(--spacing-4);
+  background: transparent;
+  color: var(--color-link);
+  border: 1.5px solid var(--color-link);
+  border-radius: var(--rounded-md);
+  font: inherit;
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+}
+
+.beholdt-bilde {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.beholdt-bilde__miniatyr {
+  display: block;
+  width: 100%;
+  max-width: 10rem;
+  height: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--rounded-sm);
 }
 
 /* ---------- Detaljer (FR-9, UX-DR14) ---------- */
@@ -1036,6 +1084,30 @@ fieldset:has(#tilbud-belop:not(:checked)) .belopfelt {
 
 .kort .pris {
   margin: 0;
+}
+
+/* Miniatyren øverst i kortet (story 2.7, FR-27, DESIGN.md § card): full kortbredde med negativ
+ * marg lik kortets innside, øvre hjørner som kortet og 16:9 med `object-fit: cover`. */
+.kort__bilde {
+  display: block;
+  width: calc(100% + 2 * var(--spacing-card-padding));
+  max-width: none;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  margin: calc(-1 * var(--spacing-card-padding)) calc(-1 * var(--spacing-card-padding)) var(--spacing-4);
+  object-fit: cover;
+  border-radius: calc(var(--rounded-lg) - 1px) calc(var(--rounded-lg) - 1px) 0 0;
+}
+
+/* Bildet i detaljene (DESIGN.md § Bilde i detaljer): full innholdsbredde, høyst 480 px høyt. */
+.detaljbilde {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 480px;
+  margin: 0 0 var(--spacing-4);
+  object-fit: contain;
+  border-radius: var(--rounded-md);
 }
 
 .forhandsvisning__etikett {
