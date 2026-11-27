@@ -1,20 +1,27 @@
-"""Testbrukere i seed og `app.admin nytt-passord` (NFR-2, NFR-4, AR-9, NFR-5)."""
+"""Testbrukere og eksempeloppdrag i seed, og `app.admin nytt-passord` (NFR-2, NFR-4, AR-9, AR-29, NFR-5, T-3)."""
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
-from sqlalchemy import func, select
+from sqlalchemy import func, inspect, select
 
 from app import admin, seed
+from app.core import tid
 from app.core.config import Settings
-from app.core.db import lag_motor, url_uten_passord
+from app.core.db import Base, lag_motor, url_uten_passord
+from app.core.domene import KATEGORIKODER
 from app.core.postnummer import finnes
 from app.identity.models import Bruker, Innloggingsforsok, Sesjon
 from app.identity.service import logg_inn, sjekk_passord
+from app.oppdrag.models import Oppdrag
 
 from .conftest import ROT, STANDARD_PASSORD
+
+# Tirsdag 24. november 2026 kl. 13 i Oslo.
+T0 = datetime(2026, 11, 24, 12, 0, tzinfo=timezone.utc)
+EIERE = {"kari@eksempel.no", "nora@eksempel.no", "sofie@eksempel.no"}
 
 
 def test_testbrukerne_oppfyller_nfr2() -> None:
@@ -51,19 +58,107 @@ def test_testbrukerne_star_i_readme() -> None:
     assert "uv run python -m app.admin nytt-passord" in readme
 
 
+def test_eksempeloppdragene_star_i_readme() -> None:
+    """NFR-2: README beskriver eksempeloppdragene, med tittel på hvert av dem."""
+    readme = (ROT / "README.md").read_text(encoding="utf-8")
+    assert f"{len(seed.EKSEMPELOPPDRAG)} eksempeloppdrag" in readme
+    for eksempel in seed.EKSEMPELOPPDRAG:
+        assert eksempel.tittel in readme, eksempel.tittel
+
+
+def test_eksempeloppdragene_oppfyller_nfr2() -> None:
+    """NFR-2 (story 2.1): 10–15 oppdrag, bare Kari, Nora og Sofie eier, alle kategorier blant de åpne.
+
+    Minst ett er utgått og minst ett avbrutt, minst ett av Noras ligger i 0571,
+    og klokkeslettene er hele timer mellom 9 og 18.
+    """
+    eksempler = seed.EKSEMPELOPPDRAG
+    assert 10 <= len(eksempler) <= 15
+    assert {e.eier for e in eksempler} == EIERE
+    apne_fram_i_tid = [e for e in eksempler if not e.avbrutt and e.dager > 0]
+    assert {e.kategori for e in apne_fram_i_tid} == KATEGORIKODER
+    assert any(e.dager < 0 and not e.avbrutt for e in eksempler)  # utgått (FR-8)
+    assert any(e.avbrutt for e in eksempler)
+    assert any(e.eier == "nora@eksempel.no" and e.postnummer == "0571" for e in eksempler)
+    assert all(9 <= e.klokka <= 18 for e in eksempler)
+    assert all(finnes(e.postnummer) for e in eksempler)
+    assert len({e.tittel for e in eksempler}) == len(eksempler)
+
+
+def test_eksempeloppdragene_i_databasen(db, sett_na) -> None:
+    """NFR-2, AD-2, AD-9: tidspunkt relative til klokka, hele timer i norsk tid, avbrutt gjennom `endre_status`."""
+    sett_na(T0)
+    seed.last_eksempeldata(db)
+    db.commit()
+    oppdrag = db.scalars(select(Oppdrag)).all()
+    assert len(oppdrag) == len(seed.EKSEMPELOPPDRAG)
+    eiere = {b.id: b.epost for b in db.scalars(select(Bruker)).all()}
+    assert {eiere[o.oppdragsgiver_id] for o in oppdrag} == EIERE
+    for o in oppdrag:
+        lokal = o.tidspunkt.astimezone(tid.OSLO)
+        assert (lokal.minute, lokal.second) == (0, 0) and 9 <= lokal.hour <= 18, o.tittel
+        assert o.opprettet <= T0
+        assert o.skjema_id
+    avbrutte = [o for o in oppdrag if o.status == "avbrutt"]
+    assert avbrutte and all(o.versjon == 2 for o in avbrutte)  # gjennom endre_status
+    assert any(o.status == "apen" and o.tidspunkt < T0 for o in oppdrag)  # utgått
+    apne = [o for o in oppdrag if o.status == "apen" and o.tidspunkt > T0]
+    assert {o.kategori for o in apne} == KATEGORIKODER
+    assert all(o.tidspunkt <= T0 + timedelta(days=60) for o in oppdrag)
+
+
+def _tell(url: str) -> dict[str, int]:
+    motor = lag_motor(url)
+    try:
+        with motor.connect() as tilkobling:
+            return {
+                "brukere": tilkobling.scalar(select(func.count()).select_from(Bruker)),
+                "oppdrag": tilkobling.scalar(select(func.count()).select_from(Oppdrag)),
+            }
+    finally:
+        motor.dispose()
+
+
 def test_seed_main_to_ganger_pa_ren_database(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
+    """NFR-2, invariant 1.5: samme seks brukere og testbrukernes oppdrag byttes ut, ingen andre røres."""
     url = f"sqlite:///{(tmp_path / 'seed.db').as_posix()}"
     settings = Settings(_env_file=None, app_env="local", database_url=url)
     monkeypatch.setattr(seed, "hent_settings", lambda: settings)
     monkeypatch.setattr("app.core.config.hent_settings", lambda: settings)
     assert seed.main() == 0
+    assert _tell(url) == {"brukere": 6, "oppdrag": len(seed.EKSEMPELOPPDRAG)}
+
+    # En annen bruker med eget oppdrag skal stå urørt etter neste seed.
+    motor = lag_motor(url)
+    try:
+        with motor.begin() as tilkobling:
+            na = datetime.now(timezone.utc)
+            annen = tilkobling.execute(
+                Bruker.__table__.insert().values(navn="Annen", epost="annen@eksempel.no", opprettet=na)
+            ).inserted_primary_key[0]
+            tilkobling.execute(
+                Oppdrag.__table__.insert().values(
+                    oppdragsgiver_id=annen, tittel="Annens oppdrag", beskrivelse="Beskrivelse her.",
+                    kategori="annet", postnummer="0571", tidspunkt=na + timedelta(days=2), belop=None,
+                    status="apen", versjon=1, skjema_id="annen-skjema-id-123", opprettet=na,
+                )
+            )
+            gamle_ider = set(tilkobling.scalars(select(Oppdrag.id)).all())
+    finally:
+        motor.dispose()
+
     assert seed.main() == 0
+    assert _tell(url) == {"brukere": 7, "oppdrag": len(seed.EKSEMPELOPPDRAG) + 1}
     motor = lag_motor(url)
     try:
         with motor.connect() as tilkobling:
-            assert tilkobling.scalar(select(func.count()).select_from(Bruker)) == 6
+            assert tilkobling.scalar(select(Oppdrag.tittel).where(Oppdrag.oppdragsgiver_id == annen)) == (
+                "Annens oppdrag"
+            )
+            nye_ider = set(tilkobling.scalars(select(Oppdrag.id).where(Oppdrag.oppdragsgiver_id != annen)).all())
     finally:
         motor.dispose()
+    assert not nye_ider & gamle_ider  # testbrukernes oppdrag er lagt inn på nytt
 
 
 def test_url_uten_passord() -> None:
@@ -146,9 +241,15 @@ def test_admin_ukjent_eller_slettet_bruker(db, sesjonsfabrikk, lag_bruker, capsy
     assert "Fant ingen aktiv bruker" in capsys.readouterr().err
 
 
-def test_last_eksempeldata_gir_bare_testbrukerne(db, lag_bruker) -> None:
-    """AR-29: `last_eksempeldata` tømmer sesjoner, forsøk og brukere og legger inn de seks på nytt."""
-    lag_bruker(epost="annen@eksempel.no")
+# Tabellene testen under lager fremmede rader i. En ny tabell i `Base.metadata`
+# må legges til her, med en fremmed rad i testen (T-3).
+TABELLER_MED_FREMMEDE_RADER = {"bruker", "sesjon", "innloggingsforsok", "oppdrag"}
+
+
+def test_last_eksempeldata_gir_bare_testbrukerne_og_eksempeloppdragene(db, lag_bruker, lag_oppdrag) -> None:
+    """AR-29, T-3: fremmede rader i hver tabell forsvinner, og bare seed-dataene står igjen."""
+    annen = lag_bruker(epost="annen@eksempel.no")
+    fremmed = lag_oppdrag(oppdragsgiver=annen, skjema_id="fremmed-skjema-id-1")
     logg_inn(db, "annen@eksempel.no", STANDARD_PASSORD)
     logg_inn(db, "annen@eksempel.no", "feil")
     db.commit()
@@ -159,7 +260,18 @@ def test_last_eksempeldata_gir_bare_testbrukerne(db, lag_bruker) -> None:
     seed.last_eksempeldata(db)  # to ganger gir samme resultat
     db.commit()
 
+    assert {t.name for t in Base.metadata.sorted_tables} - {"postnummer"} == TABELLER_MED_FREMMEDE_RADER
     assert db.scalar(select(func.count()).select_from(Sesjon)) == 0
     assert db.scalar(select(func.count()).select_from(Innloggingsforsok)) == 0
     eposter = set(db.scalars(select(Bruker.epost)).all())
     assert eposter == {t.epost for t in seed.TESTBRUKERE}
+    skjema_ider = set(db.scalars(select(Oppdrag.skjema_id)).all())
+    assert fremmed.skjema_id not in skjema_ider
+    assert len(skjema_ider) == len(seed.EKSEMPELOPPDRAG)
+    assert db.scalar(select(func.count()).select_from(Oppdrag)) == len(seed.EKSEMPELOPPDRAG)
+
+
+def test_alle_tabellene_i_databasen_finnes_i_metadataen(tilkobling) -> None:
+    """T-3: når `app.seed` er importert, kjenner `Base.metadata` hver tabell, så `last_eksempeldata` tømmer alt."""
+    tabeller = set(inspect(tilkobling).get_table_names()) - {"alembic_version"}
+    assert tabeller == set(Base.metadata.tables)
