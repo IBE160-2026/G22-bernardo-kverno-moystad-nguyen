@@ -63,22 +63,24 @@ def _url_for(context: dict[str, Any], name: str, /, **path_params: Any) -> str:
     return str(request.app.url_path_for(name, **path_params))
 
 
-# Markøren fra postnummerskjemaet i oversikten. Følger aldri med i lenker fra appen.
-VIST_POSTNUMMER = "vist_postnummer"
+# Parametrene filterlenkene bærer videre. `vist_postnummer` (markøren fra
+# postnummerskjemaet) og ukjente parametre følger aldri med i lenker fra appen.
+FILTERPARAMETRE = ("kategori", "postnummer")
 
 
 @pass_context
 def _filterlenke(context: dict[str, Any], **endringer: str | None) -> str:
     """Relativ lenke til oversikten, `/?…`, bygget fra den gjeldende spørringen (AR-27).
 
-    De andre parametrene beholdes i samme rekkefølge, og nye kommer til slutt.
-    En endring med `None` fjerner parameteren. `vist_postnummer` fjernes alltid,
-    så den aldri følger med i en lenke som deles. Uten parametre: `/`.
+    Bare `kategori` og `postnummer` beholdes, i samme rekkefølge, og nye kommer
+    til slutt. En endring med `None` fjerner parameteren. `vist_postnummer` og
+    ukjente parametre (for eksempel `utm`) fjernes alltid, så de aldri følger med
+    i en lenke som deles. Uten parametre: `/`.
     """
     request: Request = context["request"]
-    par = dict(request.query_params)
+    par = {n: v for n, v in request.query_params.items() if n in FILTERPARAMETRE}
     par.update(endringer)
-    par = {n: v for n, v in par.items() if v is not None and n != VIST_POSTNUMMER}
+    par = {n: v for n, v in par.items() if v is not None and n in FILTERPARAMETRE}
     return f"/?{urlencode(par)}" if par else "/"
 
 

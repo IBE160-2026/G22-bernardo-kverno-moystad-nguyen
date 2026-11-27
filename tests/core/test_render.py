@@ -200,6 +200,14 @@ def test_filterlenke_utelater_none_og_vist_postnummer(app) -> None:
     assert "vist_postnummer" not in _filterlenke(app, sporring, "{{ filterlenke() }}")
 
 
+def test_filterlenke_utelater_ukjente_parametre(app) -> None:
+    """AR-27, FR-11: ukjente parametre fra adressen følger ikke med i filterlenkene."""
+    sporring = b"utm=x&kategori=hage&postnummer=5006&soppel=" + b"a" * 3000
+    html = _filterlenke(app, sporring, "{{ filterlenke(kategori='alle') }}")
+    assert html == "/?kategori=alle&amp;postnummer=5006"
+    assert "utm" not in html and "soppel" not in html
+
+
 def test_filterlenke_koder_verdiene(app) -> None:
     """NFR-12: verdier fra adressen kodes i lenken og escapes i HTML."""
     html = _filterlenke(app, b"postnummer=%22%3E%3Cscript%3E", "{{ filterlenke(kategori='hage') }}")
@@ -210,7 +218,8 @@ def test_filterlenke_koder_verdiene(app) -> None:
 @pytest.mark.parametrize(
     ("snitt", "antall", "forventet"),
     [(None, 0, "Ingen vurderinger ennå"), (4.3, 7, "4,3 av 5, 7 vurderinger"), (5.0, 1, "5,0 av 5, 1 vurdering"),
-     (4.25, 4, "4,2 av 5, 4 vurderinger"), (4.0, 0, "Ingen vurderinger ennå")],
+     (4.25, 4, "4,3 av 5, 4 vurderinger"), (4.45, 2, "4,5 av 5, 2 vurderinger"), (4, 3, "4,0 av 5, 3 vurderinger"),
+     (4.0, 0, "Ingen vurderinger ennå")],
 )
 def test_filteret_vurdering(snitt: float | None, antall: int, forventet: str) -> None:
     """FR-21, EXPERIENCE.md § Formater: snittet som «4,3 av 5, 7 vurderinger»."""

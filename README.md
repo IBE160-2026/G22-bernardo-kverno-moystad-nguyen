@@ -84,7 +84,7 @@ Seed legger inn 13 eksempeloppdrag (NFR-2). Bare Kari, Nora og Sofie har lagt ut
 | Handle og bære opp varer | Sofie | Annet | 5006 Bergen | +1 dag kl. 16 | Uten betaling | Åpen |
 | Bytte lyspære i taket | Kari | Annet | 0571 Oslo | −5 dager kl. 12 | 150 kr | Utført, med Nora som hjelper |
 
-Oversikten viser åpne oppdrag som ikke er passert, i ditt postnummer og uten dine egne, sortert etter tidspunkt (FR-10). Logg inn som Ola for å se fire oppdrag i 0571 Oslo. Du kan filtrere på kategori og skrive et annet postnummer, for eksempel 5006 (FR-11). Dine egne oppdrag finner du under «Mine oppdrag», og du kan legge ut nye med «+ Legg ut oppdrag» på oversikten (FR-5).
+Oversikten viser åpne oppdrag som ikke er passert, i ditt postnummer og uten dine egne, sortert etter tidspunkt (FR-10). Logg inn som Ola for å se fire oppdrag i 0571 Oslo. Tidspunktene er regnet fra da eksempeldataene ble lagt inn, så antallet kan endre seg etter noen dager. Kjør `uv run python -m app.seed` på nytt hvis det ikke stemmer. Du kan filtrere på kategori og skrive et annet postnummer, for eksempel 5006 (FR-11). Dine egne oppdrag finner du under «Mine oppdrag», og du kan legge ut nye med «+ Legg ut oppdrag» på oversikten (FR-5).
 
 ### Nytt passord for en bruker
 

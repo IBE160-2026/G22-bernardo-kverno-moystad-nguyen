@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import unicodedata
 from dataclasses import dataclass
+from decimal import ROUND_HALF_UP, Decimal
 
 KATEGORIER: tuple[tuple[str, str], ...] = (
     ("snomaking", "Snømåking"),
@@ -122,6 +123,7 @@ def vurdering_tekst(erfaring: Erfaring) -> str:
     """«4,3 av 5, 7 vurderinger», «5,0 av 5, 1 vurdering» eller «Ingen vurderinger ennå» (FR-21)."""
     if erfaring.snitt is None or erfaring.antall_vurderinger <= 0:
         return INGEN_VURDERINGER
-    snitt = f"{erfaring.snitt:.1f}".replace(".", ",")
+    # Halvparten rundes opp (4,25 → 4,3), uavhengig av hvordan flyttallet er lagret.
+    snitt = str(Decimal(str(erfaring.snitt)).quantize(Decimal("0.1"), ROUND_HALF_UP)).replace(".", ",")
     ord_ = "vurdering" if erfaring.antall_vurderinger == 1 else "vurderinger"
     return f"{snitt} av 5, {erfaring.antall_vurderinger} {ord_}"
