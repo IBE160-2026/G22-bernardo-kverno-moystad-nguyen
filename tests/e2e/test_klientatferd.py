@@ -2,7 +2,8 @@
 
 Testene som var utsatt til T1: «Vis passord» og sendeknappen fra story 1.2, og
 `poststed.js` fra story 1.4 (`deferred-work.md`). Menyen ved 360 og 1280 px
-kom med T-1 (V3 i retro Epic 1): axe ser ikke en skjult `nav`.
+kom med T-1 (V3 i retro Epic 1): axe ser ikke en skjult `nav`. Telleren i
+`skjema.js` og dobbeltklikk på «Publiser» kom med story 2.1 (NFR-5, UX-DR13, UX-DR28).
 """
 
 from __future__ import annotations
@@ -11,6 +12,8 @@ from collections.abc import Callable
 
 import pytest
 from playwright.sync_api import Page, expect
+
+from .conftest import fyll_ut_nytt_oppdrag
 
 pytestmark = pytest.mark.e2e
 
@@ -131,3 +134,75 @@ def test_riktig_meny_ved_bredden(
     hovedmeny = page.get_by_role("navigation", name="Hovedmeny")
     expect(hovedmeny).to_have_count(1)
     expect(hovedmeny.get_by_role("link")).to_have_text(["Oppdrag", "Mine oppdrag", "Profil"])
+
+
+def test_telleren_teller_tegn_og_varsler_ved_grensen(
+    page: Page, logg_inn_som_kari: Callable[[Page], None]
+) -> None:
+    """UX-DR13, AD-10: «e» + kombinerende akutt teller 1; varselet får tekst bare ved 1000 tegn."""
+    logg_inn_som_kari(page)
+    page.goto("/oppdrag/ny")
+    felt = page.get_by_label("Hva trenger du hjelp til?")
+    teller = page.locator("#beskrivelse-teller")
+    varsel = page.locator("#beskrivelse-varsel")
+    expect(teller).to_have_text("0 av 1000 tegn")
+    expect(teller).not_to_have_attribute("aria-live", "polite")
+    expect(varsel).to_have_attribute("aria-live", "polite")
+
+    felt.fill("e\u0301")
+    expect(teller).to_have_text("1 av 1000 tegn")
+    felt.fill("  Hei  ")
+    expect(teller).to_have_text("3 av 1000 tegn")
+    expect(varsel).to_have_text("")
+
+    felt.fill("a" * 999 + "e\u0301")
+    expect(teller).to_have_text("1000 av 1000 tegn")
+    expect(varsel).to_have_text("1000 av 1000 tegn")
+
+    felt.fill("a" * 1001)
+    expect(teller).to_have_text("1001 av 1000 tegn")
+    expect(varsel).to_have_text("1000 av 1000 tegn")  # leses ikke opp for hvert tegn
+
+    felt.fill("a" * 999)
+    expect(teller).to_have_text("999 av 1000 tegn")
+    expect(varsel).to_have_text("")
+
+    # Nettleseren setter verdien uten `input` (tilbakeknappen): `pageshow` retter telleren uten opplesning.
+    page.evaluate("""() => {
+      document.getElementById("beskrivelse").value = "Fem t";
+      window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true }));
+    }""")
+    expect(teller).to_have_text("5 av 1000 tegn")
+    expect(varsel).to_have_text("")
+
+
+def test_dobbeltklikk_pa_publiser_gir_ett_oppdrag(
+    page: Page, logg_inn_som_kari: Callable[[Page], None], antall_oppdrag: Callable[[str], int]
+) -> None:
+    """NFR-5, UX-DR28: knappen får `aria-disabled`, andre klikk sender ikke, og databasen får én rad.
+
+    De to klikkene kjøres i samme skript, før navigasjonen starter. Det er det
+    verste tilfellet: siden står fortsatt, og andre klikk må stoppes av sending.js.
+    """
+    tittel = "Dobbeltklikk-testen"
+    logg_inn_som_kari(page)
+    fyll_ut_nytt_oppdrag(page, tittel=tittel)
+    poster: list[str] = []
+    page.on("request", lambda r: poster.append(r.url) if r.method == "POST" else None)
+
+    with page.expect_navigation():
+        knapp, innsendinger = page.evaluate(
+            """() => {
+              const innsendinger = [];
+              window.addEventListener("submit", (hendelse) => innsendinger.push(hendelse.defaultPrevented));
+              const knapp = document.querySelector('.skjema button[type="submit"]');
+              knapp.click();
+              knapp.click();
+              return [knapp.getAttribute("aria-disabled"), innsendinger];
+            }"""
+        )
+    assert knapp == "true"
+    assert innsendinger == [False, True]  # andre klikk stoppes i nettleseren
+    expect(page.locator("#kvittering")).to_contain_text("Oppdraget er lagt ut.")
+    assert len([u for u in poster if u.endswith("/oppdrag/ny")]) == 1
+    assert antall_oppdrag(tittel) == 1

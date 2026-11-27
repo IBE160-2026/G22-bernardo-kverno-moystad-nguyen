@@ -1,6 +1,6 @@
 """T1: universell utforming i ekte nettleser (SM-5, NFR-6, NFR-7, UX-DR5, UX-DR31).
 
-Hver side og tilstand fra Epic 1 sjekkes
+Hver side og tilstand fra Epic 1 og story 2.1 sjekkes
 - med axe ved 360 og 1280 px: ingen brudd med `impact` «serious» eller «critical»,
 - for vannrett rulling ved 320 px: `scrollWidth <= clientWidth` på `<html>`.
 
@@ -16,6 +16,8 @@ import pytest
 from axe_playwright_python.base import AXE_FILE_PATH
 from axe_playwright_python.sync_playwright import Axe
 from playwright.sync_api import Page, expect
+
+from .conftest import OLA, fyll_ut_nytt_oppdrag
 
 pytestmark = pytest.mark.e2e
 
@@ -98,6 +100,35 @@ def logg_inn_igjen_401(page: Page, h: dict) -> None:
     expect(page.get_by_role("heading", level=1)).to_have_text("Du må logge inn igjen.")
 
 
+def nytt_oppdrag(page: Page, h: dict) -> None:
+    h["logg_inn_som_kari"](page)
+    page.get_by_role("link", name="Legg ut oppdrag").click()
+    expect(page.get_by_role("heading", level=1)).to_have_text("Nytt oppdrag")
+
+
+def nytt_oppdrag_feil(page: Page, h: dict) -> None:
+    """Tom innsending: postnummeret er forhåndsutfylt, så skjemaet har seks feil."""
+    h["logg_inn_som_kari"](page)
+    page.goto("/oppdrag/ny")
+    page.get_by_role("button", name="Publiser").click()
+    expect(page.locator("#feiloppsummering")).to_contain_text("Skjemaet har 6 feil")
+
+
+def oppdrag_detaljer(page: Page, h: dict) -> None:
+    """Publisert gjennom skjemaet, med kvitteringen «Oppdraget er lagt ut.»."""
+    h["logg_inn_som_kari"](page)
+    fyll_ut_nytt_oppdrag(page)
+    page.get_by_role("button", name="Publiser").click()
+    expect(page.locator("#kvittering")).to_contain_text("Oppdraget er lagt ut.")
+
+
+def mine_oppdrag_tom(page: Page, h: dict) -> None:
+    """Ola har ikke lagt ut noen oppdrag (seed)."""
+    h["logg_inn_som"](page, OLA)
+    page.goto("/mine-oppdrag")
+    expect(page.get_by_text("Du har ikke lagt ut noen oppdrag.")).to_be_visible()
+
+
 SIDER: dict[str, Callable[[Page, dict], None]] = {
     "logg-inn": logg_inn_tom,
     "logg-inn-tom-innsending": logg_inn_tom_innsending,
@@ -110,12 +141,17 @@ SIDER: dict[str, Callable[[Page, dict], None]] = {
     "profil-andre": andres_profil,
     "404": fant_ikke_siden,
     "401": logg_inn_igjen_401,
+    # Story 2.1
+    "nytt-oppdrag": nytt_oppdrag,
+    "nytt-oppdrag-feil": nytt_oppdrag_feil,
+    "oppdrag-detaljer": oppdrag_detaljer,
+    "mine-oppdrag-tom": mine_oppdrag_tom,
 }
 
 
 @pytest.fixture
-def hjelpere(logg_inn_som_kari, bruker_id) -> dict:
-    return {"logg_inn_som_kari": logg_inn_som_kari, "bruker_id": bruker_id}
+def hjelpere(logg_inn_som_kari, logg_inn_som, bruker_id) -> dict:
+    return {"logg_inn_som_kari": logg_inn_som_kari, "logg_inn_som": logg_inn_som, "bruker_id": bruker_id}
 
 
 def alvorlige_brudd(page: Page) -> list[str]:
