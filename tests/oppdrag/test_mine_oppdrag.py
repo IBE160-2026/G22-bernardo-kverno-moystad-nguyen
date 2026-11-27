@@ -177,8 +177,9 @@ def test_kari_ser_seks_lenkerader_etter_tidspunkt(som, db: Session) -> None:
 def test_raden_har_bare_tittelen_som_lenke(som) -> None:
     """UX-DR9, UX-DR10: tittelen er eneste lenke, med aria-describedby til merkelinja og tidspunktet.
 
-    Merkelinja og tidspunktet har unik id, tidspunktet har klokkeikon, pila er aria-hidden, og raden har
-    ingen knapper. Merket har skjult «Må gjøres: » foran og «.» etter.
+    Merkelinja og tidspunktet har unik id, tidspunktet har klokkeikon, pila er aria-hidden, og lenkedelen
+    har ingen knapper. Merket har skjult «Må gjøres: » foran og «.» etter. Fra story 2.5 har bare raden
+    med merket snarveiene, i `listerad__handlinger` etter lenkedelen (test_avbryte.py sjekker dem).
     """
     html = som("kari").get("/mine-oppdrag").text
     funnet = rader(html)
@@ -192,8 +193,10 @@ def test_raden_har_bare_tittelen_som_lenke(som) -> None:
         assert rad["beskrevet_av"] == f'{rad["merkelinje_id"]} {rad["tid_id"]}'
         assert html.count(f'id="{rad["merkelinje_id"]}"') == html.count(f'id="{rad["tid_id"]}"') == 1
         assert f'<p class="listerad__tittel" id="rad-{oppdrag_id}-tittel">' in blokk
-        assert blokk.count("<a ") == 1
-        assert "<button" not in blokk and "<form" not in blokk
+        hoved, _, handlinger = blokk.partition('<div class="listerad__handlinger">')
+        assert hoved.count("<a ") == 1
+        assert "<button" not in hoved and "<form" not in hoved
+        assert bool(handlinger) is bool(rad["merker"])
         assert '<svg class="listerad__pil" aria-hidden="true" focusable="false"' in blokk
         fakta = re.search(r'<p class="listerad__fakta">(.*?)</p>', blokk, re.S).group(1)
         assert '<svg class="ikon" aria-hidden="true"' in fakta

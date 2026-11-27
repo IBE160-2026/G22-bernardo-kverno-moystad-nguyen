@@ -153,6 +153,13 @@ def test_rutenavn_er_unike_og_folger_monsteret() -> None:
     for n in navn:
         slice_, _, handling = n.partition(".")
         assert slice_ in LOVLIGE_IMPORTER and handling, n
+    # Story 2.5: redigering og avbrudd (AR-27, URL-ene i epic-konteksten).
+    stier = {r.name: (r.path, tuple(sorted(r.methods))) for r in alle_ruter(app.routes)
+             if getattr(r, "name", None) and getattr(r, "methods", None)}
+    assert stier["oppdrag.rediger"] == ("/oppdrag/{id:int}/rediger", ("GET",))
+    assert stier["oppdrag.send_rediger"] == ("/oppdrag/{id:int}/rediger", ("POST",))
+    assert stier["oppdrag.avbryt"] == ("/oppdrag/{id:int}/avbryt", ("GET",))
+    assert stier["oppdrag.send_avbryt"] == ("/oppdrag/{id:int}/avbryt", ("POST",))
 
 
 def _testruter(app_env: str) -> dict[str, str]:

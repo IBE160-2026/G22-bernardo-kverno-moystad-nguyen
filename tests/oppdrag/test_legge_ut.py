@@ -468,3 +468,19 @@ def test_detaljene_har_ingen_personopplysninger(klient: TestClient, kari, lag_br
         assert verdi not in html, verdi
     # Fra story 2.3 ser andre oppdragsgiverblokken med navnet, men fortsatt ingen personopplysninger.
     assert "Lagt ut av Kari Nordmann" in html
+
+
+# ---------- invariant etter story 2.5 (T-6) ----------
+
+
+def test_nytt_oppdrag_er_uendret_etter_felles_skjema(kari_klient: TestClient) -> None:
+    """Spec 2.5, invariant 2.1/2.2: «Nytt oppdrag» har fortsatt `skjema_id`, stegene, steg.js og
+    «Publiser», og ingen dialog. Skjemaet er nå felles med redigeringen (`skjema.html`)."""
+    html = kari_klient.get("/oppdrag/ny").text
+    form = attrs(html, "form", method="post")
+    assert form["action"] == "/oppdrag/ny" and "data-steg-skjema" in form and "data-tittel-1" in form
+    assert 'name="skjema_id"' in html
+    assert ">Publiser</button>" in html and ">Neste</button>" in html and ">Tilbake til steg 1</button>" in html
+    assert '<script src="/static/js/steg.js"></script>' in html
+    assert '<a class="tekstknapp" href="/" data-vis-i-steg="1">Tilbake</a>' in html
+    assert "Lagre endringer" not in html and "<dialog" not in html
