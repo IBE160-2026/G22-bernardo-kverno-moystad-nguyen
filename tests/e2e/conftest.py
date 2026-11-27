@@ -11,7 +11,9 @@
 - Før hver test: `seed=1` og fast klokke. Etter hver test og etter økta: vanlig klokke.
 - `logg_inn_som(page, testbruker)` logger inn en av testbrukerne gjennom
   skjemaet. `fyll_ut_nytt_oppdrag(page, ...)` fyller ut «Nytt oppdrag» med
-  gyldige verdier for den faste klokka (story 2.1).
+  gyldige verdier for den faste klokka (story 2.1), og trykker «Neste» når
+  skjemaet står i to steg (under 768 px, story 2.2). `fyll_ut_steg_1` fyller
+  bare ut steg 1.
 
 Kjøres med `uv run playwright install chromium` og `uv run pytest -m e2e`.
 Vanlig `uv run pytest` velger E2E bort (`-m "not e2e"` i pyproject.toml).
@@ -156,14 +158,31 @@ def logg_inn_som_kari() -> Callable[[Page], None]:
     return lambda page: _logg_inn(page, KARI)
 
 
-def fyll_ut_nytt_oppdrag(page: Page, *, tittel: str = "Måke snø i innkjørselen") -> None:
-    """Fyller ut «Nytt oppdrag» med gyldige verdier: i morgen kl. 07:00 med den faste klokka, 200 kr."""
+def fyll_ut_steg_1(page: Page, *, tittel: str = "Måke snø i innkjørselen") -> None:
+    """Åpner «Nytt oppdrag» og fyller ut beskrivelse, tittel og kategori (Snømåking)."""
     page.goto("/oppdrag/ny")
     page.get_by_label("Hva trenger du hjelp til?").fill(
         "Trenger noen som kan måke snø i innkjørselen min i morgen."
     )
     page.get_by_label("Tittel").fill(tittel)
     page.locator('label[for="kategori-snomaking"]').click()
+
+
+def trykk_neste_hvis_synlig(page: Page) -> None:
+    """I to steg (under 768 px) går «Neste» til steg 2. På én skjerm er knappen skjult."""
+    neste = page.get_by_role("button", name="Neste")
+    if neste.is_visible():
+        neste.click()
+        expect(page.get_by_role("heading", level=1)).to_have_text("Nytt oppdrag 2 av 2")
+
+
+def fyll_ut_nytt_oppdrag(page: Page, *, tittel: str = "Måke snø i innkjørselen") -> None:
+    """Fyller ut «Nytt oppdrag» med gyldige verdier: i morgen kl. 07:00 med den faste klokka, 200 kr.
+
+    I to steg trykkes «Neste» etter steg 1, så «Publiser» er synlig etterpå på alle bredder.
+    """
+    fyll_ut_steg_1(page, tittel=tittel)
+    trykk_neste_hvis_synlig(page)
     page.get_by_label("Dato").fill("25.11.2026")
     page.get_by_label("Klokkeslett").fill("07:00")
     page.get_by_label("Beløp", exact=True).check()

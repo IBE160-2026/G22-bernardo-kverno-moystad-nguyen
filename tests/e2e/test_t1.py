@@ -1,8 +1,12 @@
 """T1: universell utforming i ekte nettleser (SM-5, NFR-6, NFR-7, UX-DR5, UX-DR31).
 
-Hver side og tilstand fra Epic 1 og story 2.1 sjekkes
+Hver side og tilstand fra Epic 1 og story 2.1–2.2 sjekkes
 - med axe ved 360 og 1280 px: ingen brudd med `impact` «serious» eller «critical»,
 - for vannrett rulling ved 320 px: `scrollWidth <= clientWidth` på `<html>`.
+
+«Nytt oppdrag» står i to steg under 768 px og på én skjerm fra 768 px (story 2.2).
+Ved 320 og 360 px sjekkes derfor steg 1, steg 2 og feil i begge steg, og en egen
+test sjekker én skjerm ved 768 px (nettbrett, EXPERIENCE.md § T1).
 
 Ingen regler slås av, og ingen side utelates. Senere stories legger sine nye
 sider og tilstander inn i `SIDER` (Definition of Done).
@@ -12,12 +16,14 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+import re
+
 import pytest
 from axe_playwright_python.base import AXE_FILE_PATH
 from axe_playwright_python.sync_playwright import Axe
 from playwright.sync_api import Page, expect
 
-from .conftest import OLA, fyll_ut_nytt_oppdrag
+from .conftest import OLA, fyll_ut_nytt_oppdrag, fyll_ut_steg_1, trykk_neste_hvis_synlig
 
 pytestmark = pytest.mark.e2e
 
@@ -101,17 +107,60 @@ def logg_inn_igjen_401(page: Page, h: dict) -> None:
 
 
 def nytt_oppdrag(page: Page, h: dict) -> None:
+    """Steg 1 under 768 px, én skjerm fra 768 px."""
     h["logg_inn_som_kari"](page)
     page.get_by_role("link", name="Legg ut oppdrag").click()
-    expect(page.get_by_role("heading", level=1)).to_have_text("Nytt oppdrag")
+    expect(page.get_by_role("heading", level=1)).to_have_text(re.compile(r"^Nytt oppdrag( 1 av 2)?$"))
+
+
+def nytt_oppdrag_steg_2(page: Page, h: dict) -> None:
+    """Steg 2 etter «Neste», med forhåndsvisningen utfylt fra steg 1 (én skjerm fra 768 px)."""
+    h["logg_inn_som_kari"](page)
+    fyll_ut_steg_1(page)
+    trykk_neste_hvis_synlig(page)
+    expect(page.get_by_role("button", name="Publiser")).to_be_visible()
 
 
 def nytt_oppdrag_feil(page: Page, h: dict) -> None:
-    """Tom innsending: postnummeret er forhåndsutfylt, så skjemaet har seks feil."""
+    """Feil i begge steg: tittelen `ab` slipper gjennom «Neste», og steg 2 er tomt.
+
+    Serveren gir feil i tittel (steg 1) og i dato, klokkeslett og «Hva tilbyr du?»
+    (steg 2). I to steg vises steg 1, med feiloppsummeringen i fokus.
+    """
+    h["logg_inn_som_kari"](page)
+    fyll_ut_steg_1(page, tittel="ab")
+    trykk_neste_hvis_synlig(page)
+    page.get_by_role("button", name="Publiser").click()
+    expect(page.locator("#feiloppsummering")).to_contain_text("Skjemaet har 4 feil")
+
+
+def nytt_oppdrag_neste_feil(page: Page, h: dict) -> None:
+    """Feiloppsummeringen og feltfeilene som «Neste» lager i nettleseren (bare beskrivelsen er fylt ut).
+
+    På én skjerm finnes ingen «Neste», og siden sjekkes som det tomme skjemaet.
+    """
     h["logg_inn_som_kari"](page)
     page.goto("/oppdrag/ny")
+    page.get_by_label("Hva trenger du hjelp til?").fill(
+        "Trenger noen som kan måke snø i innkjørselen min i morgen."
+    )
+    neste = page.get_by_role("button", name="Neste")
+    if neste.is_visible():
+        neste.click()
+        expect(page.locator("#feiloppsummering")).to_contain_text("Skjemaet har 2 feil")
+        expect(page.locator("#feiloppsummering")).to_be_focused()
+
+
+def nytt_oppdrag_feil_steg_2(page: Page, h: dict) -> None:
+    """Serverfeil bare i steg 2 («Hva tilbyr du?» mangler): mobil viser steg 2 med oppsummeringen."""
+    h["logg_inn_som_kari"](page)
+    fyll_ut_steg_1(page)
+    trykk_neste_hvis_synlig(page)
+    page.get_by_label("Dato").fill("25.11.2026")
+    page.get_by_label("Klokkeslett").fill("07:00")
     page.get_by_role("button", name="Publiser").click()
-    expect(page.locator("#feiloppsummering")).to_contain_text("Skjemaet har 6 feil")
+    expect(page.locator("#feiloppsummering")).to_contain_text("Skjemaet har 1 feil")
+    expect(page.get_by_role("button", name="Publiser")).to_be_visible()
 
 
 def oppdrag_detaljer(page: Page, h: dict) -> None:
@@ -146,7 +195,14 @@ SIDER: dict[str, Callable[[Page, dict], None]] = {
     "nytt-oppdrag-feil": nytt_oppdrag_feil,
     "oppdrag-detaljer": oppdrag_detaljer,
     "mine-oppdrag-tom": mine_oppdrag_tom,
+    # Story 2.2
+    "nytt-oppdrag-steg-2": nytt_oppdrag_steg_2,
+    "nytt-oppdrag-neste-feil": nytt_oppdrag_neste_feil,
+    "nytt-oppdrag-feil-steg-2": nytt_oppdrag_feil_steg_2,
 }
+
+# «Nytt oppdrag» på én skjerm ved 768 px (nettbrett): de samme tilstandene som i to steg.
+SIDER_EN_SKJERM = ("nytt-oppdrag", "nytt-oppdrag-steg-2", "nytt-oppdrag-feil")
 
 
 @pytest.fixture
@@ -192,6 +248,18 @@ def test_axe_ingen_alvorlige_brudd(page: Page, hjelpere: dict, side: str, bredde
     SIDER[side](page, hjelpere)
     brudd = alvorlige_brudd(page)
     assert not brudd, f"axe fant brudd på «{side}» ved {bredde} px:\n" + "\n".join(brudd)
+
+
+@pytest.mark.parametrize("side", SIDER_EN_SKJERM)
+def test_nytt_oppdrag_pa_en_skjerm_ved_768(page: Page, hjelpere: dict, side: str) -> None:
+    """NFR-6, UX-DR16, SM-5: fra 768 px står «Nytt oppdrag» på én skjerm, uten brudd i axe."""
+    page.set_viewport_size({"width": 768, "height": HOYDE})
+    SIDER[side](page, hjelpere)
+    expect(page.get_by_role("heading", level=1)).to_have_text("Nytt oppdrag")
+    expect(page.get_by_role("heading", level=2, name="Når og hvor?")).to_be_visible()
+    expect(page.get_by_role("button", name="Neste")).to_be_hidden()
+    brudd = alvorlige_brudd(page)
+    assert not brudd, f"axe fant brudd på «{side}» på én skjerm ved 768 px:\n" + "\n".join(brudd)
 
 
 @pytest.mark.parametrize("side", list(SIDER))
