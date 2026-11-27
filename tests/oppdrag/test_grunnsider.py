@@ -2,6 +2,7 @@
 
 Invariantene fra story 1.2, oppdatert i story 2.1: «+ Legg ut oppdrag» på
 oversikten og lenken «Legg ut oppdrag» i tomtilstanden i «Mine oppdrag» (FR-5).
+Oppdatert i story 2.3: oversikten har lista, filtrene og tomtilstandene (FR-10, FR-11).
 """
 
 from __future__ import annotations
@@ -11,6 +12,8 @@ from datetime import datetime, timezone
 
 import pytest
 from fastapi.testclient import TestClient
+
+from app.core.domene import KATEGORIER
 
 from ..core.test_render import les_side
 
@@ -59,12 +62,13 @@ def test_logoen_er_lenke_til_oversikten(kari_klient: TestClient) -> None:
 
 
 def test_oversikten_har_overskrift_og_tomtilstand(kari_klient: TestClient) -> None:
-    """Lista kommer i 2.3, så oversikten har fortsatt tomtilstanden."""
+    """FR-10: uten oppdrag i postnummeret vises tomtilstanden med «Alle» valgt."""
     svar = kari_klient.get("/")
     assert svar.status_code == 200
     assert "<title>Ledige oppdrag i 0571 Oslo – Nabolagshelten</title>" in svar.text
     assert "<h1>Ledige oppdrag i 0571 Oslo</h1>" in svar.text
     assert "Ingen ledige oppdrag i 0571 Oslo akkurat nå." in svar.text
+    assert "Prøv et annet postnummer." in svar.text
 
 
 def test_oversikten_har_legg_ut_oppdrag_for_h1(kari_klient: TestClient) -> None:
@@ -106,24 +110,28 @@ def test_mine_oppdrag_viser_egne_oppdrag_nyeste_forst(
 
 
 @pytest.mark.parametrize(
-    ("sti", "legg_ut"),
-    [("/", True), ("/mine-oppdrag", True), ("/profil", False)],
+    ("sti", "legg_ut", "har_filter"),
+    [("/", True, True), ("/mine-oppdrag", True, False), ("/profil", False, False)],
 )
 def test_ingen_lenker_til_funksjoner_som_ikke_finnes(
-    kari_klient: TestClient, sti: str, legg_ut: bool
+    kari_klient: TestClient, sti: str, legg_ut: bool, har_filter: bool
 ) -> None:
-    """Ingen postnummerfilter før 2.3. «Legg ut oppdrag» finnes fra 2.1 på oversikten og i tomtilstanden.
+    """«Legg ut oppdrag» finnes fra 2.1 på oversikten og i tomtilstanden. Fra 2.3 har bare
+    oversikten filtrene (kategorilenker og postnummerfeltet) og «Velg et annet postnummer».
 
     Registreringen (story 1.4) lenkes bare fra innloggingssiden, aldri fra sider for innloggede.
     """
     html = kari_klient.get(sti).text
-    for tekst in ("Velg et annet postnummer", "/registrer", "Postnummer</label>"):
-        assert tekst not in html, tekst
+    assert "/registrer" not in html
+    for tekst in ("Velg et annet postnummer", "Postnummer</label>"):
+        assert (tekst in html) is har_filter, tekst
     assert ("Legg ut oppdrag" in html) is legg_ut
     hrefs = set(re.findall(r'href="([^"#]+)"', html))
     tillatt = {"/", "/mine-oppdrag", "/profil", "/static/css/app.css", "/static/favicon.svg"}
     if legg_ut:
         tillatt.add("/oppdrag/ny")
+    if har_filter:
+        tillatt |= {"/?kategori=alle"} | {f"/?kategori={kode}" for kode, _ in KATEGORIER}
     assert hrefs <= tillatt, hrefs
 
 

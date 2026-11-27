@@ -1,15 +1,77 @@
 {% extends "core/base.html" %}
 {% import "core/makroer.html" as m with context %}
-{# Oversikten (FR-10 grunnside, FR-5). «+ Legg ut oppdrag» står før h1 (UX-DR10).
-   Oppdragene og postnummerfilteret kommer i story 2.3. #}
+{# Oversikten (FR-10, FR-11, FR-5, UX-DR5, UX-DR8, UX-DR10, UX-DR21, UX-DR24). Rekkefølgen er fra
+   mockupen key-oversikt.html: «+ Legg ut oppdrag», h1, antallslinja, kategorifilteret,
+   postnummerfilteret og kortene eller tomtilstanden. Malen får bare `OppdragKort` (AD-16).
+   Filterlenkene bygges bare med `filterlenke` (AR-27). Høyst ett autofocus: `fokusmal` er
+   «postnummer», «kategori» eller ingenting. Antallslinja har ikke aria-live; fokus på den
+   valgte lenken eller feltet gir opplesningen gjennom aria-describedby. #}
+{% macro kategorilenke(kode, tekst) %}
+{%- set valgt = (kode == kategori) or (kode == "alle" and kategori is none) -%}
+<a class="kategoriknapp kategoriknapp--filter" href="{{ filterlenke(kategori=kode, postnummer=lenkepostnummer) }}"
+  {%- if valgt %} aria-current="true" aria-describedby="{{ beskrevet_av }}"{% if fokusmal == "kategori" %} autofocus{% endif %}{% endif %}>
+  {%- if valgt %}<svg class="ikon" aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>{% endif %}
+  {%- if kode != "alle" %}{{ m.kategoriikon(kode, 20) }}{% endif %}
+  <span>{{ tekst }}</span>
+</a>
+{%- endmacro %}
 {% block innhold %}
 <p class="hovedhandling">
   <a class="knapp knapp--primar" href="{{ url_for('oppdrag.ny') }}"><span aria-hidden="true">+</span>&nbsp;Legg ut oppdrag</a>
 </p>
-<h1>Ledige oppdrag i {{ sted }}</h1>
+<h1>{{ overskrift }}</h1>
 {{ m.meldinger() }}
+{% if antallslinje %}
+<p class="antallslinje" id="antallslinje">{{ antallslinje }}</p>
+{% endif %}
+<div class="filter">
+  <div class="kategorifilter" role="group" aria-labelledby="kategori-etikett">
+    <p class="gruppe__etikett" id="kategori-etikett">Kategori</p>
+    <div class="kategorifilter__valg">
+      {{ kategorilenke("alle", "Alle") }}
+      {% for kode, tekst in KATEGORIER %}
+      {{ kategorilenke(kode, tekst) }}
+      {% endfor %}
+    </div>
+  </div>
+  <form class="postnummerfilter" method="get" action="{{ url_for('oppdrag.oversikt') }}" novalidate>
+    <div class="felt">
+      <label for="postnummer">Postnummer</label>
+      <div class="postnummerfilter__rad">
+        <div class="postnummerfelt">
+          {% set ider = (["postnummer-feil"] if postnummer_feil else []) + ["postnummer-sted"] + ([beskrevet_av] if fra_skjema and not postnummer_feil else []) %}
+          <input id="postnummer" name="postnummer" type="text" inputmode="numeric" autocomplete="postal-code" value="{{ postnummer_verdi }}" data-poststed="postnummer-sted" data-postnumre="{{ url_for('static', path='postnumre.json') }}" aria-describedby="{{ ider | join(' ') }}"
+            {%- if postnummer_feil %} aria-invalid="true"{% endif %}
+            {%- if fokusmal == "postnummer" %} autofocus{% endif %}>
+          <span id="postnummer-sted" aria-live="polite">{{ "" if postnummer_feil else poststed }}</span>
+        </div>
+        <button class="knapp knapp--sekundar" type="submit">Vis</button>
+      </div>
+      {{ m.feltfeil("postnummer-feil", postnummer_feil) }}
+    </div>
+    {% if kategori %}
+    <input type="hidden" name="kategori" value="{{ kategori }}">
+    {% endif %}
+    <input type="hidden" name="vist_postnummer" value="{{ vist_postnummer }}">
+  </form>
+</div>
+{% if oppdrag %}
+<ul class="kortliste">
+  {% for o in oppdrag %}
+  <li>{{ m.oppdragskort(o.kategori, o.tittel, o.tidspunkt|tidspunkt, o.sted, o.belop|kr, href=url_for('oppdrag.detaljer', id=o.id)) }}</li>
+  {% endfor %}
+</ul>
+{% else %}
 <div class="tomtilstand">
   <svg class="tomtilstand__ikon" aria-hidden="true" focusable="false" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.4-4.4"/></svg>
-  <p>Ingen ledige oppdrag i {{ sted }} akkurat nå.</p>
+  <p id="tom-forste">Ingen ledige oppdrag i {{ sted }} akkurat nå.</p>
+  {% if kategori %}
+  <p>Prøv en annen kategori eller et annet postnummer.</p>
+  <a class="knapp knapp--sekundar" href="{{ filterlenke(kategori='alle', postnummer=lenkepostnummer) }}">Vis alle kategorier</a>
+  {% else %}
+  <p>Prøv et annet postnummer.</p>
+  <a class="knapp knapp--sekundar" href="#postnummer" data-velg-felt>Velg et annet postnummer</a>
+  {% endif %}
 </div>
+{% endif %}
 {% endblock %}

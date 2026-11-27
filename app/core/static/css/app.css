@@ -207,7 +207,8 @@ main[tabindex="-1"]:focus-visible {
 
 @media (forced-colors: active) {
   :focus-visible,
-  [tabindex="-1"]:not(main):focus {
+  [tabindex="-1"]:not(main):focus,
+  .kort__lenke:focus-visible::after {
     outline-color: Highlight;
   }
 
@@ -1063,6 +1064,151 @@ fieldset:has(#tilbud-belop:not(:checked)) .belopfelt {
 
 .tomtilstand__lenke {
   margin-left: 0;
+}
+
+/* ---------- Oversikten (FR-10, FR-11, UX-DR5, UX-DR8, UX-DR24) ---------- */
+
+/* Antallslinja rett under h1. Ingen aria-live: fokus på valgt lenke eller felt gir opplesningen. */
+.antallslinje {
+  margin: calc(-1 * var(--spacing-2)) 0 var(--spacing-4);
+  color: var(--color-ink-muted);
+}
+
+.filter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  margin: 0 0 var(--spacing-5);
+}
+
+.kategorifilter .gruppe__etikett {
+  margin: 0 0 var(--spacing-2);
+}
+
+/* Kategorilenkene brytes over så mange linjer som trengs, aldri vannrett rulling. */
+.kategorifilter__valg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+}
+
+/* Valgt lenke ser ut som valgt radioknapp i skjemaet: 3 px kant, hake og fet tekst
+ * (DESIGN.md § category-button). */
+.kategoriknapp[aria-current="true"] {
+  padding: calc(var(--spacing-2) - 2px);
+  border: 3px solid var(--color-primary);
+  font-weight: var(--weight-bold);
+}
+
+/* I filteret er knappene lenker på én rad med ikonet foran teksten. */
+.kategoriknapp--filter {
+  flex-direction: row;
+  gap: var(--spacing-2);
+  min-height: var(--spacing-touch-target);
+  padding: var(--spacing-1) var(--spacing-4);
+  text-align: left;
+  text-decoration: none;
+}
+
+.kategoriknapp--filter[aria-current="true"] {
+  padding: calc(var(--spacing-1) - 2px) calc(var(--spacing-4) - 2px);
+}
+
+/* Postnummer, poststed og «Vis» på én rad, som brytes ved 320 px. */
+.postnummerfilter__rad {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2) var(--spacing-3);
+}
+
+.postnummerfilter__rad .postnummerfelt {
+  min-width: 0;
+}
+
+/* Kortene: 1 kolonne, 2 fra 768 px og 3 fra 1280 px, innenfor --spacing-content-max (.innhold). */
+.kortliste {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--spacing-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 48em) {
+  .kortliste {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 80em) {
+  .kortliste {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--spacing-5);
+  }
+}
+
+.kortliste > li {
+  display: flex;
+}
+
+.kortliste .kort {
+  flex: 1;
+}
+
+/* Hele kortet er én lenke: tittelen er lenken, og ::after dekker kortet (DESIGN.md § card og
+ * § Fokus). Fokusringen tegnes på ::after og virker uten :has(). Lenken selv får gjennomsiktig
+ * outline, så ringen ikke dobles, men synes med tvungne farger. */
+.kort--lenke {
+  position: relative;
+}
+
+.kort__lenke {
+  color: var(--color-ink);
+  text-decoration: none;
+}
+
+.kort__lenke::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--rounded-lg);
+}
+
+.kort__lenke:focus-visible {
+  outline: var(--focus-width) solid transparent;
+}
+
+.kort__lenke:focus-visible::after {
+  outline: var(--focus-width) solid var(--color-focus);
+  outline-offset: var(--focus-offset);
+}
+
+/* 2 px kant i primærfargen ved hover og fokus (1 px kant + 1 px ring). :has() er bare et tillegg. */
+.kort--lenke:hover,
+.kort--lenke:has(.kort__lenke:focus-visible) {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-card), 0 0 0 1px var(--color-primary);
+}
+
+.tomtilstand .knapp {
+  margin-top: var(--spacing-2);
+}
+
+/* Oppdragsgiverblokken i detaljene (FR-9, UX-DR25). */
+.oppdragsgiver {
+  margin-top: var(--spacing-6);
+  padding-top: var(--spacing-5);
+  border-top: 1px solid var(--color-border);
+}
+
+.oppdragsgiver__overskrift {
+  margin-bottom: var(--spacing-2);
+}
+
+.brukerkort__erfaring {
+  margin: 0 0 var(--spacing-1);
 }
 
 @media (prefers-reduced-motion: no-preference) {

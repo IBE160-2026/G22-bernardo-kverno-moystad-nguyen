@@ -1,8 +1,9 @@
 {% extends "core/base.html" %}
 {% import "core/makroer.html" as m with context %}
-{# Detaljene for et oppdrag (FR-9, AD-16, UX-DR14). Malen får bare `OppdragVisning`,
-   aldri ORM-objektet, så telefon, e-post og fødselsdato aldri havner i HTML.
-   Oppdragsgiverblokken kommer i 2.3, handlingene i 2.5 og Epic 3. #}
+{# Detaljene for et oppdrag (FR-9, AD-16, UX-DR14, UX-DR25). Malen får bare `OppdragVisning`,
+   `OffentligBruker` og `Erfaring`, aldri ORM-objekter, så telefon, e-post og fødselsdato aldri
+   havner i HTML. Oppdragsgiverblokken «Lagt ut av …» står etter beskrivelsen for alle andre
+   enn oppdragsgiveren. Handlingene kommer i 2.5 og Epic 3. #}
 {% block innhold %}
 <div class="lesebredde">
   <a class="tekstknapp" href="{{ tilbake_url }}">Tilbake</a>
@@ -24,5 +25,11 @@
     <li class="pris">{{ oppdrag.belop|kr }}</li>
   </ul>
   <p class="beskrivelse">{{ oppdrag.beskrivelse }}</p>
+  {% if oppdragsgiver %}
+  <section class="oppdragsgiver" aria-labelledby="oppdragsgiver-overskrift">
+    <h2 class="oppdragsgiver__overskrift" id="oppdragsgiver-overskrift">Lagt ut av {{ oppdragsgiver.visningsnavn }}</h2>
+    {{ m.brukerkort(oppdragsgiver, erfaring) }}
+  </section>
+  {% endif %}
 </div>
 {% endblock %}
