@@ -2,7 +2,7 @@
 title: EXPERIENCE – Nabolagshelten
 status: final
 created: 2026-11-07
-updated: 2026-11-26
+updated: 2026-11-27
 sources:
   - ../../prds/prd-G22-bernardo-kverno-moystad-nguyen-2026-11-05/prd.md
   - ../../product-brief-nabolagshelten.md
@@ -13,7 +13,7 @@ sources:
 
 # EXPERIENCE – Nabolagshelten
 
-Hvordan appen virker: struktur, tekster, tilstander, samhandling, tilgjengelighet og brukerreiser. Utseendet står i [DESIGN.md](DESIGN.md); tokens refereres som `{colors.primary}` og `{components.card}`. Kravene (UJ, FR, NFR, SM) står i PRD v1.2 og gjentas ikke her. Denne fila viser til ID-ene og sier bare hvordan kravene oppleves. Beslutningene er logget i `.memlog.md`.
+Hvordan appen virker: struktur, tekster, tilstander, samhandling, tilgjengelighet og brukerreiser. Utseendet står i [DESIGN.md](DESIGN.md); tokens refereres som `{colors.primary}` og `{components.card}`. Kravene (UJ, FR, NFR, SM) står i PRD v1.3 og gjentas ikke her. Denne fila viser til ID-ene og sier bare hvordan kravene oppleves. Beslutningene er logget i `.memlog.md`.
 
 **Kildeprioritet:** PRD > spinene (denne fila og DESIGN.md) > mockups og fargeprøver i `mockups/` > skisser. Ved konflikt mellom spinene og en mockup, skisse eller fargeprøve gjelder spinene.
 
@@ -59,8 +59,8 @@ Hvordan appen virker: struktur, tekster, tilstander, samhandling, tilgjengelighe
 | Innlogging | Alle sider uten innlogging; «Logg ut» | E-post, Passord, «Logg inn». Lenke til registrering. | FR-2, FR-3 |
 | Registrering | Lenke fra innlogging | Navn, E-post, Passord, Telefonnummer, Postnummer (poststed vises når nummeret er gyldig), Fødselsdato. Personverntekst over knappen «Opprett konto» [ASSUMPTION]. Etterpå innlogget og sendt til oversikten. | FR-1, NFR-9 |
 | Oppdragsoversikt («Oppdrag») | Startside etter innlogging; meny | «+ Legg ut oppdrag» (primær), overskrift «Ledige oppdrag i 0571 Oslo», synlig antall rett under («4 ledige oppdrag i 0571 Oslo»), kategoriknapper (filter), postnummerfelt med poststed og knappen «Vis» (sekundær), oppdragskort. | FR-10, FR-11, FR-5 |
-| Nytt oppdrag | «Legg ut oppdrag» (oversikten, tom fane i Mine oppdrag) | Steg 1: Beskrivelse, «Få forslag», Tittel, Kategori. Steg 2: Postnummer, «Når?» (Dato + Klokkeslett som tekstfelt), «Hva tilbyr du?», forhåndsvisning, «Publiser». To steg under 768 px, én skjerm fra 768 px. Mockup: [steg 1](mockups/key-nytt-oppdrag.html), [steg 2](mockups/key-nytt-oppdrag-steg2.html). | FR-5, FR-23–FR-26, NFR-9 |
-| Rediger oppdrag | «Rediger» / «Endre tidspunkt» i detaljer eller Mine oppdrag | Samme skjema uten KI, knapp «Lagre endringer». Bare mens Åpen. | FR-6, FR-8 |
+| Nytt oppdrag | «Legg ut oppdrag» (oversikten, tom fane i Mine oppdrag) | Steg 1: Beskrivelse, «Få forslag», Bilde (valgfritt) med «Hva viser bildet?», Tittel, Kategori. Steg 2: Postnummer, «Når?» (Dato + Klokkeslett som tekstfelt), «Hva tilbyr du?», forhåndsvisning, «Publiser». To steg under 768 px, én skjerm fra 768 px. Mockup: [steg 1](mockups/key-nytt-oppdrag.html), [steg 2](mockups/key-nytt-oppdrag-steg2.html). | FR-5, FR-23–FR-26, FR-27, NFR-9 |
+| Rediger oppdrag | «Rediger» / «Endre tidspunkt» i detaljer eller Mine oppdrag | Samme skjema uten KI, knapp «Lagre endringer». Bare mens Åpen. Gjeldende bilde vises med «Bytt bilde» (filfelt) og «Fjern bildet». | FR-6, FR-8, FR-27 |
 | Oppdragsdetaljer | Kort i oversikten; rad i Mine oppdrag | Alle felt, status, oppdragsgiverblokken («Lagt ut av Kari», erfaring, «Se profil») – ikke for oppdragsgiveren selv. Nederst varierer innholdet etter rolle og status (tabell under). | FR-7, FR-9, FR-12–FR-17, FR-19 |
 | Tilbakemelding | Del av detaljer ved Utført | «Hvordan gikk det med Amir?», stjerner, kommentar, «Send». | FR-20 |
 | Bekreftelsesdialoger | Handlingene i NFR-8 | Fem dialoger (Interaction Primitives § Bekreftelser). | NFR-8, FR-7, FR-15, FR-17, FR-19 |
@@ -88,6 +88,8 @@ Ingen andre sider. Ingen «glemt passord» (PRD §6.2). Ingen skjulte funksjoner
 | Valgt hjelper | Hjelper valgt | Telefonboks med oppdragsgiveren. Før datoen: «Du kan markere oppdraget som utført fra fredag 6. nov.» [ASSUMPTION] tekst | «Marker som utført» (primær, fra kl. 00:00 på datoen), «Trekk meg fra oppdraget» (lenke) |
 | Oppdragsgiver / valgt hjelper | Utført | Telefonboks (FR-16). Tilbakemeldingsskjema, eller egen gitt tilbakemelding når den er sendt | «Send» (primær) |
 | Oppdragsgiver / valgt hjelper | Avbrutt | Status Avbrutt, ingen telefonnumre | Ingen |
+
+**Bildet** (FR-27) står under tittelen for alle som ser detaljene, med bildeteksten som `alt`, med `width` og `height` og uten lenke. Oppdrag uten bilde har ingen plassholder.
 
 Andre brukere får ikke åpne oppdrag som ikke er Åpne (FR-9); de ser feilsiden. Fra «Mine oppdrag» er rader med «bare tittel og status» ikke lenker.
 
@@ -142,6 +144,7 @@ Alle er [ASSUMPTION] og må godkjennes av gruppen før de låses i stories.
 | Feil e-post eller passord | «Feil e-post eller passord.» | FR-2 |
 | For mange forsøk (5 på 15 min) | «For mange mislykkede forsøk. Prøv igjen om 15 minutter.» | FR-2 |
 | Utløpt innlogging | «Du må logge inn igjen.» | FR-2, FR-3 |
+| Utløpt innlogging med nytt bilde (401-siden, over knappen) | «Velg bildet på nytt etter innlogging.» | FR-27, FR-2, FR-3 |
 | Etter utlogging | «Du er logget ut.» | FR-2 |
 | KI ved knappen (ekte tjeneste) | «Teksten i beskrivelsen sendes til en ekstern KI-tjeneste for å lage forslag.» | FR-23 |
 | KI ved knappen (mock-modus) | «Forslagene lages i appen. Teksten sendes ikke ut.» | FR-23, FR-26 |
@@ -150,6 +153,8 @@ Alle er [ASSUMPTION] og må godkjennes av gruppen før de låses i stories.
 | Forslag klare (skjermleser) | «Forslagene er klare.» | FR-23, NFR-7 |
 | Publisert | «Oppdraget er lagt ut.» | FR-5, NFR-8 |
 | Lagret endring | «Endringene er lagret.» | FR-6 |
+| Beholdt bilde (etter feil, og ved redigering) | Avkrysningen «Fjern bildet» | FR-27 |
+| Bytte bilde ved redigering | Filfeltet «Bytt bilde» | FR-27 |
 | Trukket interesse | «Interessen din er trukket.» | FR-13 |
 | Valgt hjelper | «Du har valgt Amir. Avtal detaljene direkte.» | FR-15 |
 | Fjernet hjelper | «Amir er fjernet. Oppdraget er åpent igjen.» | FR-17 |
@@ -191,6 +196,8 @@ Hver feil sier hva som er galt og hvordan det rettes, med et eksempel der format
 | Postnummer | Finnes i lista | «Skriv postnummeret.» / «Finner ikke postnummeret. Sjekk at det har fire siffer.» | FR-1, FR-5, FR-10 |
 | Fødselsdato | Format, ikke fram i tid, høyst 120 år tilbake, minst 18 år | «Skriv fødselsdatoen din.» / «Skriv fødselsdatoen som dd.mm.åååå, for eksempel 03.05.1954.» / «Sjekk fødselsdatoen.» / «Du må være minst 18 år for å bruke Nabolagshelten.» | FR-1 |
 | Beskrivelse | 10–1000 tegn, ikke bare mellomrom | «Skriv hva du trenger hjelp til.» / «Skriv minst 10 tegn.» / «Beskrivelsen kan ha høyst 1000 tegn. Nå har den 1046.» | FR-5 |
+| Bilde | JPEG, PNG eller WebP (etter innholdet i fila), høyst 4 MB og 40 megapiksler | «Velg et bilde i JPEG, PNG eller WebP.» / «Bildet er for stort. Velg et bilde på høyst 4 MB.» / «Bildet har for mange piksler. Velg et mindre bilde.» | FR-27 |
+| Hva viser bildet? | Påkrevd når et bilde er valgt, 3–120 tegn | «Skriv hva bildet viser.» / «Teksten må ha minst 3 tegn.» / «Teksten kan ha høyst 120 tegn.» | FR-27 |
 | Tittel | 3–80 tegn | «Skriv en tittel.» / «Tittelen må ha minst 3 tegn.» / «Tittelen kan ha høyst 80 tegn.» | FR-5 |
 | Kategori | Ett valg | «Velg en kategori.» | FR-5 |
 | Dato | dd.mm.åååå, finnes | «Skriv datoen.» / «Skriv datoen som dd.mm.åååå, for eksempel 14.11.2026.» / «Den datoen finnes ikke. Sjekk dag og måned.» | FR-5 |
@@ -213,7 +220,7 @@ Atferd. Utseendet står i DESIGN.md § Components; navnene er de samme. Komponen
 | Like knappenavn i samme visning | «Bruk» / «Ikke bruk» (KI), «Se profil» (interesserte), snarveiene i rader | Den synlige teksten står først i navnet (WCAG 2.5.3), og knappen får `aria-describedby` til det den gjelder: forslagets overskrift, personens navn eller oppdragstittelen. |
 | Lenken «Hopp til innholdet» | Alle sider | Første fokuserbare element, usynlig til den får fokus og da synlig øverst til venstre. Går til `main`, som har `tabindex="-1"`. |
 | `{components.button-disabled}` | Alle knapper når de ikke kan brukes | `aria-disabled="true"`, så knappen fortsatt kan få fokus og leses opp; klikk gjør ingenting. Brukes bare kortvarig (under forespørsel) eller når en synlig tekst forklarer hvorfor (KI under 10 tegn); ellers vises en forklarende tekst i stedet for knappen. |
-| `{components.card}` | Oppdragskort i oversikten | Hele kortet er én lenke til detaljer: tittelen er lenken, trykkflaten dekker kortet, og kortet har ingen andre knapper. Viser tittel, kategori, tidspunkt, godtgjørelse (FR-10) og postnummer med poststed. |
+| `{components.card}` | Oppdragskort i oversikten | Hele kortet er én lenke til detaljer: tittelen er lenken, trykkflaten dekker kortet, og kortet har ingen andre knapper. Viser tittel, kategori, tidspunkt, godtgjørelse (FR-10) og postnummer med poststed. Har oppdraget bilde (FR-27), står miniatyren øverst (16:9, `object-fit: cover`, `alt=""`, `loading="lazy"`, `width` og `height`). Bildet er pynt for skjermlesere, fordi lenken allerede har tittelen. Kort uten bilde har ingen plassholder. Radene under «Mine oppdrag» viser ikke bildet. |
 | `{components.status-badge}` | Detaljer, Mine oppdrag | Viser oppdragets status med ord og er ikke trykkbar. Skjult tekst foran for skjermleser: «Status: Åpen.» |
 | `{components.action-tag}` | Rader i Mine oppdrag, detaljer | Viser FR-18-merkene og er ikke trykkbar selv; raden den står i, er lenken. Et oppdrag med merke står under «Trenger handling» og teller i `{components.nav-badge}` (mer i § Rader i lister). |
 | `{components.situation-label}` | «Oppdrag jeg hjelper med» | Viser «Vises som» fra FR-18; når situasjonen er lik statusen («Utført», «Avbrutt»), vises bare statusmerket. Skjult tekst foran: «Din situasjon: Venter på svar.» |
@@ -241,6 +248,8 @@ Atferd. Utseendet står i DESIGN.md § Components; navnene er de samme. Komponen
 - **«Når?»** (`{components.input}` × 2): `fieldset` med `legend` «Når?». To tekstfelt, **ikke** nettleserens dato- og klokkevelger: «Dato» med hjelpeteksten «dd.mm.åååå, for eksempel 14.11.2026» og «Klokkeslett» med «tt:mm, for eksempel 07:00». Alltid norsk format, uansett nettleserens språk. Appen godtar også andre skrivemåter [ASSUMPTION]. Dato: skråstrek, bindestrek og mellomrom mellom tallene, og tosifret år. Klokkeslett: uten kolon («7», «0700», «7.00»). `autocomplete="off"`. Ikke `inputmode="numeric"`, fordi talltastaturet på enkelte telefoner mangler punktum [ASSUMPTION]. Feil for hvert felt står ved feltet; feil for tidspunktet står samlet under gruppen («Velg et nytt tidspunkt fram i tid»).
 - **«Hva tilbyr du?»** (radio + `{components.input}`): `fieldset` med `legend` «Hva tilbyr du?» og to radioknapper: «Beløp» og «Uten betaling». Ingen er valgt på forhånd [ASSUMPTION]. Feltet «Beløp i kr» (`inputmode="numeric"`, `autocomplete="off"`) står rett etter radioknappen «Beløp» i koden, innrykket under den, og vises bare når «Beløp» er valgt. Å vise feltet flytter ikke fokus. Skrevet beløp beholdes om brukeren bytter fram og tilbake.
 - **Kategori** (`{components.category-button}`, skjema): radiogruppe (`fieldset`, `legend` «Kategori») med samme utseende som filteret. Piltaster flytter valget, Tab går videre; valg sender ikke skjemaet. Valgt knapp (`:checked`) beholder kategoriikonet og får i tillegg hake og fet tekst.
+- **Bilde (valgfritt)** (FR-27): filfelt med `accept="image/jpeg,image/png,image/webp"` og hjelpetekstene «Ikke vis husnummer, bilskilt, navn eller ansikter.» og «JPEG, PNG eller WebP, høyst 4 MB.». Plassering: steg 1, rett etter beskrivelsen. «Få forslag» og KI-teksten hører til beskrivelsen og står fortsatt rett under den (Interaction Primitives § KI-forslag), så bildefeltet kommer etter dem og før Tittel. Rett under bildefeltet står **«Hva viser bildet?»**: tekstfelt med teller (120 tegn), påkrevd når et bilde er valgt. Det vises med CSS `:has()` når en fil er valgt, eller når et bilde er beholdt, på samme måte som «Beløp i kr». Teksten blir bildets `alt` i detaljene.
+- **Beholdt bilde:** kommer skjemaet tilbake med feil i andre felt, beholder serveren et gyldig bilde, fordi nettleseren ikke kan fylle ut et filfelt på nytt. Bildet vises som miniatyr med avkrysningen «Fjern bildet». Ved redigering vises gjeldende bilde på samme måte, med «Bytt bilde» (filfelt) og «Fjern bildet».
 - **Forhåndsvisning** (steg 2, rett over «Publiser»): region (`section`) med navnet «Slik vises oppdraget for andre», som også står som synlig tekst over. Viser kortet slik det blir i oversikten, men uten lenke, og tittelen er ikke en overskrift (så den ikke forveksles med sidens). Oppdateres når feltene endres, uten å leses opp. Tomme felt vises som «–». [ASSUMPTION] Tomme felt.
 
 **Felttyper og formål (WCAG 1.3.5).** Med riktig felttype og `autocomplete` kan nettleseren fylle inn kjente opplysninger, og hjelpemidler vet hva feltet er til:
@@ -256,7 +265,8 @@ Atferd. Utseendet står i DESIGN.md § Components; navnene er de samme. Komponen
 | Passord ved innlogging og sletting | `type="password" autocomplete="current-password"` |
 | Dato og klokkeslett i oppdrag | `type="text" autocomplete="off"` (se «Når?») |
 | Beløp i kr | `type="text" inputmode="numeric" autocomplete="off"` |
-| Tittel, beskrivelse, melding, kommentar, om meg | `autocomplete="off"` |
+| Bilde | `type="file" accept="image/jpeg,image/png,image/webp"` |
+| Tittel, beskrivelse, «Hva viser bildet?», melding, kommentar, om meg | `autocomplete="off"` |
 
 ### Stjerner
 
@@ -394,7 +404,7 @@ Hvor fokus går og hva skjermleseren leser (NFR-7); de andre avsnittene viser hi
 
 ### To steg i nytt oppdrag (under 768 px)
 
-Steg 1 har `h1` «Nytt oppdrag 1 av 2» og knappen «Neste» (primær). «Neste» sjekker feltene i steg 1 og viser feiloppsummeringen der hvis noe mangler [ASSUMPTION]; ellers vises steg 2. Steg 2 har «Publiser» (primær) og «Tilbake til steg 1» (`button-text`), som beholder alt utfylt. Fokus ved stegbytte står i § Fokus og opplesning. `<title>` byttes per steg (se Accessibility Floor). Fra 768 px er begge delene på én side med `h1` «Nytt oppdrag» og hver sin `h2` («Hva trenger du hjelp til?», «Når og hvor?» [ASSUMPTION]).
+Steg 1 har `h1` «Nytt oppdrag 1 av 2» og knappen «Neste» (primær). «Neste» sjekker feltene i steg 1 og viser feiloppsummeringen der hvis noe mangler [ASSUMPTION]; ellers vises steg 2. Steg 2 har «Publiser» (primær) og «Tilbake til steg 1» (`button-text`), som beholder alt utfylt. Fokus ved stegbytte står i § Fokus og opplesning. `<title>` byttes per steg (se Accessibility Floor). Fra 768 px er begge delene på én side med `h1` «Nytt oppdrag» og hver sin `h2` («Hva trenger du hjelp til?», «Når og hvor?» [ASSUMPTION]). Bildet og «Hva viser bildet?» står i steg 1, og forhåndsvisningen viser bildet når det er valgt (FR-27).
 
 ### Sending
 
@@ -434,7 +444,7 @@ Krav: NFR-7, WCAG 2.1 nivå AA. Visuell kontrast står i DESIGN.md § Colors. Hv
 | Kontrast minst 4,5:1 for tekst | Alle tekstpar i DESIGN.md er 4,61:1 eller bedre; kanter og fokus ≥ 3:1. | T5 |
 | Alt kan brukes med tastatur, med synlig fokus, også dato og klokkeslett | Logisk Tab-rekkefølge lik leserekkefølgen. Lenken «Hopp til innholdet» er første fokuserbare element på hver side (Component Patterns). Dato og klokkeslett er to tekstfelt med fast format i gruppen «Når?» (besluttet 2026-11-07); ingen kalender å navigere. Fødselsdato er også tekstfelt med format. | T2 |
 | Synlige etiketter; feil ved feltet og knyttet til det | Etikett over hvert felt, `aria-describedby` til hjelpetekst og feil, `aria-invalid`, felttype og `autocomplete` etter tabellen i Component Patterns. «Når?», «Hva tilbyr du?», kategori og stjerner har `fieldset`/`legend`. Feiloppsummering med lenker til feltene. | T1, T3 |
-| Knapper har tekst; meningsbærende bilder og ikoner har alt-tekst | Alle ikoner står sammen med tekst og er `aria-hidden`, også pila › i lenkerader og stjernene i snittvisningen (teksten «4,9 av 5, 11 vurderinger» bærer verdien). Logoen er en lenke med navnet «Nabolagshelten, til oversikten». Like knappenavn får `aria-describedby`. | T1 |
+| Knapper har tekst; meningsbærende bilder og ikoner har alt-tekst | Alle ikoner står sammen med tekst og er `aria-hidden`, også pila › i lenkerader og stjernene i snittvisningen (teksten «4,9 av 5, 11 vurderinger» bærer verdien). Logoen er en lenke med navnet «Nabolagshelten, til oversikten». Like knappenavn får `aria-describedby`. Bildet av oppdraget har bildeteksten som `alt` i detaljene og `alt=""` i kortet (FR-27). | T1 |
 | Brødtekst ≥ 18 px, trykkflater ≥ 48 px | Tokens i DESIGN.md. Frittstående lenker, stjerner og telefonlenken har minst 48 px høy trykkflate; lenker inne i løpende tekst (f.eks. navnet i «Fra Kari») er unntatt. | T2 (måles i DevTools) |
 | Forstørre til 200 % uten tap | `rem`-størrelser; layouten skifter til mobilvisning når vinduet blir smalt. Flyter om ved 320 px (400 % zoom på 1280 px) uten vannrett rulling. Bunnmenyen og merkene bryter tekst i stedet for å klippe. | T4 |
 | Status med ord, ikke bare farge | Status, situasjon, merker og valgt kategori har alltid tekst og ikon, og skjult forklaring for skjermleser («Status: Åpen.»). | T3, T5 (gråtoner / tvungne farger) |
@@ -463,7 +473,7 @@ Også: én `h1` per side, overskrifter i riktig rekkefølge; landemerker `header
 
 **Testes ved** (NFR-7, SM-5). T1 kjøres automatisk med axe, T2–T6 manuelt; alle seks dokumenteres som tester (sensorveiledningen, kriterium 3). Kolonnen «Testes ved» over viser hvilket NFR-7-punkt hver test dekker.
 
-1. **T1 Automatisk, axe:** ingen «serious» eller «critical» på oppdragsoversikt (med treff og tom), nytt oppdrag steg 1 og steg 2 (mobil) og som én skjerm (nettbrett), KI-forslag vist og KI-feil, oppdragsdetaljer for oppdragsgiver (med og uten interesserte), for interessert og for valgt hjelper, tilbakemelding med stjerner, Mine oppdrag (begge faner og tom fane), profil, registrering, innlogging, rediger profil, et skjema med valideringsfeil, feilside, slettet bruker og hver bekreftelsesdialog (fem dialoger + slett konto-siden). Den samme testen sjekker at det ikke er vannrett rulling ved 320 px (SM-5). axe finner ikke manglende `autocomplete`, så felttypene sjekkes mot tabellen i T2.
+1. **T1 Automatisk, axe:** ingen «serious» eller «critical» på oppdragsoversikt (med treff, tom og med bilde), nytt oppdrag steg 1 og steg 2 (mobil) og som én skjerm (nettbrett), nytt oppdrag med bildefeil, KI-forslag vist og KI-feil, oppdragsdetaljer for oppdragsgiver (med og uten interesserte), for interessert og for valgt hjelper, oppdragsdetaljer med bilde, tilbakemelding med stjerner, Mine oppdrag (begge faner og tom fane), profil, registrering, innlogging, rediger profil, et skjema med valideringsfeil, feilside, slettet bruker og hver bekreftelsesdialog (fem dialoger + slett konto-siden). Den samme testen sjekker at det ikke er vannrett rulling ved 320 px (SM-5). axe finner ikke manglende `autocomplete`, så felttypene sjekkes mot tabellen i T2.
 2. **T2 Tastatur:** UJ-1 og UJ-2 uten mus, og støtteflytene (registrering, innlogging, rediger profil, slett konto). Kontrollpunkter: «Hopp til innholdet», synlig fokus på alt, dato og klokkeslett, kategorifilter og kategoriknapper, stjerner, alle dialoger, fokus tilbake etter dialog, felttyper og `autocomplete`. Tekststørrelse og trykkflater måles i DevTools.
 3. **T3 Skjermleser** (NVDA på Windows eller VoiceOver på iPad/Mac): UJ-1, UJ-2 steg 3–6 (antallet etter filtervalg), ett skjema med feil (feiloppsummeringen leses, lenkene fører til feltene) og en kvittering etter sidelasting.
 4. **T4 Bredder og zoom:** UJ-1 og UJ-2 ved 360, 768 og 1280 px med skjermbilder (NFR-6); 320 px (400 % zoom på 1280 px) uten vannrett rulling; 200 % zoom; tekstavstand etter WCAG 1.4.12 (bokmerke); 200 % tekststørrelse i operativsystemet; liggende telefon med bunnmenyen og et felt med fokus.
@@ -566,6 +576,7 @@ Ingen referanseprodukter er valgt. Avvist i Discovery (`.memlog.md`):
 | FR-18 | State Patterns § Mine oppdrag (FR-18), Component Patterns § Rader i lister (`list-row`), nav-badge i Information Architecture |
 | FR-20, FR-21, FR-22 | Interaction Primitives § Tilbakemelding, Information Architecture (Profil, Rediger profil), Component Patterns § Stjerner (`star-rating` visning) og § Rader i lister |
 | FR-23–FR-26 | Interaction Primitives § KI-forslag, `ki-suggestion-box` |
+| FR-27 | Component Patterns § Skjemafelt (Bilde, «Hva viser bildet?», beholdt bilde) og `card`, Information Architecture § Oppdragsdetaljer etter rolle og status og Rediger oppdrag, Interaction Primitives § To steg i nytt oppdrag, Voice and Tone § Feiltekster ved felt |
 | NFR-6, NFR-7, NFR-8, NFR-9, NFR-10, NFR-11, NFR-12 | Responsive & Platform, Accessibility Floor og Interaction Primitives § Fokus og opplesning, Voice and Tone og § Bekreftelser, hjelpetekst, State Patterns, Information Architecture, ren tekst i `ki-suggestion-box` |
 
 ## Endringer fra skissene
@@ -600,6 +611,7 @@ Lista dekker punktene i PRD §8 og avstemmingen mot PRD v1.1 og v1.2, også ordl
 | 24 | «Ingen fullførte ennå» heter «Ingen fullførte oppdrag ennå» [ASSUMPTION]. | FR-14 |
 | 25 | KI-teksten «Teksten sendes til en ekstern tjeneste …» må si «ekstern KI-tjeneste» (ordlyden står i Voice and Tone § Tekster som mangler i kildene – forslag). | FR-23 |
 | 26 | «Trekk meg» (UJ-2) / «Trekk meg fra oppdraget» (skisse 3c): knappen heter «Trekk meg fra oppdraget», dialogknappen «Ja, trekk meg». | FR-17 |
+| 27 | Bilde av oppdraget (2026-11-27): ikke i skissene eller mockupene, og mockupene oppdateres ikke. Teksten her og i DESIGN.md gjelder. | FR-27 |
 
 ## Åpne punkter
 

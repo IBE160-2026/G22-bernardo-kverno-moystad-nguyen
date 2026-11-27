@@ -7,8 +7,8 @@ paradigm: 'Server-rendret monolitt med vertikale slices, lagdelt innad (routes �
 scope: 'Hele Nabolagshelten v1: én FastAPI-app som lager HTML med Jinja, lokalt og på Vercel'
 status: final
 created: '2026-11-08'
-updated: '2026-11-23'
-binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15, FR-16, FR-17, FR-18, FR-19, FR-20, FR-21, FR-22, FR-23, FR-24, FR-25, FR-26, NFR-1, NFR-2, NFR-3, NFR-4, NFR-5, NFR-6, NFR-7, NFR-8, NFR-9, NFR-10, NFR-11, NFR-12]
+updated: '2026-11-27'
+binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15, FR-16, FR-17, FR-18, FR-19, FR-20, FR-21, FR-22, FR-23, FR-24, FR-25, FR-26, FR-27, NFR-1, NFR-2, NFR-3, NFR-4, NFR-5, NFR-6, NFR-7, NFR-8, NFR-9, NFR-10, NFR-11, NFR-12]
 sources:
   - ../../prds/prd-G22-bernardo-kverno-moystad-nguyen-2026-11-05/prd.md
   - ../../ux-designs/ux-G22-bernardo-kverno-moystad-nguyen-2026-11-07/EXPERIENCE.md
@@ -61,7 +61,7 @@ Pilene betyr «kan importere fra». Bare direkte piler gjelder.
     | Eier | Tabeller |
     |---|---|
     | identity | bruker, sesjon, innloggingsforsok |
-    | oppdrag | oppdrag, interesse, tidligere_hjelper, tilbakemelding |
+    | oppdrag | oppdrag, interesse, tidligere_hjelper, tilbakemelding, oppdragsbilde |
     | ki | ki_bruk |
     | core | postnummer (skrives bare av migreringen) |
 
@@ -137,12 +137,13 @@ Pilene betyr «kan importere fra». Bare direkte piler gjelder.
 - **Prevents:** at noen ruter sender til innlogging og mister skjemaet mens andre beholder det, og at innhold fra databasen vises uten innlogging.
 - **Rule:**
   - **Svaret:** POST uten gyldig sesjon endrer ingen data. `core` svarer 401 med én generisk side, «Du må logge inn igjen.». Siden har:
-    - alle innsendte felt som skjulte felt, unntatt passord og CSRF
+    - alle innsendte felt som skjulte felt, unntatt passord, CSRF og filfelt
     - en ny CSRF-nøkkel
     - feltene `_innlogging_epost` og `_innlogging_passord`
     - en knapp som sender til samme URL
 
     Siden viser ikke noe innhold fra databasen.
+  - **Filfelt:** en fil kan ikke bli et skjult felt. Hadde innsendingen et nytt bilde, sier 401-siden «Velg bildet på nytt etter innlogging.». `bilde_beholdt` følger med som et vanlig skjult felt (AD-18).
   - **Innsending:** Mellomvaren logger inn gjennom `Autentisering`, fjerner `_innlogging_*`-feltene og slipper forespørselen videre. Ruta behandler den som den nye innloggede brukeren, og tilgangsreglene i servicen gjelder som vanlig.
   - **Feltnavn:** Ingen andre skjema bruker feltnavn som begynner med `_`.
   - **Kan kuttes:** Står AD-7 i veien for fristen, kan den erstattes av en 401-side med «Du må logge inn igjen.» og en lenke til innlogging. Endringen føres i memlog og i PRD §9.2.
@@ -274,19 +275,36 @@ Pilene betyr «kan importere fra». Bare direkte piler gjelder.
   - **Fange databasefeil:** En service som må fange `IntegrityError`, gjør det rundt én setning med `with db.begin_nested():` (SAVEPOINT). `core/db.py` setter opp SAVEPOINT for pysqlite.
   - **Unntak:** KI-kvoten (AD-12) er det eneste stedet der én forespørsel har to transaksjoner.
 
+### AD-18 — Bilder behandles ett sted og lagres i databasen [ADOPTED]
+
+- **Binds:** FR-27, FR-4, FR-9, NFR-9, NFR-12
+- **Prevents:** at originalfiler med GPS-posisjon blir lagret, at en fil som later som den er et bilde, blir servert, at bilder kan hentes forbi tilgangsreglene i FR-9, og at bilder bare virker lokalt fordi Vercel ikke har varig filsystem.
+- **Rule:**
+  - **Lagring:** tabellen `oppdragsbilde` (én rad per oppdrag, `oppdrag_id` er primærnøkkel og fremmednøkkel) har `bilde` og `miniatyr` som binærdata (`LargeBinary`), `bildetekst`, `bredde`, `hoyde` og `opprettet`. Den eies av `oppdrag` (AD-1). Samme kode mot SQLite og Postgres (AD-13).
+  - **Behandling:** bare `oppdrag/bilde.py` åpner opplastede filer. Den bruker Pillow og:
+    - godtar formatet JPEG, PNG eller WebP slik Pillow leser det, og avviser alt annet
+    - avviser filer over 4 MB og over 40 megapiksler (sjekket før dekoding)
+    - snur bildet etter EXIF-orienteringen
+    - lagrer en JPEG på høyst 1 600 px og en miniatyr på høyst 640 px, uten metadata
+  - **Servering:** `GET /oppdrag/{oppdrag_id:int}/bilde` og `/oppdrag/{oppdrag_id:int}/bilde/liten` krever innlogging (AD-4). De bruker samme tilgangsregel som detaljene (FR-9) og gir samme 404 ellers. Svaret er `image/jpeg` med `Cache-Control: private, max-age=31536000, immutable`. URL-en i malene har `?v={versjon}`, så et nytt bilde får ny URL.
+  - **Gjenvisning:** ved 422 legger ruta den omkodede JPEG-en i det skjulte feltet `bilde_beholdt` (base64). Ved neste innsending går feltet gjennom `oppdrag/bilde.py` på nytt, akkurat som en opplasting.
+  - **Skjemaet:** `enctype="multipart/form-data"`. CSRF-mellomvaren (AD-5) leser filfelt uten å legge dem i `request.state.skjema` som tekst.
+  - **Sletting:** bildet slettes med oppdraget, og `profil/service.py` sletter bildet på oppdrag som beholdes når en konto slettes (AD-8).
+  - **Klienten:** `bilde.js` skalerer et valgt bilde ned i nettleseren (canvas, JPEG, høyst 1 600 px) før innsending, og viser det i forhåndsvisningen. Uten JS sendes fila som den er. JS har ingen regler. Serveren sjekker alltid.
+
 ## Consistency Conventions
 
 | Concern | Convention |
 | --- | --- |
 | Navn | Domeneordene fra PRD §3 brukes i kode, tabeller og URL-er. Identifikatorer er ASCII: æ → ae, ø → o, å → a. Tabellnavn i entall. |
-| URL-er og rutenavn | `/` (oversikt) · `/logg-inn` · `/logg-ut` (POST) · `/registrer` · `/oppdrag/ny` · `/oppdrag/{oppdrag_id:int}` · `/oppdrag/{oppdrag_id:int}/rediger` · `/oppdrag/{oppdrag_id:int}/<handling>` (GET viser bekreftelsessiden, POST utfører handlingen) · `/oppdrag/forslag` · `/mine-oppdrag` · `/profil` · `/profil/{bruker_id:int}` · `/profil/rediger` · `/profil/slett`. Stiparametre bruker alltid `:int`. Rutenavn er `<slice>.<handling>`, maler lenker bare med `url_for`, og en test sjekker at rutenavnene er unike. |
+| URL-er og rutenavn | `/` (oversikt) · `/logg-inn` · `/logg-ut` (POST) · `/registrer` · `/oppdrag/ny` · `/oppdrag/{oppdrag_id:int}` · `/oppdrag/{oppdrag_id:int}/rediger` · `/oppdrag/{oppdrag_id:int}/<handling>` (GET viser bekreftelsessiden, POST utfører handlingen) · `/oppdrag/{oppdrag_id:int}/bilde` og `/oppdrag/{oppdrag_id:int}/bilde/liten` (GET-ruter som gir bildet, AD-18; unntak fra mønsteret `<handling>` med bekreftelsesside) · `/oppdrag/forslag` · `/mine-oppdrag` · `/profil` · `/profil/{bruker_id:int}` · `/profil/rediger` · `/profil/slett`. Stiparametre bruker alltid `:int`. Rutenavn er `<slice>.<handling>`, maler lenker bare med `url_for`, og en test sjekker at rutenavnene er unike. |
 | Id-er og data | Heltall som primærnøkkel. Penger som heltall i kroner, og «uten betaling» som NULL. Kategori som kode (AD-10). Status etter AD-2. Tid etter AD-9. |
 | Validering | Skjemamodellene har bare felt av typen `str \| None = None`, uten Pydantic-begrensninger. All tolkning og alle regler ligger i service og `core/tid.py`. En egen handler for `RequestValidationError` viser den vennlige feilsiden og logger. |
 | Feil | Typene ligger i `core/feil.py`, og hver av dem har én handler i `core`. Rutene fanger dem ikke selv. <br>• `RegelBrudd(feil: list[(felt, melding)])` gjelder skjema med felt. Skjemaet vises på nytt med 422, alle feilene samtidig, og verdiene beholdes (ikke passord). <br>• `Konflikt(melding, til_url)` gjelder AD-2 og avvisning av handlinger uten felt. Den gir POST → redirect → GET til `til_url`, med meldingen i cookien. <br>• `Duplikat(til_url)` gir POST → redirect → GET til det som allerede finnes. <br>• `IngenTilgang` og `FinnesIkke` gir begge 404 og samme side, med teksten fra FR-4 for slettet bruker. <br>• Uventede feil gir en vennlig side, aldri en stack trace (NFR-10). Feilhandlerne ruller tilbake og rendrer uten databasekall. |
 | Etter vellykket handling | POST → redirect → GET. Kvitteringen eller feilmeldingen ligger i en kortlivet signert cookie (`itsdangerous`) og vises på neste side. |
 | Rendring | Alle sider rendres med `core.render(request, mal, *, tittel, aktiv_meny, fokus=None, **ctx)`. Den legger til innlogget bruker, `request.state.csrf`, kvittering, «Feil: » foran tittelen ved feil, `aria-current`, antallet i menyen (kroken, bare når noen er innlogget) og `tilbake_url` (`Referer` fra samme nettsted, ellers `/`). Fragmenter rendres med `core.render_fragment`, som verken leser kvitteringen eller kaller kroken. <br>Maler ligger i `app/<slice>/templates/<slice>/` og brukes som `"oppdrag/detaljer.html"`. Det finnes ett Jinja-miljø. `core/makroer.html` har blant annet `brukerkort(bruker, erfaring, lenke=True)`, `bekreft_dialog`, `feltfeil` og `kvittering`. Filtrene `status_tekst`, `kategori_tekst`, `vurdering`, `tidspunkt` og `kr` ligger i `core`, og maler formaterer aldri selv. `base.html` har menyen (NFR-11). |
 | Fokus og opplesning | Høyst ett fokusmål per side, satt med `autofocus` fra makroen. Rekkefølge: feiloppsummering > feilmelding > kvittering > sidens eget mål. Etter sidelasting er det fokuset som gir opplesningen. `role="status"`, `role="alert"` og `aria-live` brukes bare på fragmenter som JS setter inn. Feiloppsummeringen har aldri `role`. |
-| Klientatferd | Én fil per oppgave i `core/static/js/`, uten npm og uten byggsteg. JS har aldri regler fra PRD-en, og serveren bestemmer alltid. <br>• `fokus.js` gjør `select()` og viser riktig steg. Uten JS: `autofocus` alene. <br>• `dialog.js` viser de fem bekreftelsene som `<dialog>` fra `bekreft_dialog`. Uten JS: en GET-bekreftelsesside med POST-knapp. <br>• `sending.js` setter `aria-disabled` på knappen som sendte, og nullstiller ved `pageshow`. Uten JS: serveren avviser duplikater (AD-2). <br>• `steg.js` gjør det ene skjemaet i «Nytt oppdrag» om til to steg under 768 px. Uten JS: én skjerm. <br>• `ki.js` følger AD-15. Uten JS: knappen er skjult. <br>• `skjema.js` har teller, poststed fra `postnumre.json`, «Vis passord» og forhåndsvisning med dato og klokkeslett slik brukeren skrev dem. Uten JS vises disse etter innsending. <br>• «Beløp i kr» styres med CSS (`:has(:checked)`). <br>`core/static/postnumre.json` lages av `uv run python -m app.core.postnummer` fra TSV-fila og sjekkes inn. En test sammenligner de to. |
+| Klientatferd | Én fil per oppgave i `core/static/js/`, uten npm og uten byggsteg. JS har aldri regler fra PRD-en, og serveren bestemmer alltid. <br>• `fokus.js` gjør `select()` og viser riktig steg. Uten JS: `autofocus` alene. <br>• `dialog.js` viser de fem bekreftelsene som `<dialog>` fra `bekreft_dialog`. Uten JS: en GET-bekreftelsesside med POST-knapp. <br>• `sending.js` setter `aria-disabled` på knappen som sendte, og nullstiller ved `pageshow`. Uten JS: serveren avviser duplikater (AD-2). <br>• `steg.js` gjør det ene skjemaet i «Nytt oppdrag» om til to steg under 768 px. Uten JS: én skjerm. <br>• `ki.js` følger AD-15. Uten JS: knappen er skjult. <br>• `skjema.js` har teller, poststed fra `postnumre.json`, «Vis passord» og forhåndsvisning med dato og klokkeslett slik brukeren skrev dem. Uten JS vises disse etter innsending. <br>• `bilde.js` skalerer et valgt bilde ned før innsending og viser det i forhåndsvisningen. Uten JS: fila sendes som den er, og serveren avviser over 4 MB (AD-18). <br>• «Beløp i kr» styres med CSS (`:has(:checked)`). <br>`core/static/postnumre.json` lages av `uv run python -m app.core.postnummer` fra TSV-fila og sjekkes inn. En test sammenligner de to. |
 | Filtre | Filtrene er GET-parametre (`postnummer`, `kategori`, `fane`). Én hjelper bygger lenkene og beholder de andre parametrene. |
 | Lagringstid | Appen har ingen cron, så eier-slicen rydder når den brukes (AD-4, AD-12). |
 | Konfig og hemmeligheter | Appen leser `APP_ENV`, `DATABASE_URL`, `SECRET_KEY`, `OPENROUTER_API_KEY` og `OPENROUTER_MODEL`. De står i `.env.example` uten ekte verdier, og i Vercel env (Production). `MIGRATION_DATABASE_URL`, `VERCEL_TOKEN`, `VERCEL_ORG_ID` og `VERCEL_PROJECT_ID` står bare i GitHub Secrets. Id-ene hentes fra `.vercel/project.json` etter `vercel link`, og `.vercel/` er git-ignorert. Workflows bruker aldri `pull_request_target`. Bytte av `SECRET_KEY` logger ingen ut (sesjonene ligger i databasen), men gjør CSRF- og kvitteringscookies ugyldige. |
@@ -312,6 +330,7 @@ Pilene betyr «kan importere fra». Bare direkte piler gjelder.
 | pydantic-settings | 2.16.x |
 | bcrypt | 5.0.x |
 | itsdangerous | 2.2.x |
+| Pillow | 12.x |
 | httpx | 0.28.x (<1.0) |
 | tzdata | 2026.6 |
 | pytest | 9.2.x |
@@ -388,6 +407,7 @@ erDiagram
   OPPDRAG ||--o{ TIDLIGERE_HJELPER : har
   BRUKER ||--o{ TIDLIGERE_HJELPER : var
   OPPDRAG ||--o{ TILBAKEMELDING : får
+  OPPDRAG ||--o| OPPDRAGSBILDE : har
   BRUKER ||--o{ TILBAKEMELDING : "gir / får"
   POSTNUMMER ||--o{ BRUKER : "bor i"
   POSTNUMMER ||--o{ OPPDRAG : "ligger i"
@@ -404,9 +424,9 @@ app/
   core/                 # config, db (UtcDateTime, hent_db), mellomvare, sesjon (Autentisering), csrf,
                         # headere, klokke, tid, domene, postnummer, feil, render
     templates/core/     # base.html, makroer.html, feilsider, «Du må logge inn igjen»
-    static/             # css/, js/ (fokus, dialog, sending, steg, ki, skjema), postnumre.json
+    static/             # css/, js/ (fokus, dialog, sending, steg, ki, skjema, bilde), postnumre.json
   identity/             # FR-1–FR-3, Autentisering-implementasjon, OffentligBruker/Profil/EgneOpplysninger
-  oppdrag/              # FR-5–FR-20: oppdrag, interesse, valg, utført, mine_oppdrag, tilbakemelding
+  oppdrag/              # FR-5–FR-20, FR-27: oppdrag, interesse, valg, utført, mine_oppdrag, tilbakemelding, bilde.py
   profil/               # FR-21, FR-22, sletting av konto (FR-4)
   ki/                   # grensesnitt, openrouter.py, mock.py, prompt.txt (FR-23–FR-26)
   seed.py               # eksempeldata med relative datoer (NFR-2)
@@ -430,6 +450,7 @@ pyproject.toml  uv.lock  .python-version  vercel.json  .env.example
 | FR-5–FR-7 legge ut, redigere, avbryte | oppdrag | AD-2, AD-3, AD-9, AD-10, AD-17 |
 | FR-8 utgåtte oppdrag | oppdrag | AD-3 |
 | FR-9–FR-11 detaljer, oversikt, filter | oppdrag, core (postnummer) | AD-3, AD-16, konvensjonene Filtre og Rendring |
+| FR-27 bilde av oppdraget | oppdrag (`bilde.py`) | AD-18, AD-1, AD-4, AD-13 |
 | FR-12–FR-15 interesse og valg | oppdrag | AD-2, AD-3 |
 | FR-16 telefonnummer | oppdrag | AD-3, AD-16 |
 | FR-17 fjerne hjelper / trekke seg | oppdrag | AD-2, AD-3 |
