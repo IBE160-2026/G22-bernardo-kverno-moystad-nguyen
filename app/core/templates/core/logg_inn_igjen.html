@@ -1,9 +1,48 @@
 {% extends "core/base.html" %}
-{# 401 uten innlogging (FR-3, AR-17, enkel versjon av AD-7). Rendres uten databasekall.
-   Full gjenvisning av skjemaet kommer i story 2.6. #}
+{% import "core/makroer.html" as m with context %}
+{# 401 uten gyldig sesjon (FR-2, FR-3, AD-7, UX-DR12, UX-DR27). Ingen meny og ingenting fra databasen.
+   Alle innsendte tekstfelt står som skjulte felt, i innsendt rekkefølge. Bare `_innlogging_`-feltene
+   her begynner med `_` (AD-7). Skjemaet sendes alltid som multipart, fordi et stort skjult felt
+   ville gitt 413 som urlencoded. Filer kan ikke bli skjulte felt: `tapte_filer` er navnene på
+   filfeltene, som merket `_innlogging_fil` bærer videre også etter feil passord. #}
 {% block innhold %}
-<div class="lesebredde">
+<div class="skjemabredde">
   <h1>Du må logge inn igjen.</h1>
-  <p><a class="knapp knapp--primar" href="{{ innlogging_url }}">Logg inn</a></p>
+  {{ m.meldinger(lenker={"epost": "innlogging-epost", "passord": "innlogging-passord"}) }}
+  <form class="skjema" method="post" action="{{ handling }}" enctype="multipart/form-data" novalidate>
+    {{ m.csrf_felt() }}
+    {% for navn, verdi in skjulte_felt %}
+    <input type="hidden" name="{{ navn }}" value="{{ verdi }}">
+    {% endfor %}
+    {% if tapte_filer %}
+    <input type="hidden" name="_innlogging_fil" value="{{ tapte_filer }}">
+    {% endif %}
+    <div class="felt">
+      <label for="innlogging-epost">E-post</label>
+      <input id="innlogging-epost" name="_innlogging_epost" type="email" autocomplete="email" required value="{{ epost }}"
+        {%- if feltfeil.get("epost") %} aria-invalid="true" aria-describedby="innlogging-epost-feil"{% endif %}
+        {%- if fokusmal == "epost" %} autofocus{% endif %}>
+      {{ m.feltfeil("innlogging-epost-feil", feltfeil.get("epost")) }}
+    </div>
+    <div class="felt">
+      <label for="innlogging-passord">Passord</label>
+      {% if feil and not feltfeil.get("passord") %}
+      <p class="hjelpetekst" id="innlogging-passord-hjelp">Skriv passordet på nytt.</p>
+      {% endif %}
+      <div class="passordfelt">
+        <input id="innlogging-passord" name="_innlogging_passord" type="password" autocomplete="current-password" required
+          {%- if feltfeil.get("passord") %} aria-invalid="true" aria-describedby="innlogging-passord-feil"
+          {%- elif feil %} aria-describedby="innlogging-passord-hjelp"{% endif %}>
+        <button class="knapp knapp--sekundar passordfelt__vis" type="button" aria-pressed="false" aria-controls="innlogging-passord" data-vis-passord hidden>Vis passord</button>
+      </div>
+      {{ m.feltfeil("innlogging-passord-feil", feltfeil.get("passord")) }}
+    </div>
+    {% if tapte_filer %}
+    <p class="hjelpetekst">Velg bildet på nytt etter innlogging.</p>
+    {% endif %}
+    <div class="skjema__knapper">
+      <button class="knapp knapp--primar" type="submit">Logg inn</button>
+    </div>
+  </form>
 </div>
 {% endblock %}
